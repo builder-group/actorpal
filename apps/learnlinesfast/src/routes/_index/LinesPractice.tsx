@@ -1,8 +1,8 @@
-import { useFeatureState, withLocalStorage } from 'feature-react/state';
+import { useCompute, useFeatureState, withLocalStorage } from 'feature-react/state';
 import { createState } from 'feature-state';
 import { AlignLeftIcon, InfoIcon, TextSearchIcon } from 'lucide-react';
 import React from 'react';
-import { tokenizeText, type TToken } from '../../lib';
+import { cn, tokenizeText, type TToken } from '../../lib';
 
 export const LinesPractice: React.FC<TLinesPracticeProps> = (props) => {
 	const {
@@ -47,10 +47,16 @@ mind – tell me it's all an illusion ...`
 	}, [text]);
 	const lines = useFeatureState(linesState);
 
-	const allTextRevealed = React.useMemo(
-		() => lines.every((line) => line.filter((t) => t.type === 'word').every((t) => t.revealed)),
-		[lines]
+	const allTextRevealed = useCompute(
+		linesState,
+		({ value }) =>
+			value.every((line) => line.filter((t) => t.type === 'word').every((t) => t.revealed)),
+		[]
 	);
+
+	// =========================================================================
+	// Events
+	// =========================================================================
 
 	const handleTextChange = React.useCallback(
 		(event: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -105,6 +111,10 @@ mind – tell me it's all an illusion ...`
 		linesState._notify();
 	}, [linesState]);
 
+	// =========================================================================
+	// UI
+	// =========================================================================
+
 	return (
 		<div className="not-prose">
 			<div className="mb-6">
@@ -140,11 +150,12 @@ mind – tell me it's all an illusion ...`
 						<div key={lineIndex} className="text-base-content flex flex-wrap gap-2 font-sans">
 							<button
 								onClick={() => toggleLine(lineIndex)}
-								className={`flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${
+								className={cn(
+									'flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-all duration-200',
 									allWordsRevealed
 										? 'bg-secondary/20 text-secondary hover:bg-secondary/30'
 										: 'bg-base-300 text-base-content/70 hover:bg-base-content/10'
-								}`}
+								)}
 								title={allWordsRevealed ? 'Hide line' : 'Reveal line'}
 							>
 								{allWordsRevealed ? (
@@ -175,11 +186,12 @@ mind – tell me it's all an illusion ...`
 										<div
 											key={tokenIndex}
 											onClick={() => toggleWord(lineIndex, tokenIndex)}
-											className={`flex h-12 cursor-pointer items-center justify-center rounded-lg px-3 text-xl font-medium transition-all duration-200 ${
+											className={cn(
+												'flex h-12 cursor-pointer items-center justify-center rounded-lg px-3 text-xl font-medium transition-all duration-200',
 												token.revealed
 													? 'bg-secondary/20 text-secondary hover:bg-secondary/30'
 													: 'bg-base-300 text-base-content hover:bg-base-content/10'
-											}`}
+											)}
 										>
 											{token.revealed ? token.original : token.display}
 										</div>
@@ -196,12 +208,18 @@ mind – tell me it's all an illusion ...`
 			<div className="mt-6">
 				<button
 					onClick={toggleAllText}
-					className={`cursor-pointer rounded-lg px-6 py-3 font-sans text-sm font-medium transition-all duration-200 ${
+					className={cn(
+						'flex cursor-pointer items-center gap-2 rounded-lg px-6 py-3 font-sans text-sm font-medium transition-all duration-200',
 						allTextRevealed
 							? 'bg-secondary text-secondary-content hover:bg-secondary/90'
 							: 'bg-neutral text-neutral-content hover:bg-neutral/80'
-					}`}
+					)}
 				>
+					{allTextRevealed ? (
+						<TextSearchIcon className="h-4 w-4" />
+					) : (
+						<AlignLeftIcon className="h-4 w-4" />
+					)}
 					{allTextRevealed ? 'Hide All' : 'Reveal All'}
 				</button>
 			</div>

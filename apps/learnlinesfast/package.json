@@ -1,0 +1,47 @@
+{
+	"name": "@repo/learnlinesfast",
+	"version": "0.0.1",
+	"private": true,
+	"description": "",
+	"keywords": [],
+	"bugs": {
+		"url": "https://github.com/builder-group/actorpal/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/builder-group/actorpal.git"
+	},
+	"license": "AGPL-3.0-or-later",
+	"author": "@bennobuilder",
+	"type": "module",
+	"scripts": {
+		"build": "pnpm typecheck && react-router build",
+		"build:prod": "export NODE_ENV=production && pnpm build",
+		"clean": "shx rm -rf dist && shx rm -rf build && shx rm -rf .turbo && shx rm -rf node_modules",
+		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
+		"install:clean": "pnpm run clean && pnpm install",
+		"lint": "eslint . --fix",
+		"start": "react-router-serve ./build/server/index.js",
+		"start:dev": "react-router dev",
+		"test": "echo \"🧪 No tests defined yet.\"",
+		"typecheck": "react-router typegen && tsc --noEmit",
+		"update:latest": "pnpm update --latest"
+	},
+	"dependencies": {
+		"@react-router/fs-routes": "^7.9.3",
+		"@react-router/node": "^7.9.3",
+		"@react-router/serve": "^7.9.3",
+		"isbot": "^5.1.31",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0",
+		"react-router": "^7.9.3"
+	},
+	"devDependencies": {
+		"@react-router/dev": "^7.9.3",
+		"@tailwindcss/vite": "^4.1.14",
+		"@types/react": "^19.2.0",
+		"@types/react-dom": "^19.2.0",
+		"tailwindcss": "^4.1.14",
+		"vite-tsconfig-paths": "^5.1.4"
+	}
+}

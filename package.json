@@ -1,20 +1,43 @@
 {
-  "name": "actorpal",
-  "private": true,
-  "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
-  },
-  "devDependencies": {
-    "prettier": "^3.6.2",
-    "turbo": "^2.5.8",
-    "typescript": "5.9.2"
-  },
-  "packageManager": "pnpm@9.0.0",
-  "engines": {
-    "node": ">=18"
-  }
+	"name": "actorpal",
+	"private": true,
+	"description": "",
+	"keywords": [],
+	"homepage": "https://actorpal.com/?utm_source=github",
+	"bugs": {
+		"url": "https://github.com/builder-group/actorpal/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/builder-group/actorpal.git"
+	},
+	"license": "AGPL-3.0-or-later",
+	"author": "@bennobuilder",
+	"scripts": {
+		"build": "turbo run build",
+		"clean": "turbo run clean --force && shx rm -rf .turbo && shx rm -rf .vercel && shx rm -rf node_modules",
+		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
+		"install:clean": "pnpm clean && pnpm install && pnpm build",
+		"lint": "turbo run lint",
+		"start:dev": "turbo run start:dev",
+		"test": "turbo run test",
+		"update:latest": "turbo run update:latest --force && pnpm update --latest && pnpm build"
+	},
+	"devDependencies": {
+		"@blgc/config": "^0.0.38",
+		"eslint": "^9.37.0",
+		"prettier": "^3.6.2",
+		"rollup": "^4.52.4",
+		"rollup-presets": "^0.0.24",
+		"shx": "^0.4.0",
+		"tsx": "^4.20.6",
+		"turbo": "^2.5.8",
+		"typescript": "^5.9.3",
+		"vite": "^7.1.9",
+		"vitest": "^3.2.4"
+	},
+	"packageManager": "pnpm@10.18.0",
+	"engines": {
+		"node": ">=20"
+	}
 }

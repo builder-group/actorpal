@@ -1,0 +1,231 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Hono Guidelines
+
+Core guidelines for building type-safe, maintainable APIs using Hono. These patterns ensure consistent, secure, and performant backend services.
+
+## Core Principles
+- **KISS (Keep It Simple, Stupid)** - Always choose the simplest, most maintainable solution
+- **TypeScript First** - Always use TypeScript with strict typing everywhere
+- **Less is More** - Always avoid unnecessary complexity, the best code is no code
+- **Clean Routes** - Always keep route handlers focused on request/response flow
+- **Smart Separation** - Only extract code to lib/ when it adds value
+
+## Route Organization
+
+### Directory Structure
+- Always structure routes using dot notation for clear API paths
+- Always keep route handlers in `index.ts`
+- Always keep schemas in `schema.ts`
+- Always use `lib/` for complex or reused functionality
+
+✅ Good:
+```typescript
+src/app/routes/
+├── v1.user/                  # User resource
+│   ├── index.ts              # Route handlers with direct DB ops
+│   └── schema.ts             # API contracts
+│
+├── v1.auth/                  # Auth operations
+│   ├── index.ts              # Route handlers
+│   ├── schema.ts             # API contracts
+│   └── lib/                  # Complex/reused logic
+│       ├── verify-token.ts   # Token verification
+│       └── hash-password.ts  # Password hashing
+```
+
+❌ Bad:
+```typescript
+src/routes/
+├── v1/                  # Wrong: Nested version
+│   └── users/           # Wrong: Nested resource
+│       └── users.ts     # Wrong: Single file for all routes
+```
+
+## Schema Definition
+- Always use Zod with `DTO` suffix for API contracts
+- Always include OpenAPI examples for all fields
+- Always use descriptive parameter names (`userId`, not `id`)
+- Always export TypeScript types from schemas
+
+✅ Good:
+```typescript
+// schema.ts
+import { createRoute, z } from '@hono/zod-openapi';
+import { JsonSuccessResponse, BadRequestResponse } from '@repo/hono-utils';
+
+const SUserDto = z
+  .object({
+    id: z.string().uuid().openapi({ example: '123e4567-e89b-12d3' }),
+    email: z.email().openapi({ example: 'user@example.com' }),
+    name: z.string().openapi({ example: 'John Doe' })
+  })
+  .openapi('UserDto');
+
+export type TUserDto = z.infer<typeof SUserDto>;
+
+export const CreateUserRoute = createRoute({
+  method: 'post',
+  path: '/v1/users',
+  tags: ['users'],
+  summary: 'Create user',
+  operationId: 'createUser',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: SUserDto.omit({ id: true })
+        }
+      }
+    }
+  },
+  responses: {
+    201: JsonSuccessResponse(SUserDto),
+    400: BadRequestResponse
+  }
+});
+```
+
+❌ Bad:
+```typescript
+// Wrong: Missing DTO suffix, no examples, generic parameters
+const SUser = z.object({        // Wrong: Missing Dto suffix
+  email: z.string(),            // Wrong: No OpenAPI example
+  name: z.string()
+});
+
+export const CreateRoute = createRoute({
+  path: '/users/{id}',          // Wrong: Generic 'id' parameter
+  responses: {
+    200: { description: 'OK' }  // Wrong: No typed response
+  }
+});
+```
+
+## Route Implementation
+- Always keep simple CRUD operations in route handlers
+- Always keep request/response flow clear in route handlers
+- Always extract complex business logic to lib/
+- Always validate inputs with `c.req.valid()`
+
+✅ Good:
+```typescript
+// Simple CRUD stays in index.ts
+router.openapi(GetUserRoute, async (c) => {
+  const { id } = c.req.valid('param');
+  
+  const [user] = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.id, id))
+    .limit(1);
+    
+  if (user == null) {
+    throw new AppError('#ERR_NOT_FOUND', 404);
+  }
+  
+  return c.json(user);
+});
+
+// Complex operations use lib functions
+router.openapi(RegisterUserRoute, async (c) => {
+  const input = c.req.valid('json');
+  
+  // Clear flow with complex operations in lib/
+  const hashedPassword = await hashPassword(input.password);
+  const user = await createUser({ ...input, password: hashedPassword });
+  const token = await generateAuthToken(user);
+  await sendWelcomeEmail(user.email);
+  
+  return c.json({ user, token });
+});
+```
+
+❌ Bad:
+```typescript
+// Wrong: Simple CRUD operation doesn't need lib/
+// lib/get-user.ts
+export async function getUser(id: string) {
+  return await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.id, id))
+    .limit(1);
+}
+
+// Wrong: Route-specific validation doesn't need lib/
+// lib/validate-create-input.ts
+export function validateCreateUserInput(input: unknown) {
+  return SCreateUserDto.parse(input);
+}
+
+// Wrong: Complex business logic in route handler
+router.openapi(RegisterUserRoute, async (c) => {
+  const input = c.req.valid('json');
+  
+  // Wrong: These operations should be in lib/
+  const hashedPassword = await bcrypt.hash(input.password, 10);
+  const existingUser = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.email, input.email))
+    .limit(1);
+    
+  if (existingUser.length > 0) {
+    throw new AppError('#ERR_USER_EXISTS', 409);
+  }
+  
+  const [user] = await db
+    .insert(userTable)
+    .values({ ...input, password: hashedPassword })
+    .returning();
+    
+  const token = jwt.sign(
+    { id: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+  
+  await sendWelcomeEmail(user.email);
+  
+  return c.json({ user, token });
+});
+```
+
+## Error Handling
+- Always use `AppError` from `@repo/hono-utils`
+- Always include error codes with `#ERR_` prefix
+- Always provide helpful detail messages
+- Always re-throw `AppError` instances in route handlers
+
+✅ Good:
+```typescript
+if (user == null) {
+  throw new AppError('#ERR_USER_NOT_FOUND', 404, {
+    detail: 'User not found'
+  });
+}
+```
+
+❌ Bad:
+```typescript
+// Wrong: Generic error handling
+if (!user) {
+  throw new Error('User not found');           // Wrong: Generic Error
+}
+
+// Wrong: Custom error responses
+try {
+  const user = await getUser(id);
+  return c.json(user);
+} catch (e) {
+  return c.json({ error: e.message }, 500);      // Wrong: Custom format
+}
+```
+
+## Related Rules
+- [style-guide.mdc](mdc:.cursor/rules/style-guide.mdc): Core coding standards
+- [drizzle.mdc](mdc:.cursor/rules/drizzle.mdc): Database patterns

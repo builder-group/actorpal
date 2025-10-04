@@ -53,9 +53,18 @@ importers:
       '@react-router/serve':
         specifier: ^7.9.3
         version: 7.9.3(react-router@7.9.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(typescript@5.9.3)
+      feature-react:
+        specifier: ^0.0.63
+        version: 0.0.63(react@19.2.0)
+      feature-state:
+        specifier: ^0.0.61
+        version: 0.0.61
       isbot:
         specifier: ^5.1.31
         version: 5.1.31
+      lucide-react:
+        specifier: ^0.544.0
+        version: 0.544.0(react@19.2.0)
       react:
         specifier: ^19.2.0
         version: 19.2.0
@@ -221,6 +230,12 @@ packages:
 
   '@blgc/config@0.0.38':
     resolution: {integrity: sha512-ztpxoF7ZSrmv+FIdd+WTft5YlZ19S0bJ0yn2JgUQPPSTmDbo+Exyo9BoE38ViI3/fAcDQs7XvV5gVzS/3MbHng==}
+
+  '@blgc/types@0.0.19':
+    resolution: {integrity: sha512-jOM34Bmor6jc8O/aPnw6OakguLK7xrTUyQSR2YB/2xkWhLXJZNutOEypcwtvj4LKe+YFDUeGyvFSKjmVKnybhg==}
+
+  '@blgc/utils@0.0.59':
+    resolution: {integrity: sha512-rKkwTBqArJjg89LEkTswLLNIhRRo+0SGK3YKMx22eDMwAGefDfYKprGqsqssV6AN1RGkWOMcxfdfL10fYyW3mA==}
 
   '@esbuild/aix-ppc64@0.25.10':
     resolution: {integrity: sha512-0NFWnA+7l41irNuaSVlLfgNT12caWJVLzp5eAVhZ0z1qpxbockccEt3s+149rE64VUI3Ml2zt8Nv5JVc4QXTsw==}
@@ -1435,6 +1450,14 @@ packages:
       picomatch:
         optional: true
 
+  feature-react@0.0.63:
+    resolution: {integrity: sha512-X+kEvlv2cAjxHW9HcLfE/rwpIwAUMRLqxSuM1NCXyQvfNeuIJb7itUPei8ogGUoa/jvy4AgmzMXg3Ihc9GJAkw==}
+    peerDependencies:
+      react: ^18.3.1
+
+  feature-state@0.0.61:
+    resolution: {integrity: sha512-JaK94jyOGi/SiKIrd3Osgpvu6ITzCGwY+ZTvoxAPrKFi2DjUIIPWDkOtAavUon8LVoDGAPrK8xK9pAbdaDjmsQ==}
+
   figures@6.1.0:
     resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
     engines: {node: '>=18'}
@@ -1921,6 +1944,11 @@ packages:
   lru-cache@7.18.3:
     resolution: {integrity: sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA==}
     engines: {node: '>=12'}
+
+  lucide-react@0.544.0:
+    resolution: {integrity: sha512-t5tS44bqd825zAW45UQxpG2CvcC4urOwn2TrwSH8u+MjeE+1NnWl6QqeQ/6NdjMqdOygyiT9p3Ev0p1NJykxjw==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   magic-string@0.30.19:
     resolution: {integrity: sha512-2N21sPY9Ws53PZvsEpVtNuSW+ScYbQdp4b9qUaL+9QkHUrGFKo56Lg9Emg5s9V/qrtNBmiR01sYhUOwu3H+VOw==}
@@ -3200,6 +3228,10 @@ snapshots:
       - turbo
       - typescript
       - vite
+
+  '@blgc/types@0.0.19': {}
+
+  '@blgc/utils@0.0.59': {}
 
   '@esbuild/aix-ppc64@0.25.10':
     optional: true
@@ -4542,6 +4574,17 @@ snapshots:
     optionalDependencies:
       picomatch: 4.0.3
 
+  feature-react@0.0.63(react@19.2.0):
+    dependencies:
+      '@blgc/types': 0.0.19
+      '@blgc/utils': 0.0.59
+      react: 19.2.0
+
+  feature-state@0.0.61:
+    dependencies:
+      '@blgc/types': 0.0.19
+      '@blgc/utils': 0.0.59
+
   figures@6.1.0:
     dependencies:
       is-unicode-supported: 2.1.0
@@ -4996,6 +5039,10 @@ snapshots:
       yallist: 3.1.1
 
   lru-cache@7.18.3: {}
+
+  lucide-react@0.544.0(react@19.2.0):
+    dependencies:
+      react: 19.2.0
 
   magic-string@0.30.19:
     dependencies:

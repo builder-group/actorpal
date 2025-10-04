@@ -118,7 +118,7 @@ mind – tell me it's all an illusion ...`
 					id="text-input"
 					value={text}
 					onChange={handleTextChange}
-					className="focus:border-secondary focus:ring-secondary/20 w-full rounded-lg border-2 border-neutral-200 px-4 py-3 font-sans text-base leading-relaxed text-neutral-900 transition-colors focus:ring-2 focus:outline-none"
+					className="w-full rounded-lg border-2 border-neutral-200 px-4 py-3 font-sans text-base leading-relaxed text-neutral-900 transition-colors focus:border-neutral-300 focus:outline-none"
 					rows={4}
 					placeholder="Paste your lines here..."
 				/>
@@ -142,8 +142,8 @@ mind – tell me it's all an illusion ...`
 								onClick={() => toggleLine(lineIndex)}
 								className={`flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${
 									allWordsRevealed
-										? 'bg-secondary/20 text-secondary hover:bg-secondary/30'
-										: 'bg-neutral-200/60 text-neutral-500 hover:bg-neutral-300/60 hover:text-neutral-700'
+										? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+										: 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300'
 								}`}
 								title={allWordsRevealed ? 'Hide line' : 'Reveal line'}
 							>
@@ -175,10 +175,10 @@ mind – tell me it's all an illusion ...`
 										<div
 											key={tokenIndex}
 											onClick={() => toggleWord(lineIndex, tokenIndex)}
-											className={`flex h-12 cursor-pointer items-center justify-center rounded-lg px-3 text-xl font-medium transition-all duration-200 hover:shadow-md ${
+											className={`flex h-12 cursor-pointer items-center justify-center rounded-lg px-3 text-xl font-medium transition-all duration-200 ${
 												token.revealed
-													? 'bg-secondary/20 text-secondary hover:bg-secondary/30'
-													: 'hover:bg-secondary/20 hover:text-secondary bg-neutral-100'
+													? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+													: 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
 											}`}
 										>
 											{token.revealed ? token.original : token.display}
@@ -196,9 +196,9 @@ mind – tell me it's all an illusion ...`
 			<div className="mt-6">
 				<button
 					onClick={toggleAllText}
-					className={`rounded-lg px-6 py-3 font-sans text-sm font-medium transition-all duration-200 ${
+					className={`cursor-pointer rounded-lg px-6 py-3 font-sans text-sm font-medium transition-all duration-200 ${
 						allTextRevealed
-							? 'bg-secondary hover:bg-secondary/90 text-white'
+							? 'bg-purple-600 text-white hover:bg-purple-700'
 							: 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'
 					}`}
 				>

@@ -28,13 +28,13 @@ describe('tokenizeText', () => {
 		]);
 	});
 
-	it('strips contractions from words', () => {
+	it('keeps contractions in original but shows first letter only', () => {
 		const result = tokenizeText("I can't do it!");
 
 		expect(result).toEqual([
 			{ type: 'word', original: 'I', display: 'I' },
 			{ type: 'space', original: ' ', display: ' ' },
-			{ type: 'word', original: 'can', display: 'c' },
+			{ type: 'word', original: "can't", display: 'c' },
 			{ type: 'space', original: ' ', display: ' ' },
 			{ type: 'word', original: 'do', display: 'd' },
 			{ type: 'space', original: ' ', display: ' ' },

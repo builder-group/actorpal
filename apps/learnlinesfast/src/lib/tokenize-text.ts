@@ -27,18 +27,20 @@ export function tokenizeText(text: string): TToken[] {
 			});
 		} else if (isLetter(char)) {
 			const word = stream.consumeWhile(isLetter);
+			let fullWord = word;
 
 			// Check if there's a contraction (apostrophe + letters)
 			const nextChar = stream.currChar();
 			if (nextChar === "'") {
-				// Skip the apostrophe and any following letters (contraction)
+				// Include the apostrophe and contraction in original
 				stream.advance(); // skip '
-				stream.consumeWhile(isLetter); // skip 't, 'm, 's, etc.
+				const contraction = stream.consumeWhile(isLetter); // get 't, 'm, 's, etc.
+				fullWord = word + "'" + contraction;
 			}
 
 			tokens.push({
 				type: 'word',
-				original: word,
+				original: fullWord,
 				display: word.charAt(0)
 			});
 		} else {

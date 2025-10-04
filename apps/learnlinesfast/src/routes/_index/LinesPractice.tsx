@@ -1,6 +1,6 @@
 import { useFeatureState, withLocalStorage } from 'feature-react/state';
 import { createState } from 'feature-state';
-import { Info, SquareChevronDown, SquareChevronRight } from 'lucide-react';
+import { AlignLeftIcon, InfoIcon, TextSearchIcon } from 'lucide-react';
 import React from 'react';
 import { tokenizeText, type TToken } from '../../lib';
 
@@ -110,7 +110,7 @@ mind – tell me it's all an illusion ...`
 			<div className="mb-6">
 				<label
 					htmlFor="text-input"
-					className="mb-2 block font-sans text-sm font-semibold text-neutral-700 dark:text-neutral-300"
+					className="text-base-content mb-2 block font-sans text-sm font-semibold"
 				>
 					Text to Practice
 				</label>
@@ -118,14 +118,14 @@ mind – tell me it's all an illusion ...`
 					id="text-input"
 					value={text}
 					onChange={handleTextChange}
-					className="w-full rounded-lg border-2 border-neutral-200 bg-white px-4 py-3 font-sans text-base leading-relaxed text-neutral-900 transition-colors focus:border-neutral-300 focus:outline-none dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-100 dark:focus:border-neutral-500"
+					className="border-base-300 bg-base-100 text-base-content focus:border-base-content/30 w-full rounded-lg border-2 px-4 py-3 font-sans text-base leading-relaxed transition-colors focus:outline-none"
 					rows={4}
 					placeholder="Paste your lines here..."
 				/>
 			</div>
 
-			<div className="mb-6 flex max-w-2xl items-start gap-3 rounded-lg bg-blue-50 p-4 text-blue-800 dark:bg-blue-950 dark:text-blue-200">
-				<Info className="mt-0.5 h-5 w-5 shrink-0" />
+			<div className="bg-info/10 text-info mb-6 flex max-w-2xl items-start gap-3 rounded-lg p-4">
+				<InfoIcon className="mt-0.5 h-5 w-5 shrink-0" />
 				<span className="text-sm">
 					Each box shows the first letter. Click to reveal words, use arrows for lines. Try
 					recalling before clicking.
@@ -137,23 +137,20 @@ mind – tell me it's all an illusion ...`
 					const allWordsRevealed = line.filter((t) => t.type === 'word').every((t) => t.revealed);
 
 					return (
-						<div
-							key={lineIndex}
-							className="flex flex-wrap gap-2 font-sans text-neutral-700 dark:text-neutral-300"
-						>
+						<div key={lineIndex} className="text-base-content flex flex-wrap gap-2 font-sans">
 							<button
 								onClick={() => toggleLine(lineIndex)}
 								className={`flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-lg transition-all duration-200 ${
 									allWordsRevealed
-										? 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800'
-										: 'bg-neutral-200 text-neutral-500 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-600'
+										? 'bg-secondary/20 text-secondary hover:bg-secondary/30'
+										: 'bg-base-300 text-base-content/70 hover:bg-base-content/10'
 								}`}
 								title={allWordsRevealed ? 'Hide line' : 'Reveal line'}
 							>
 								{allWordsRevealed ? (
-									<SquareChevronDown className="h-5 w-5" />
+									<TextSearchIcon className="h-5 w-5" />
 								) : (
-									<SquareChevronRight className="h-5 w-5" />
+									<AlignLeftIcon className="h-5 w-5" />
 								)}
 							</button>
 
@@ -166,7 +163,7 @@ mind – tell me it's all an illusion ...`
 									return (
 										<div
 											key={tokenIndex}
-											className="flex h-12 items-center justify-center rounded-lg bg-blue-100 px-3 text-xl text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+											className="bg-info/20 text-info flex h-12 items-center justify-center rounded-lg px-3 text-xl"
 										>
 											{token.display}
 										</div>
@@ -180,8 +177,8 @@ mind – tell me it's all an illusion ...`
 											onClick={() => toggleWord(lineIndex, tokenIndex)}
 											className={`flex h-12 cursor-pointer items-center justify-center rounded-lg px-3 text-xl font-medium transition-all duration-200 ${
 												token.revealed
-													? 'bg-purple-100 text-purple-700 hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:hover:bg-purple-800'
-													: 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600'
+													? 'bg-secondary/20 text-secondary hover:bg-secondary/30'
+													: 'bg-base-300 text-base-content hover:bg-base-content/10'
 											}`}
 										>
 											{token.revealed ? token.original : token.display}
@@ -201,8 +198,8 @@ mind – tell me it's all an illusion ...`
 					onClick={toggleAllText}
 					className={`cursor-pointer rounded-lg px-6 py-3 font-sans text-sm font-medium transition-all duration-200 ${
 						allTextRevealed
-							? 'bg-purple-600 text-white hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600'
-							: 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300 dark:bg-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-600'
+							? 'bg-secondary text-secondary-content hover:bg-secondary/90'
+							: 'bg-neutral text-neutral-content hover:bg-neutral/80'
 					}`}
 				>
 					{allTextRevealed ? 'Hide All' : 'Reveal All'}

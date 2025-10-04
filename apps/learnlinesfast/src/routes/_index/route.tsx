@@ -1,22 +1,30 @@
+import { Moon, Sun } from 'lucide-react';
 import { mdxComponents } from '@/components';
 import Content from './content.mdx';
 import { LinesPractice } from './LinesPractice';
 
 const Page: React.FC = () => {
 	return (
-		<div className="min-h-screen bg-white dark:bg-neutral-900">
+		<div className="bg-base-100 min-h-screen">
+			{/* Theme Toggle */}
+			<label className="swap swap-rotate fixed top-4 right-4 z-50">
+				<input type="checkbox" value="dark" className="theme-controller" />
+				<Sun className="swap-on text-base-content h-6 w-6 fill-current" />
+				<Moon className="swap-off text-base-content h-6 w-6 fill-current" />
+			</label>
+
 			{/* Hero Section */}
 			<section className="relative pt-16 sm:pt-24">
 				<div className="mx-auto max-w-3xl px-4 text-left md:px-6">
 					<div className="flex items-center gap-2">
-						<span className="font-handwriting text-2xl font-bold text-neutral-500 sm:text-3xl dark:text-neutral-400">
+						<span className="font-handwriting text-base-content/50 text-2xl font-bold sm:text-3xl">
 							Learn Lines Fast
 						</span>
 					</div>
-					<h1 className="mt-4 font-serif text-5xl leading-tight font-semibold text-neutral-900 sm:text-6xl dark:text-white">
+					<h1 className="text-base-content mt-4 font-serif text-5xl leading-tight font-semibold sm:text-6xl">
 						The Acronym Method
 					</h1>
-					<p className="mt-5 font-sans text-lg leading-relaxed text-neutral-700 dark:text-neutral-200">
+					<p className="text-base-content/80 mt-5 font-sans text-lg leading-relaxed">
 						Robert Downey Jr. used this technique to memorize Sherlock Holmes—write only the first
 						letter of each word, practice with those letters, and let your memory fill in the rest.
 						It&apos;s called the acronym method, and it&apos;s helped me learn lines about 4x
@@ -27,7 +35,7 @@ const Page: React.FC = () => {
 				{/* Interactive Demo */}
 				<div id="demo" className="mt-10 overflow-hidden md:mt-14 md:px-4">
 					<div className="mx-auto w-full max-w-[69rem]">
-						<div className="relative border-y border-neutral-200 bg-neutral-50 p-6 md:rounded-2xl md:border md:p-8 dark:border-neutral-700 dark:bg-neutral-800">
+						<div className="border-base-300 bg-base-200 relative border-y p-6 md:rounded-2xl md:border md:p-8">
 							<LinesPractice />
 						</div>
 					</div>
@@ -50,32 +58,32 @@ export default Page;
 
 export function meta() {
 	return [
-		{ title: 'Learn Lines Fast - The Acronym Method (First Letter Method)' },
+		{ title: 'The Acronym Method - Learn Lines 4x Faster Like RDJ' },
 		{
 			name: 'description',
 			content:
-				"Learn RDJ's acronym method (first letter method) to memorize lines faster. Write the first letter of each word and practice with just those letters. Interactive tool included."
+				'Master the acronym method (first letter technique) used by Robert Downey Jr. to memorize lines 4x faster. Write the first letter of each word and let your memory do the rest. Free interactive practice tool included.'
 		},
 		{
 			name: 'keywords',
 			content:
-				'acronym method, first letter method, learn lines fast, memorize lines, acting technique, Robert Downey Jr, line learning, actor tips, memorization technique'
+				'acronym method, first letter method, memorize lines, acting technique, Robert Downey Jr, line learning, actor memorization, learn lines fast, memory technique for actors'
 		},
 		// Open Graph
-		{ property: 'og:title', content: 'Learn Lines Fast - The Acronym Method' },
+		{ property: 'og:title', content: 'The Acronym Method - Learn Lines 4x Faster' },
 		{
 			property: 'og:description',
 			content:
-				"Learn RDJ's acronym method to memorize lines faster. Interactive tool to practice the first letter technique."
+				"Master Robert Downey Jr.'s acronym method to memorize lines 4x faster. Free interactive practice tool."
 		},
 		{ property: 'og:type', content: 'website' },
+		{ property: 'og:url', content: 'https://acronymmethod.com' },
 		// Twitter Card
 		{ name: 'twitter:card', content: 'summary_large_image' },
-		{ name: 'twitter:title', content: 'Learn Lines Fast - The Acronym Method' },
+		{ name: 'twitter:title', content: 'The Acronym Method - Learn Lines 4x Faster' },
 		{
 			name: 'twitter:description',
-			content:
-				"Learn RDJ's acronym method to memorize lines faster. Interactive practice tool included."
+			content: "Master RDJ's acronym method to memorize lines 4x faster. Free interactive tool."
 		}
 	];
 }

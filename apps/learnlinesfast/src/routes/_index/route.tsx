@@ -17,10 +17,10 @@ const Page: React.FC = () => {
 						The Acronym Method
 					</h1>
 					<p className="mt-5 font-sans text-lg leading-relaxed text-neutral-600">
-						I found this watching Robert Downey Jr. talk about learning Sherlock Holmes. He calls it
-						the acronym method (also known as the first letter method). Write the first letter of
-						each word, practice with just those letters, and let your memory do what it does best.
-						It&apos;s helped me learn lines way faster.
+						I found this watching Robert Downey Jr. talk about learning lines for Sherlock Holmes.
+						He calls it the acronym method (also known as the first letter method). Write the first
+						letter of each word, practice with just those letters, and let your memory do what it
+						does best. It&apos;s helped me learn lines way faster.
 					</p>
 				</div>
 

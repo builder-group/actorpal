@@ -7,7 +7,7 @@ const Page: React.FC = () => {
 	return (
 		<div className="bg-base-100 min-h-screen">
 			{/* Theme Toggle */}
-			<label className="swap swap-rotate fixed top-4 right-4 z-50">
+			<label className="swap swap-rotate absolute top-4 right-4 z-50">
 				<input type="checkbox" value="dark" className="theme-controller" />
 				<Sun className="swap-on text-base-content h-6 w-6 fill-current" />
 				<Moon className="swap-off text-base-content h-6 w-6 fill-current" />

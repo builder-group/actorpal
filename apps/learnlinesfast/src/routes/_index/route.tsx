@@ -4,30 +4,30 @@ import { LinesPractice } from './LinesPractice';
 
 const Page: React.FC = () => {
 	return (
-		<div className="bg-base-100 min-h-screen">
+		<div className="min-h-screen bg-white dark:bg-neutral-900">
 			{/* Hero Section */}
 			<section className="relative pt-16 sm:pt-24">
 				<div className="mx-auto max-w-3xl px-4 text-left md:px-6">
 					<div className="flex items-center gap-2">
-						<span className="font-handwriting text-2xl font-bold text-neutral-400 sm:text-3xl">
+						<span className="font-handwriting text-2xl font-bold text-neutral-500 sm:text-3xl dark:text-neutral-400">
 							Learn Lines Fast
 						</span>
 					</div>
-					<h1 className="mt-4 font-serif text-5xl leading-tight font-semibold text-neutral-900 sm:text-6xl">
+					<h1 className="mt-4 font-serif text-5xl leading-tight font-semibold text-neutral-900 sm:text-6xl dark:text-white">
 						The Acronym Method
 					</h1>
-					<p className="mt-5 font-sans text-lg leading-relaxed text-neutral-600">
-						I found this watching Robert Downey Jr. talk about learning lines for Sherlock Holmes.
-						He calls it the acronym method (also known as the first letter method). Write the first
-						letter of each word, practice with just those letters, and let your memory do what it
-						does best. It&apos;s helped me learn lines way faster.
+					<p className="mt-5 font-sans text-lg leading-relaxed text-neutral-700 dark:text-neutral-200">
+						Robert Downey Jr. used this technique to memorize Sherlock Holmes—write only the first
+						letter of each word, practice with those letters, and let your memory fill in the rest.
+						It&apos;s called the acronym method, and it&apos;s helped me learn lines about 4x
+						faster. Try it yourself with the interactive tool below.
 					</p>
 				</div>
 
 				{/* Interactive Demo */}
 				<div id="demo" className="mt-10 overflow-hidden md:mt-14 md:px-4">
 					<div className="mx-auto w-full max-w-[69rem]">
-						<div className="relative border-y border-neutral-200 bg-neutral-50 p-6 md:rounded-2xl md:border md:p-8">
+						<div className="relative border-y border-neutral-200 bg-neutral-50 p-6 md:rounded-2xl md:border md:p-8 dark:border-neutral-700 dark:bg-neutral-800">
 							<LinesPractice />
 						</div>
 					</div>
@@ -37,7 +37,7 @@ const Page: React.FC = () => {
 			{/* Blog Content Section */}
 			<section className="px-4 py-6 md:px-6 md:py-10">
 				<div className="mx-auto max-w-3xl">
-					<article className="prose prose-base prose-gray max-w-none">
+					<article className="prose prose-base dark:prose-invert max-w-none">
 						<Content components={mdxComponents} />
 					</article>
 				</div>

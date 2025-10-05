@@ -56,6 +56,7 @@ mind – tell me it's all an illusion ...`
 			value.every((line) => line.filter((t) => t.type === 'word').every((t) => t.revealed)),
 		[]
 	);
+	const isDefaultText = useCompute(textState, ({ value }) => value === defaultText, [defaultText]);
 
 	// =========================================================================
 	// Events
@@ -68,6 +69,11 @@ mind – tell me it's all an illusion ...`
 		},
 		[textState]
 	);
+
+	const handleReset = React.useCallback(() => {
+		textState._v = defaultText;
+		textState._notify();
+	}, [textState, defaultText]);
 
 	const toggleLine = React.useCallback(
 		(lineIndex: number) => {
@@ -129,12 +135,19 @@ mind – tell me it's all an illusion ...`
 	return (
 		<div className="not-prose">
 			<div className="mb-6">
-				<label
-					htmlFor="text-input"
-					className="text-base-content mb-2 block font-sans text-sm font-semibold"
-				>
-					Text to Practice
-				</label>
+				<div className="mb-2 flex items-center justify-between">
+					<label htmlFor="text-input" className="text-base-content font-sans text-sm font-semibold">
+						Text to Practice
+					</label>
+					{!isDefaultText && (
+						<button
+							onClick={handleReset}
+							className="text-base-content/60 hover:text-base-content cursor-pointer text-xs font-medium transition-colors"
+						>
+							Reset
+						</button>
+					)}
+				</div>
 				<textarea
 					id="text-input"
 					value={text}

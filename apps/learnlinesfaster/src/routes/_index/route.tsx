@@ -15,12 +15,12 @@ const Page: React.FC = () => {
 						</span>
 					</div>
 					<h1 className="text-base-content mt-4 font-serif text-5xl leading-tight font-semibold sm:text-6xl">
-						The Acronym Method
+						The First Letter Method
 					</h1>
 					<p className="text-base-content/80 mt-5 font-sans text-lg leading-relaxed">
 						Robert Downey Jr. used this technique to memorize Sherlock Holmes—write only the first
 						letter of each word, practice with those letters, and let your memory fill in the rest.
-						It&apos;s called the acronym method, and it&apos;s helped me learn lines about 4x
+						It&apos;s called the first letter method, and it&apos;s helped me learn lines about 4x
 						faster. Try it yourself with the interactive tool below.
 					</p>
 				</div>
@@ -77,32 +77,33 @@ export default Page;
 
 export function meta() {
 	return [
-		{ title: 'The Acronym Method - Learn Lines 4x Faster Like RDJ' },
+		{ title: 'The First Letter Method - Learn Lines 4x Faster Like RDJ' },
 		{
 			name: 'description',
 			content:
-				'Master the acronym method (first letter technique) used by Robert Downey Jr. to memorize lines 4x faster. Write the first letter of each word and let your memory do the rest. Free interactive practice tool included.'
+				'Master the first letter method (acronym technique) used by Robert Downey Jr. to memorize lines 4x faster. Write the first letter of each word and let your memory do the rest. Free interactive practice tool included.'
 		},
 		{
 			name: 'keywords',
 			content:
-				'acronym method, first letter method, memorize lines, acting technique, Robert Downey Jr, line learning, actor memorization, learn lines fast, memory technique for actors'
+				'first letter method, acronym method, memorize lines, acting technique, Robert Downey Jr, line learning, actor memorization, learn lines fast, memory technique for actors'
 		},
 		// Open Graph
-		{ property: 'og:title', content: 'The Acronym Method - Learn Lines 4x Faster' },
+		{ property: 'og:title', content: 'The First Letter Method - Learn Lines 4x Faster' },
 		{
 			property: 'og:description',
 			content:
-				"Master Robert Downey Jr.'s acronym method to memorize lines 4x faster. Free interactive practice tool."
+				"Master Robert Downey Jr.'s first letter method to memorize lines 4x faster. Free interactive practice tool."
 		},
 		{ property: 'og:type', content: 'website' },
-		{ property: 'og:url', content: 'https://acronymmethod.com' },
+		{ property: 'og:url', content: 'https://learnlinesfaster.com' },
 		// Twitter Card
 		{ name: 'twitter:card', content: 'summary_large_image' },
-		{ name: 'twitter:title', content: 'The Acronym Method - Learn Lines 4x Faster' },
+		{ name: 'twitter:title', content: 'The First Letter Method - Learn Lines 4x Faster' },
 		{
 			name: 'twitter:description',
-			content: "Master RDJ's acronym method to memorize lines 4x faster. Free interactive tool."
+			content:
+				"Master RDJ's first letter method to memorize lines 4x faster. Free interactive tool."
 		}
 	];
 }

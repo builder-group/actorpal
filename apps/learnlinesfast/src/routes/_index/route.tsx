@@ -6,19 +6,12 @@ import { LinesPractice } from './LinesPractice';
 const Page: React.FC = () => {
 	return (
 		<div className="bg-base-100 min-h-screen">
-			{/* Theme Toggle */}
-			<label className="swap swap-rotate absolute top-4 right-4 z-50">
-				<input type="checkbox" value="dark" className="theme-controller" />
-				<Sun className="swap-on text-base-content h-6 w-6 fill-current" />
-				<Moon className="swap-off text-base-content h-6 w-6 fill-current" />
-			</label>
-
 			{/* Hero Section */}
 			<section className="relative pt-16 sm:pt-24">
 				<div className="mx-auto max-w-3xl px-4 text-left md:px-6">
 					<div className="flex items-center gap-2">
 						<span className="font-handwriting text-base-content/50 text-2xl font-bold sm:text-3xl">
-							Learn Lines Fast
+							Learn Lines Faster
 						</span>
 					</div>
 					<h1 className="text-base-content mt-4 font-serif text-5xl leading-tight font-semibold sm:text-6xl">
@@ -50,6 +43,32 @@ const Page: React.FC = () => {
 					</article>
 				</div>
 			</section>
+
+			{/* Footer */}
+			<footer className="border-base-300 bg-base-200 mt-16 border-t py-8">
+				<div className="mx-auto max-w-3xl px-4 md:px-6">
+					<div className="flex items-center justify-between">
+						<p className="text-base-content/60 font-sans text-sm">
+							Made by{' '}
+							<a
+								href="https://github.com/bennobuilder"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="text-base-content hover:text-base-content/80 font-medium transition-colors"
+							>
+								@bennobuilder
+							</a>
+						</p>
+
+						{/* Theme Toggle */}
+						<label className="swap swap-rotate">
+							<input type="checkbox" value="dark" className="theme-controller" />
+							<Sun className="swap-on text-base-content h-5 w-5 fill-current" />
+							<Moon className="swap-off text-base-content h-5 w-5 fill-current" />
+						</label>
+					</div>
+				</div>
+			</footer>
 		</div>
 	);
 };

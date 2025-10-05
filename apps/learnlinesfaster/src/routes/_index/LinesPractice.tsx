@@ -18,33 +18,36 @@ mind – tell me it's all an illusion ...`
 	} = props;
 
 	const textState = React.useMemo(() => {
-		const state = withLocalStorage(createState(defaultText), 'text');
+		const state = withLocalStorage(createState(defaultText), 'lines-practice_text');
 		return state;
 	}, [defaultText]);
 	const text = useFeatureState(textState);
 
-	const linesState = React.useMemo(() => {
-		const tokens = tokenizeText(text);
-		const lines: TRevealableToken[][] = [];
-		let currentLine: TRevealableToken[] = [];
+	const linesState = useCompute(
+		textState,
+		({ value: text }) => {
+			const tokens = tokenizeText(text);
+			const lines: TRevealableToken[][] = [];
+			let currentLine: TRevealableToken[] = [];
 
-		for (const token of tokens) {
-			if (token.type === 'newline') {
-				if (currentLine.length > 0) {
-					lines.push(currentLine);
-					currentLine = [];
+			for (const token of tokens) {
+				if (token.type === 'newline') {
+					if (currentLine.length > 0) {
+						lines.push(currentLine);
+						currentLine = [];
+					}
+				} else {
+					currentLine.push({ ...token, revealed: false });
 				}
-			} else {
-				currentLine.push({ ...token, revealed: false });
 			}
-		}
-		if (currentLine.length > 0) {
-			lines.push(currentLine);
-		}
+			if (currentLine.length > 0) {
+				lines.push(currentLine);
+			}
 
-		const state = withLocalStorage(createState(lines), 'lines');
-		return state;
-	}, [text]);
+			return createState(lines);
+		},
+		[]
+	);
 	const lines = useFeatureState(linesState);
 
 	const allTextRevealed = useCompute(
@@ -110,6 +113,14 @@ mind – tell me it's all an illusion ...`
 
 		linesState._notify();
 	}, [linesState]);
+
+	// =========================================================================
+	// Effects
+	// =========================================================================
+
+	React.useEffect(() => {
+		textState.persist();
+	}, [linesState, textState]);
 
 	// =========================================================================
 	// UI

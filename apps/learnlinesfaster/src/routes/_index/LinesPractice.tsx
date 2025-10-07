@@ -161,8 +161,9 @@ mind – tell me it's all an illusion ...`
 			<div className="bg-info/10 text-info mb-6 flex max-w-2xl items-start gap-3 rounded-lg p-4">
 				<InfoIcon className="mt-0.5 h-5 w-5 shrink-0" />
 				<span className="text-sm">
-					Each box shows the first letter. Click to reveal words, use arrows for lines. Try
-					recalling before clicking.
+					Each box shows the first letter. Click to reveal words, use the line button (
+					<AlignLeftIcon className="inline h-3 w-3" />) for entire lines. Try recalling before
+					clicking.
 				</span>
 			</div>
 
@@ -198,7 +199,10 @@ mind – tell me it's all an illusion ...`
 									return (
 										<div
 											key={tokenIndex}
-											className="bg-info/20 text-info flex h-12 items-center justify-center rounded-lg px-3 text-xl"
+											className={cn(
+												'bg-info/20 text-info flex h-12 items-center justify-center rounded-lg px-3 text-xl',
+												token.display.length > 2 ? 'font-sans' : 'font-mono'
+											)}
 										>
 											{token.display}
 										</div>
@@ -211,7 +215,7 @@ mind – tell me it's all an illusion ...`
 											key={tokenIndex}
 											onClick={() => toggleWord(lineIndex, tokenIndex)}
 											className={cn(
-												'flex h-12 cursor-pointer items-center justify-center rounded-lg px-3 text-xl font-medium transition-all duration-200',
+												'flex h-12 cursor-pointer items-center justify-center rounded-lg px-3 font-mono text-xl font-medium transition-all duration-200',
 												token.revealed
 													? 'bg-secondary/20 text-secondary hover:bg-secondary/30'
 													: 'bg-base-300 text-base-content hover:bg-base-content/10'

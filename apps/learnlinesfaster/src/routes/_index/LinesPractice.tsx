@@ -161,9 +161,9 @@ mind – tell me it's all an illusion ...`
 			<div className="bg-info/10 text-info mb-6 flex max-w-xl items-start gap-3 rounded-lg p-4">
 				<InfoIcon className="mt-0.5 h-5 w-5 shrink-0" />
 				<span className="text-sm text-balance">
-					Each box shows the first letter. Click to reveal words, use the line button (
-					<AlignLeftIcon className="inline h-3 w-3" />) for entire lines. Try recalling before
-					clicking.
+					Each box shows the first letter. Click letters to reveal words, or use the line button (
+					<AlignLeftIcon className="inline h-3 w-3" />) to reveal entire lines. Try recalling before
+					clicking ;)
 				</span>
 			</div>
 

@@ -5,11 +5,11 @@
 	"description": "",
 	"keywords": [],
 	"bugs": {
-		"url": "https://github.com/builder-group/actorpal/issues"
+		"url": "https://github.com/builder-group/lab/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/builder-group/actorpal.git"
+		"url": "https://github.com/builder-group/lab.git"
 	},
 	"license": "AGPL-3.0-or-later",
 	"author": "@bennobuilder",
@@ -28,31 +28,31 @@
 		"update:latest": "pnpm update --latest"
 	},
 	"dependencies": {
-		"@react-router/fs-routes": "^7.9.3",
-		"@react-router/node": "^7.9.3",
-		"@react-router/serve": "^7.9.3",
+		"@react-router/fs-routes": "^7.9.5",
+		"@react-router/node": "^7.9.5",
+		"@react-router/serve": "^7.9.5",
 		"@vercel/analytics": "^1.5.0",
 		"@vercel/react-router": "^1.2.3",
 		"clsx": "^2.1.1",
-		"feature-react": "^0.0.63",
-		"feature-state": "^0.0.61",
-		"isbot": "^5.1.31",
-		"lucide-react": "^0.544.0",
+		"feature-react": "^0.0.65",
+		"feature-state": "^0.0.63",
+		"isbot": "^5.1.32",
+		"lucide-react": "^0.552.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
-		"react-router": "^7.9.3",
+		"react-router": "^7.9.5",
 		"tailwind-merge": "^3.3.1"
 	},
 	"devDependencies": {
 		"@mdx-js/rollup": "^3.1.1",
-		"@react-router/dev": "^7.9.3",
+		"@react-router/dev": "^7.9.5",
 		"@tailwindcss/typography": "^0.5.19",
-		"@tailwindcss/vite": "^4.1.14",
+		"@tailwindcss/vite": "^4.1.16",
 		"@types/mdx": "^2.0.13",
-		"@types/react": "^19.2.0",
-		"@types/react-dom": "^19.2.0",
-		"daisyui": "^5.1.27",
-		"tailwindcss": "^4.1.14",
+		"@types/react": "^19.2.2",
+		"@types/react-dom": "^19.2.2",
+		"daisyui": "^5.4.4",
+		"tailwindcss": "^4.1.16",
 		"vite-tsconfig-paths": "^5.1.4"
 	}
 }

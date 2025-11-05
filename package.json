@@ -1,15 +1,15 @@
 {
-	"name": "actorpal",
+	"name": "lab",
 	"private": true,
 	"description": "",
 	"keywords": [],
-	"homepage": "https://actorpal.com/?utm_source=github",
+	"homepage": "https://builder.group/?utm_source=github",
 	"bugs": {
-		"url": "https://github.com/builder-group/actorpal/issues"
+		"url": "https://github.com/builder-group/lab/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/builder-group/actorpal.git"
+		"url": "https://github.com/builder-group/lab.git"
 	},
 	"license": "AGPL-3.0-or-later",
 	"author": "@bennobuilder",
@@ -25,19 +25,19 @@
 	},
 	"devDependencies": {
 		"@blgc/config": "^0.0.38",
-		"eslint": "^9.37.0",
+		"eslint": "^9.39.1",
 		"prettier": "^3.6.2",
-		"rollup": "^4.52.4",
+		"rollup": "^4.52.5",
 		"rollup-presets": "^0.0.24",
 		"shx": "^0.4.0",
 		"tsx": "^4.20.6",
-		"turbo": "^2.5.8",
+		"turbo": "^2.6.0",
 		"typescript": "^5.9.3",
-		"vite": "^7.1.9",
-		"vitest": "^3.2.4"
+		"vite": "^7.2.0",
+		"vitest": "^4.0.7"
 	},
-	"packageManager": "pnpm@10.18.0",
+	"packageManager": "pnpm@10.20.0",
 	"engines": {
-		"node": ">=20"
+		"node": ">=24"
 	}
 }

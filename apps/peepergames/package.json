@@ -34,8 +34,8 @@
 		"@vercel/analytics": "^1.5.0",
 		"@vercel/react-router": "^1.2.3",
 		"clsx": "^2.1.1",
-		"feature-react": "^0.0.65",
-		"feature-state": "^0.0.63",
+		"feature-react": "^0.0.66",
+		"feature-state": "^0.0.64",
 		"isbot": "^5.1.32",
 		"lucide-react": "^0.552.0",
 		"react": "^19.2.0",
@@ -47,12 +47,12 @@
 		"@mdx-js/rollup": "^3.1.1",
 		"@react-router/dev": "^7.9.5",
 		"@tailwindcss/typography": "^0.5.19",
-		"@tailwindcss/vite": "^4.1.16",
+		"@tailwindcss/vite": "^4.1.17",
 		"@types/mdx": "^2.0.13",
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
-		"daisyui": "^5.4.4",
-		"tailwindcss": "^4.1.16",
+		"daisyui": "^5.4.5",
+		"tailwindcss": "^4.1.17",
 		"vite-tsconfig-paths": "^5.1.4"
 	}
 }

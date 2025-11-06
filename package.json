@@ -24,16 +24,16 @@
 		"update:latest": "turbo run update:latest --force && pnpm update --latest && pnpm build"
 	},
 	"devDependencies": {
-		"@blgc/config": "^0.0.38",
+		"@blgc/config": "^0.0.39",
 		"eslint": "^9.39.1",
 		"prettier": "^3.6.2",
 		"rollup": "^4.52.5",
-		"rollup-presets": "^0.0.24",
+		"rollup-presets": "^0.0.25",
 		"shx": "^0.4.0",
 		"tsx": "^4.20.6",
 		"turbo": "^2.6.0",
 		"typescript": "^5.9.3",
-		"vite": "^7.2.0",
+		"vite": "^7.2.1",
 		"vitest": "^4.0.7"
 	},
 	"packageManager": "pnpm@10.20.0",

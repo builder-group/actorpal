@@ -7,10 +7,6 @@ import reactInternal from '@blgc/config/eslint/react-internal';
 export default [
 	...reactInternal,
 	{
-		rules: {
-			'react/prop-types': 'off',
-			'react/no-unknown-property': ['error', { ignore: ['variant'] }]
-		},
 		ignores: ['build/**', 'dist/**', 'node_modules/**']
 	}
 ];

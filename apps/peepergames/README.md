@@ -1,1 +1,1 @@
-# `@repo/peepergames` (👁👁️)
+# `@repo/peepergames`

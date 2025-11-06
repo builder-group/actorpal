@@ -31,7 +31,9 @@ export const links: Route.LinksFunction = () => [
 	}
 ];
 
-export function Layout({ children }: { children: React.ReactNode }) {
+export const Layout: React.FC<{ children: React.ReactNode }> = (props) => {
+	const { children } = props;
+
 	return (
 		<html lang="en" data-theme="light">
 			<head>
@@ -48,13 +50,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 			</body>
 		</html>
 	);
-}
+};
 
-export default function App() {
+export const App: React.FC = () => {
 	return <Outlet />;
-}
+};
 
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+export const ErrorBoundary: React.FC<Route.ErrorBoundaryProps> = (props) => {
+	const { error } = props;
+
 	let message = 'Oops!';
 	let details = 'An unexpected error occurred.';
 	let stack: string | undefined;
@@ -79,4 +83,4 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 			)}
 		</main>
 	);
-}
+};

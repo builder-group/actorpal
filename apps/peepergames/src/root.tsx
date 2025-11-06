@@ -44,9 +44,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = (props) => {
 	);
 };
 
-export const App: React.FC = () => {
+const App: React.FC = () => {
 	return <Outlet />;
 };
+
+export default App;
 
 export const ErrorBoundary: React.FC<Route.ErrorBoundaryProps> = (props) => {
 	const { error } = props;

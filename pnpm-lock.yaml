@@ -138,6 +138,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      ecsify:
+        specifier: ^0.0.14
+        version: 0.0.14
       feature-react:
         specifier: ^0.0.66
         version: 0.0.66(react@19.2.0)
@@ -1454,6 +1457,9 @@ packages:
 
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
+
+  ecsify@0.0.14:
+    resolution: {integrity: sha512-o9709LsqxSCWGe+UEx5yGuF2CPin8Q3lrfVMvyDoQoIAyAedJZcfctfApbgrrkeoM32verAlw+BojlKwK/ZzGA==}
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
@@ -4802,6 +4808,10 @@ snapshots:
       gopd: 1.2.0
 
   eastasianwidth@0.2.0: {}
+
+  ecsify@0.0.14:
+    dependencies:
+      '@blgc/utils': 0.0.60
 
   ee-first@1.1.1: {}
 

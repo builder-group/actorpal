@@ -34,6 +34,7 @@
 		"@vercel/analytics": "^1.5.0",
 		"@vercel/react-router": "^1.2.3",
 		"clsx": "^2.1.1",
+		"ecsify": "^0.0.14",
 		"feature-react": "^0.0.66",
 		"feature-state": "^0.0.64",
 		"isbot": "^5.1.32",

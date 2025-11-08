@@ -14,6 +14,7 @@ export type TPongPlugin = TPlugin<
 			gameConfig: TRGameConfig;
 			inputState: TRInputState;
 			score: TRScore;
+			gameState: TRGameState;
 		};
 		appExtensions: {
 			handleKeyDown: (key: string) => void;
@@ -40,7 +41,7 @@ type TCSize = { width: number; height: number }[];
 type TCPaddle = { player: number }[];
 type TCBall = Record<string, never>;
 
-type TRGameConfig = {
+interface TRGameConfig {
 	canvasWidth: number;
 	canvasHeight: number;
 	paddleWidth: number;
@@ -48,16 +49,21 @@ type TRGameConfig = {
 	ballSize: number;
 	paddleSpeed: number;
 	ballSpeed: number;
-};
+}
 
-type TRInputState = {
+interface TRInputState {
 	w: boolean;
 	s: boolean;
 	ArrowUp: boolean;
 	ArrowDown: boolean;
-};
+}
 
-type TRScore = {
+interface TRScore {
 	left: number;
 	right: number;
-};
+}
+
+interface TRGameState {
+	paddleHitCount: number;
+	speedMultiplier: number;
+}

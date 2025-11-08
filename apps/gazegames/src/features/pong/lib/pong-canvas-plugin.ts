@@ -15,11 +15,18 @@ export function createPongCanvasPlugin(ctx: CanvasRenderingContext2D): TPongCanv
 }
 
 function renderSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin, TPongCanvasPlugin]>>) {
-	const { gameConfig: config, ctx } = app.r;
+	const { gameConfig: config, ctx, score } = app.r;
 
 	// Clear canvas
 	ctx.fillStyle = '#000';
 	ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
+
+	// Draw score
+	ctx.fillStyle = '#666';
+	ctx.font = '32px monospace';
+	ctx.textAlign = 'left';
+	ctx.textBaseline = 'top';
+	ctx.fillText(`${score.left} - ${score.right}`, 20, 20);
 
 	// Draw center line
 	ctx.strokeStyle = '#444';

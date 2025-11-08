@@ -31,6 +31,10 @@ export function createPongPlugin(): TPongPlugin {
 			score: {
 				left: 0,
 				right: 0
+			},
+			gameState: {
+				paddleHitCount: 0,
+				speedMultiplier: 1.0
 			}
 		},
 		appExtensions: {
@@ -111,13 +115,21 @@ export function createPongPlugin(): TPongPlugin {
 			app.addSystem(inputSystem, { set: 'First' });
 			app.addSystem(physicsSystem, { set: 'Update' });
 			app.addSystem(collisionSystem, { set: 'Update', after: physicsSystem });
+			app.addSystem(paddleSizeSystem, { set: 'Update', after: collisionSystem });
 		}
 	};
+}
+
+function updateSpeedMultiplier(gameState: { paddleHitCount: number; speedMultiplier: number }) {
+	// Increase speed multiplier based on paddle hits (1.0 -> 5.0 over 20 hits)
+	// Formula: 1.0 + (hits / 20) * 4.0, capped at 5.0
+	gameState.speedMultiplier = Math.min(1.0 + (gameState.paddleHitCount / 20) * 4.0, 5.0);
 }
 
 function inputSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) {
 	const input = app.r.inputState;
 	const config = app.r.gameConfig;
+	const speedMultiplier = app.r.gameState.speedMultiplier;
 
 	for (const [eid, paddle, vel] of app.queryComponents([
 		Entity,
@@ -128,17 +140,17 @@ function inputSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) {
 
 		if (paddle.player === 1) {
 			if (input.w) {
-				dy = -config.paddleSpeed;
+				dy = -config.paddleSpeed * speedMultiplier;
 			}
 			if (input.s) {
-				dy = config.paddleSpeed;
+				dy = config.paddleSpeed * speedMultiplier;
 			}
 		} else if (paddle.player === 2) {
 			if (input.ArrowUp) {
-				dy = -config.paddleSpeed;
+				dy = -config.paddleSpeed * speedMultiplier;
 			}
 			if (input.ArrowDown) {
-				dy = config.paddleSpeed;
+				dy = config.paddleSpeed * speedMultiplier;
 			}
 		}
 
@@ -169,7 +181,7 @@ function physicsSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>, dt
 }
 
 function collisionSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) {
-	const { gameConfig: config } = app.r;
+	const { gameConfig: config, gameState } = app.r;
 
 	// Get ball
 	const ballQuery = app.queryComponents(
@@ -177,12 +189,12 @@ function collisionSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) 
 		With(app.c.Ball)
 	);
 
-	const ballData = Array.from(ballQuery)[0];
-	if (ballData == null) {
+	const ballResults = Array.from(ballQuery);
+	if (ballResults.length === 0 || ballResults[0] == null) {
 		return;
 	}
 
-	const [ballEid, ballPos, ballVel, ballSize] = ballData;
+	const [ballEid, ballPos, ballVel, ballSize] = ballResults[0];
 
 	// Wall collision (top/bottom)
 	if (ballPos.y <= 0 || ballPos.y + ballSize.height >= config.canvasHeight) {
@@ -191,7 +203,10 @@ function collisionSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) 
 		app.updateComponent(ballEid, app.c.Position, { x: ballPos.x, y: clampedY });
 	}
 
-	// Paddle collision
+	// Paddle collision - check if ball is moving toward paddle to prevent multiple collisions
+	const ballMovingRight = ballVel.dx > 0;
+	const ballMovingLeft = ballVel.dx < 0;
+
 	for (const [paddlePos, paddleSize] of app.queryComponents(
 		[app.c.Position, app.c.Size] as const,
 		With(app.c.Paddle)
@@ -208,14 +223,49 @@ function collisionSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) 
 			ballPos.y < paddleBottom &&
 			ballBottom > paddlePos.y
 		) {
-			// Add slight randomness to trajectory
-			const randomDy = (Math.random() - 0.5) * 100;
-			app.updateComponent(ballEid, app.c.Velocity, { dx: -ballVel.dx, dy: ballVel.dy + randomDy });
+			// Only bounce if ball is moving toward the paddle (prevents stuck ball)
+			const isLeftPaddle = paddlePos.x < config.canvasWidth / 2;
+			const shouldBounce = (isLeftPaddle && ballMovingLeft) || (!isLeftPaddle && ballMovingRight);
+
+			if (shouldBounce) {
+				// Increment paddle hit count and update speed
+				gameState.paddleHitCount += 1;
+				updateSpeedMultiplier(gameState);
+
+				// Calculate new velocity with speed multiplier
+				const speedMultiplier = gameState.speedMultiplier;
+				const randomDy = (Math.random() - 0.5) * 100;
+				const currentSpeed = Math.sqrt(ballVel.dx * ballVel.dx + ballVel.dy * ballVel.dy);
+
+				// Prevent division by zero
+				if (currentSpeed > 0.1) {
+					const newSpeed = config.ballSpeed * speedMultiplier;
+					const speedRatio = newSpeed / currentSpeed;
+					app.updateComponent(ballEid, app.c.Velocity, {
+						dx: -ballVel.dx * speedRatio,
+						dy: (ballVel.dy + randomDy) * speedRatio
+					});
+				} else {
+					// Fallback if speed is too low
+					app.updateComponent(ballEid, app.c.Velocity, {
+						dx: -config.ballSpeed * speedMultiplier * (ballVel.dx < 0 ? -1 : 1),
+						dy: config.ballSpeed * speedMultiplier * (Math.random() > 0.5 ? 1 : -1)
+					});
+				}
+
+				// Break after first collision to prevent multiple bounces per frame
+				break;
+			}
 		}
 	}
 
 	// Score (ball goes out of bounds)
-	if (ballPos.x < 0 || ballPos.x > config.canvasWidth) {
+	if (ballPos.x < 0) {
+		// Right player scores
+		app.r.score.right += 1;
+		// Reset game state
+		gameState.paddleHitCount = 0;
+		gameState.speedMultiplier = 1.0;
 		// Reset ball
 		app.updateComponent(ballEid, app.c.Position, {
 			x: config.canvasWidth / 2 - config.ballSize / 2,
@@ -225,5 +275,67 @@ function collisionSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) 
 			dx: config.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
 			dy: config.ballSpeed * (Math.random() > 0.5 ? 1 : -1)
 		});
+	} else if (ballPos.x > config.canvasWidth) {
+		// Left player scores
+		app.r.score.left += 1;
+		// Reset game state
+		gameState.paddleHitCount = 0;
+		gameState.speedMultiplier = 1.0;
+		// Reset ball
+		app.updateComponent(ballEid, app.c.Position, {
+			x: config.canvasWidth / 2 - config.ballSize / 2,
+			y: config.canvasHeight / 2 - config.ballSize / 2
+		});
+		app.updateComponent(ballEid, app.c.Velocity, {
+			dx: config.ballSpeed * (Math.random() > 0.5 ? 1 : -1),
+			dy: config.ballSpeed * (Math.random() > 0.5 ? 1 : -1)
+		});
+	}
+}
+
+function paddleSizeSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin]>>) {
+	const { gameConfig: config, score } = app.r;
+	const basePaddleHeight = config.paddleHeight;
+
+	// Calculate lead
+	const leftLead = score.left - score.right;
+	const rightLead = score.right - score.left;
+
+	// Update paddle sizes based on lead
+	// Each point of lead reduces paddle size by 10%, minimum 40% of original size
+	for (const [eid, paddle, paddleSize, paddlePos] of app.queryComponents([
+		Entity,
+		app.c.Paddle,
+		app.c.Size,
+		app.c.Position
+	] as const)) {
+		let lead = 0;
+		if (paddle.player === 1) {
+			lead = leftLead;
+		} else if (paddle.player === 2) {
+			lead = rightLead;
+		}
+
+		// Calculate new height: reduce by 10% per point of lead, minimum 40% of original
+		const sizeReduction = Math.min(lead * 0.1, 0.6); // Cap at 60% reduction
+		const newHeight = basePaddleHeight * (1 - sizeReduction);
+		const minHeight = basePaddleHeight * 0.4; // Minimum 40% of original
+		const finalHeight = Math.max(newHeight, minHeight);
+
+		// Only update if height changed
+		if (Math.abs(paddleSize.height - finalHeight) > 0.1) {
+			// Adjust position to keep paddle centered vertically
+			const heightDiff = finalHeight - paddleSize.height;
+			const newY = paddlePos.y - heightDiff / 2;
+
+			app.updateComponent(eid, app.c.Size, {
+				width: paddleSize.width,
+				height: finalHeight
+			});
+			app.updateComponent(eid, app.c.Position, {
+				x: paddlePos.x,
+				y: Math.max(0, Math.min(config.canvasHeight - finalHeight, newY))
+			});
+		}
 	}
 }

@@ -1,93 +1,113 @@
 import React from 'react';
 
-export const GazeExpression: React.FC<TGazeExpressionProps> = (props) => {
-	const { spriteMap, size, targetX, targetY } = props;
-	const containerRef = React.useRef<HTMLDivElement>(null);
+export const GazeExpression = React.forwardRef<TGazeExpressionRef, TGazeExpressionProps>(
+	(props, ref) => {
+		const { spriteMap, size, initialTargetX, initialTargetY } = props;
+		const containerRef = React.useRef<HTMLDivElement>(null);
+		const imageRef = React.useRef<HTMLImageElement>(null);
+		const targetRef = React.useRef<{ x: number | undefined; y: number | undefined }>({
+			x: initialTargetX,
+			y: initialTargetY
+		});
 
-	const mapSize = React.useMemo(() => spriteMap.length, [spriteMap.length]);
-	const centerX = React.useMemo(() => (mapSize - 1) / 2, [mapSize]);
-	const centerY = React.useMemo(() => (mapSize - 1) / 2, [mapSize]);
+		const mapSize = React.useMemo(() => spriteMap.length, [spriteMap.length]);
+		const centerX = React.useMemo(() => (mapSize - 1) / 2, [mapSize]);
+		const centerY = React.useMemo(() => (mapSize - 1) / 2, [mapSize]);
 
-	// Initial state: center position
-	const initialUrl = spriteMap[centerY]?.[centerX]?.spriteUrl ?? '';
-	const [imageUrl, setImageUrl] = React.useState<string>(initialUrl);
+		// Initial state: center position
+		const initialUrl = spriteMap[centerY]?.[centerX]?.spriteUrl ?? '';
 
-	// =============================================================================
-	// Events
-	// =============================================================================
+		// =============================================================================
+		// Events
+		// =============================================================================
 
-	// Calculate which sprite map position to use based on target direction
-	const getSpriteMapPosition = React.useCallback(
-		(
-			targetX: number | undefined,
-			targetY: number | undefined,
-			containerRect: DOMRect
-		): {
-			x: number;
-			y: number;
-		} => {
+		const updateImage = React.useCallback(() => {
+			if (containerRef.current == null || imageRef.current == null) {
+				return;
+			}
+
+			const rect = containerRef.current.getBoundingClientRect();
+			const targetX = targetRef.current.x;
+			const targetY = targetRef.current.y;
+
 			// If no target, use center
 			if (targetX == null || targetY == null) {
-				return { x: centerX, y: centerY };
+				const centerItem = spriteMap[centerY]?.[centerX];
+				if (centerItem != null) {
+					imageRef.current.src = centerItem.spriteUrl;
+				}
+				return;
 			}
 
 			// Target position relative to container center
-			const relativeX = targetX - (containerRect.left + containerRect.width / 2);
-			const relativeY = targetY - (containerRect.top + containerRect.height / 2);
+			const relativeX = targetX - (rect.left + rect.width / 2);
+			const relativeY = targetY - (rect.top + rect.height / 2);
 
 			// Normalize to -1 to 1 range
-			const maxDistance = Math.max(containerRect.width, containerRect.height) / 2;
+			const maxDistance = Math.max(rect.width, rect.height) / 2;
 			const normalizedX = relativeX / maxDistance;
 			const normalizedY = relativeY / maxDistance;
 
-			// Map to sprite map coordinates (invert Y because screen Y increases downward)
-			// Target top-left → face looks top-left → use bottom-right sprite position
+			// Map to sprite map coordinates
 			const mapX = Math.round(centerX - normalizedX * centerX);
 			const mapY = Math.round(centerY - normalizedY * centerY);
 
 			// Clamp to sprite map bounds
-			return {
-				x: Math.max(0, Math.min(mapSize - 1, mapX)),
-				y: Math.max(0, Math.min(mapSize - 1, mapY))
-			};
-		},
-		[centerX, centerY, mapSize]
-	);
+			const clampedX = Math.max(0, Math.min(mapSize - 1, mapX));
+			const clampedY = Math.max(0, Math.min(mapSize - 1, mapY));
 
-	// =============================================================================
-	// Effects
-	// =============================================================================
+			const item = spriteMap[clampedY]?.[clampedX];
+			if (item != null) {
+				imageRef.current.src = item.spriteUrl;
+			}
+		}, [spriteMap, centerX, centerY, mapSize]);
 
-	// Update based on target position
-	React.useEffect(() => {
-		if (containerRef.current == null) {
-			return;
-		}
+		// =============================================================================
+		// Effects
+		// =============================================================================
 
-		const rect = containerRef.current.getBoundingClientRect();
-		const pos = getSpriteMapPosition(targetX, targetY, rect);
-		const item = spriteMap[pos.y]?.[pos.x];
-		if (item != null) {
-			setImageUrl(item.spriteUrl);
-		}
-	}, [spriteMap, getSpriteMapPosition, targetX, targetY]);
+		// Expose updateTarget method via ref
+		React.useImperativeHandle(ref, () => ({
+			updateTarget: (x: number | undefined, y: number | undefined) => {
+				targetRef.current = { x, y };
+				updateImage();
+			}
+		}));
 
-	// =============================================================================
-	// UI
-	// =============================================================================
+		// Initial render
+		React.useEffect(() => {
+			updateImage();
+		}, [updateImage]);
 
-	return (
-		<div ref={containerRef} className="flex items-center justify-center">
-			<img src={imageUrl} alt="expression" width={size} height={size} className="object-contain" />
-		</div>
-	);
-};
+		// =============================================================================
+		// UI
+		// =============================================================================
 
-interface TGazeExpressionProps {
+		return (
+			<div ref={containerRef} className="flex items-center justify-center">
+				<img
+					ref={imageRef}
+					src={initialUrl}
+					alt="expression"
+					width={size}
+					height={size}
+					className="object-contain"
+				/>
+			</div>
+		);
+	}
+);
+GazeExpression.displayName = 'GazeExpression';
+
+export interface TGazeExpressionProps {
 	spriteMap: TSpriteMapItem[][];
 	size: number;
-	targetX?: number;
-	targetY?: number;
+	initialTargetX?: number;
+	initialTargetY?: number;
+}
+
+export interface TGazeExpressionRef {
+	updateTarget: (x: number | undefined, y: number | undefined) => void;
 }
 
 interface TSpriteMapItem {

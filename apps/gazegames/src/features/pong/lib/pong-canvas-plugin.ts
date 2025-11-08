@@ -15,7 +15,7 @@ export function createPongCanvasPlugin(ctx: CanvasRenderingContext2D): TPongCanv
 }
 
 function renderSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin, TPongCanvasPlugin]>>) {
-	const { gameConfig: config, ctx, score } = app.r;
+	const { gameConfig: config, ctx, score, gameState } = app.r;
 
 	// Clear canvas
 	ctx.fillStyle = '#000';
@@ -42,5 +42,27 @@ function renderSystem(app: TApp<TAppContext<[TDefaultPlugin, TPongPlugin, TPongC
 	for (const [pos, size] of app.queryComponents([app.c.Position, app.c.Size] as const)) {
 		ctx.fillStyle = '#fff';
 		ctx.fillRect(pos.x, pos.y, size.width, size.height);
+	}
+
+	// Draw game info (bottom right)
+	const leftLead = score.left - score.right;
+	const rightLead = score.right - score.left;
+	const lead = leftLead > 0 ? `L+${leftLead}` : rightLead > 0 ? `R+${rightLead}` : '';
+	const speedText = `${gameState.speedMultiplier.toFixed(1)}x`;
+	const paddleReduction =
+		leftLead > 0 ? Math.min(leftLead * 10, 60) : rightLead > 0 ? Math.min(rightLead * 10, 60) : 0;
+	const reductionText = paddleReduction > 0 ? `-${paddleReduction}%` : '';
+
+	ctx.fillStyle = '#555';
+	ctx.font = '12px monospace';
+	ctx.textAlign = 'right';
+	ctx.textBaseline = 'bottom';
+	const infoY = config.canvasHeight - 10;
+	const infoX = config.canvasWidth - 10;
+
+	if (lead !== '') {
+		ctx.fillText(`${speedText} | ${lead} ${reductionText}`, infoX, infoY);
+	} else {
+		ctx.fillText(speedText, infoX, infoY);
 	}
 }

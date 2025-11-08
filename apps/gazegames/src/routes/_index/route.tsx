@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLoaderData } from 'react-router';
-import { GazeExpressionSheet, useMousePosition } from '@/features/gaze-expression';
+import { GazeExpressionSheet, type TGazeExpressionSheetRef } from '@/features/gaze-expression';
 
 export async function loader({ request }: { request: Request }) {
 	const url = new URL('/girl-1_sprite-map.json', new URL(request.url).origin);
@@ -14,7 +14,19 @@ export async function loader({ request }: { request: Request }) {
 
 const Page: React.FC = () => {
 	const { spriteMap } = useLoaderData<typeof loader>();
-	const mousePosition = useMousePosition();
+	const gazeRef = React.useRef<TGazeExpressionSheetRef>(null);
+
+	// Track mouse position and update gaze expression
+	React.useEffect(() => {
+		function handleMouseMove(event: MouseEvent) {
+			if (gazeRef.current != null) {
+				gazeRef.current.updateTarget(event.clientX, event.clientY);
+			}
+		}
+
+		window.addEventListener('mousemove', handleMouseMove);
+		return () => window.removeEventListener('mousemove', handleMouseMove);
+	}, []);
 
 	return (
 		<div className="flex min-h-screen flex-col bg-gray-50">
@@ -23,11 +35,10 @@ const Page: React.FC = () => {
 					{/* Gaze Expression Icon */}
 					<div className="mb-8 flex justify-center">
 						<GazeExpressionSheet
+							ref={gazeRef}
 							spriteMap={spriteMap}
 							size={128}
 							spriteSheetUrl="/girl-1_sprite-sheet.webp"
-							targetX={mousePosition?.x}
-							targetY={mousePosition?.y}
 						/>
 					</div>
 

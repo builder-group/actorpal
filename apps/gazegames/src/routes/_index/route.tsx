@@ -1,6 +1,6 @@
 import React from 'react';
-import { useLoaderData } from 'react-router';
-import { PongCanvas, PongGazers } from '@/features/pong';
+import { Link, useLoaderData } from 'react-router';
+import { GazeExpressionSheet, useMousePosition } from '@/features/gaze-expression';
 
 export async function loader({ request }: { request: Request }) {
 	const url = new URL('/girl-1_sprite-map.json', new URL(request.url).origin);
@@ -14,47 +14,57 @@ export async function loader({ request }: { request: Request }) {
 
 const Page: React.FC = () => {
 	const { spriteMap } = useLoaderData<typeof loader>();
-	const canvasContainerRef = React.useRef<HTMLDivElement>(null);
-	const [ballPosition, setBallPosition] = React.useState<{ x: number; y: number } | null>(null);
-
-	const canvasWidth = 800;
-	const canvasHeight = 600;
-
-	// Convert canvas coordinates to screen coordinates
-	const handleBallPositionChange = React.useCallback(
-		(canvasX: number, canvasY: number) => {
-			if (canvasContainerRef.current == null) {
-				return;
-			}
-
-			const rect = canvasContainerRef.current.getBoundingClientRect();
-			const screenX = rect.left + (rect.width - canvasWidth) / 2 + canvasX;
-			const screenY = rect.top + (rect.height - canvasHeight) / 2 + canvasY;
-			setBallPosition({ x: screenX, y: screenY });
-		},
-		[canvasWidth, canvasHeight]
-	);
+	const mousePosition = useMousePosition();
 
 	return (
-		<div className="relative min-h-screen bg-gray-900">
-			{/* Background grid of expressions */}
-			<PongGazers
-				spriteMap={spriteMap}
-				spriteSheetUrl="/girl-1_sprite-sheet.webp"
-				targetX={ballPosition?.x}
-				targetY={ballPosition?.y}
-			/>
+		<div className="flex min-h-screen flex-col bg-gray-50">
+			<div className="flex flex-1 items-center justify-center py-20">
+				<div className="mx-auto max-w-4xl px-4 text-center">
+					{/* Gaze Expression Icon */}
+					<div className="mb-8 flex justify-center">
+						<GazeExpressionSheet
+							spriteMap={spriteMap}
+							size={128}
+							spriteSheetUrl="/girl-1_sprite-sheet.webp"
+							targetX={mousePosition?.x}
+							targetY={mousePosition?.y}
+						/>
+					</div>
 
-			{/* Pong canvas centered */}
-			<div className="relative z-10 flex min-h-screen flex-col items-center justify-center">
-				<div className="mb-4 text-center text-white">
-					<h1 className="mb-2 text-4xl font-bold">Gaze Pong</h1>
-					<p className="text-gray-100">W/S for left paddle, ↑/↓ for right paddle</p>
-				</div>
-				<div ref={canvasContainerRef}>
-					<PongCanvas onBallPositionChange={handleBallPositionChange} />
+					<h1 className="mb-4 text-4xl font-bold text-gray-900">Gaze Games</h1>
+					<p className="mb-12 text-gray-600">
+						Interactive games featuring gaze-following expressions
+					</p>
+
+					{/* Games Grid */}
+					<div className="flex justify-center gap-6">
+						<Link
+							to="/pong"
+							className="group rounded-xl border-2 border-gray-200 bg-white p-6 text-center transition-all hover:border-gray-900 hover:shadow-lg"
+						>
+							<h3 className="mb-2 text-xl font-semibold text-gray-900">Gaze Pong</h3>
+							<p className="text-sm text-gray-600">Classic Pong with gaze-following expressions</p>
+						</Link>
+					</div>
 				</div>
 			</div>
+
+			{/* Footer */}
+			<footer className="mt-auto border-t border-gray-200 bg-gray-100 py-4">
+				<div className="mx-auto flex max-w-3xl justify-center px-4">
+					<p className="text-center text-sm text-gray-600">
+						Made by{' '}
+						<a
+							href="https://github.com/bennobuilder"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="font-semibold text-gray-900 transition-colors hover:text-gray-700"
+						>
+							benno builder
+						</a>
+					</p>
+				</div>
+			</footer>
 		</div>
 	);
 };

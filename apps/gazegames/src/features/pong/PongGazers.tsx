@@ -5,6 +5,18 @@ export const PongGazers: React.FC<TPongGazersProps> = (props) => {
 	const { spriteMap, targetX, targetY, spriteSheetUrl, expressionSize = 256 } = props;
 	const containerRef = React.useRef<HTMLDivElement>(null);
 	const [gridDimensions, setGridDimensions] = React.useState({ cols: 0, rows: 0 });
+	const totalExpressions = React.useMemo(
+		() => gridDimensions.cols * gridDimensions.rows,
+		[gridDimensions.cols, gridDimensions.rows]
+	);
+	const gridWidth = React.useMemo(
+		() => gridDimensions.cols * expressionSize,
+		[gridDimensions.cols, expressionSize]
+	);
+	const gridHeight = React.useMemo(
+		() => gridDimensions.rows * expressionSize,
+		[gridDimensions.rows, expressionSize]
+	);
 
 	// Calculate grid dimensions: one tile larger than needed, then center
 	React.useEffect(() => {
@@ -24,10 +36,6 @@ export const PongGazers: React.FC<TPongGazersProps> = (props) => {
 		window.addEventListener('resize', updateGridDimensions);
 		return () => window.removeEventListener('resize', updateGridDimensions);
 	}, [expressionSize]);
-
-	const totalExpressions = gridDimensions.cols * gridDimensions.rows;
-	const gridWidth = gridDimensions.cols * expressionSize;
-	const gridHeight = gridDimensions.rows * expressionSize;
 
 	return (
 		<div ref={containerRef} className="absolute inset-0 overflow-hidden">

@@ -1,7 +1,7 @@
 import React from 'react';
 
 export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) => {
-	const { spriteMap, size, spriteSheetUrl } = props;
+	const { spriteMap, size, spriteSheetUrl, targetX, targetY } = props;
 	const containerRef = React.useRef<HTMLDivElement>(null);
 
 	const mapSize = React.useMemo(() => spriteMap.length, [spriteMap.length]);
@@ -13,6 +13,12 @@ export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) 
 	const centerY = React.useMemo(() => (mapSize - 1) / 2, [mapSize]);
 	const spriteSheetWidth = React.useMemo(() => mapSize * spriteSize, [mapSize, spriteSize]);
 	const spriteSheetHeight = React.useMemo(() => mapSize * spriteSize, [mapSize, spriteSize]);
+	const scale = React.useMemo(() => size / spriteSize, [size, spriteSize]);
+	const scaledSheetWidth = React.useMemo(() => spriteSheetWidth * scale, [spriteSheetWidth, scale]);
+	const scaledSheetHeight = React.useMemo(
+		() => spriteSheetHeight * scale,
+		[spriteSheetHeight, scale]
+	);
 
 	// Initial state: center position
 	const initialItem = React.useMemo(
@@ -25,12 +31,24 @@ export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) 
 	// Events
 	// =============================================================================
 
-	// Calculate which sprite map position to use based on cursor direction
+	// Calculate which sprite map position to use based on target direction
 	const getSpriteMapPosition = React.useCallback(
-		(cursorX: number, cursorY: number, containerRect: DOMRect): { x: number; y: number } => {
-			// Cursor position relative to container center
-			const relativeX = cursorX - (containerRect.left + containerRect.width / 2);
-			const relativeY = cursorY - (containerRect.top + containerRect.height / 2);
+		(
+			targetX: number | undefined,
+			targetY: number | undefined,
+			containerRect: DOMRect
+		): {
+			x: number;
+			y: number;
+		} => {
+			// If no target, use center
+			if (targetX == null || targetY == null) {
+				return { x: centerX, y: centerY };
+			}
+
+			// Target position relative to container center
+			const relativeX = targetX - (containerRect.left + containerRect.width / 2);
+			const relativeY = targetY - (containerRect.top + containerRect.height / 2);
 
 			// Normalize to -1 to 1 range
 			const maxDistance = Math.max(containerRect.width, containerRect.height) / 2;
@@ -38,7 +56,7 @@ export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) 
 			const normalizedY = relativeY / maxDistance;
 
 			// Map to sprite map coordinates (invert Y because screen Y increases downward)
-			// Cursor top-left → face looks top-left → use bottom-right sprite position
+			// Target top-left → face looks top-left → use bottom-right sprite position
 			const mapX = Math.round(centerX - normalizedX * centerX);
 			const mapY = Math.round(centerY - normalizedY * centerY);
 
@@ -55,24 +73,19 @@ export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) 
 	// Effects
 	// =============================================================================
 
+	// Update based on target position
 	React.useEffect(() => {
-		function handleMouseMove(event: MouseEvent) {
-			if (containerRef.current == null) {
-				return;
-			}
-
-			const rect = containerRef.current.getBoundingClientRect();
-			const pos = getSpriteMapPosition(event.clientX, event.clientY, rect);
-
-			const item = spriteMap[pos.y]?.[pos.x];
-			if (item != null) {
-				setCurrentItem(item);
-			}
+		if (containerRef.current == null) {
+			return;
 		}
 
-		window.addEventListener('mousemove', handleMouseMove);
-		return () => window.removeEventListener('mousemove', handleMouseMove);
-	}, [spriteMap, getSpriteMapPosition]);
+		const rect = containerRef.current.getBoundingClientRect();
+		const pos = getSpriteMapPosition(targetX, targetY, rect);
+		const item = spriteMap[pos.y]?.[pos.x];
+		if (item != null) {
+			setCurrentItem(item);
+		}
+	}, [spriteMap, getSpriteMapPosition, targetX, targetY]);
 
 	// =============================================================================
 	// UI
@@ -82,8 +95,8 @@ export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) 
 		return null;
 	}
 
-	const backgroundX = -currentItem.spriteSheetX;
-	const backgroundY = -currentItem.spriteSheetY;
+	const backgroundX = -currentItem.spriteSheetX * scale;
+	const backgroundY = -currentItem.spriteSheetY * scale;
 
 	return (
 		<div ref={containerRef} className="flex items-center justify-center">
@@ -92,7 +105,7 @@ export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) 
 					width: size,
 					height: size,
 					backgroundImage: `url(${spriteSheetUrl})`,
-					backgroundSize: `${spriteSheetWidth}px ${spriteSheetHeight}px`,
+					backgroundSize: `${scaledSheetWidth}px ${scaledSheetHeight}px`,
 					backgroundPosition: `${backgroundX}px ${backgroundY}px`,
 					backgroundRepeat: 'no-repeat'
 				}}
@@ -106,6 +119,8 @@ interface TGazeExpressionSheetProps {
 	spriteMap: TSpriteMapItem[][];
 	size: number;
 	spriteSheetUrl: string;
+	targetX?: number;
+	targetY?: number;
 }
 
 interface TSpriteMapItem {

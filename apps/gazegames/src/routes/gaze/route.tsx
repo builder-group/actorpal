@@ -1,9 +1,10 @@
 import React from 'react';
 import { useLoaderData } from 'react-router';
-import { GazeExpressionSheet } from '@/features/gaze-expression';
+import { GazeExpressionSheet, useMousePosition } from '@/features/gaze-expression';
 
 const Page: React.FC = () => {
 	const { spriteMap } = useLoaderData<typeof loader>();
+	const mousePosition = useMousePosition();
 
 	return (
 		<div className="flex min-h-screen items-center justify-center bg-gray-900">
@@ -14,6 +15,8 @@ const Page: React.FC = () => {
 					spriteMap={spriteMap}
 					size={512}
 					spriteSheetUrl="/girl-1_sprite-sheet.webp"
+					targetX={mousePosition?.x}
+					targetY={mousePosition?.y}
 				/>
 			</div>
 		</div>

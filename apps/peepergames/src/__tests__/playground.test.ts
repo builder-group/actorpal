@@ -31,7 +31,7 @@ describe('playground', () => {
 	});
 
 	it('should generate expression sprite map (separate sprite files) looking toward center', async () => {
-		const mapSize = 10;
+		const mapSize = 9;
 		const folderName = 'girl-1';
 
 		const __dirname = dirname(fileURLToPath(import.meta.url));

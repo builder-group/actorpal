@@ -1,16 +1,25 @@
 import React from 'react';
 
-export const GazeExpression: React.FC<TGazeExpressionProps> = (props) => {
-	const { spriteMap, size } = props;
+export const GazeExpressionSheet: React.FC<TGazeExpressionSheetProps> = (props) => {
+	const { spriteMap, size, spriteSheetUrl } = props;
 	const containerRef = React.useRef<HTMLDivElement>(null);
 
 	const mapSize = React.useMemo(() => spriteMap.length, [spriteMap.length]);
+	const spriteSize = React.useMemo(() => {
+		const firstItem = spriteMap[0]?.[0];
+		return firstItem?.width ?? 512;
+	}, [spriteMap]);
 	const centerX = React.useMemo(() => (mapSize - 1) / 2, [mapSize]);
 	const centerY = React.useMemo(() => (mapSize - 1) / 2, [mapSize]);
+	const spriteSheetWidth = React.useMemo(() => mapSize * spriteSize, [mapSize, spriteSize]);
+	const spriteSheetHeight = React.useMemo(() => mapSize * spriteSize, [mapSize, spriteSize]);
 
 	// Initial state: center position
-	const initialUrl = spriteMap[centerY]?.[centerX]?.spriteUrl ?? '';
-	const [imageUrl, setImageUrl] = React.useState<string>(initialUrl);
+	const initialItem = React.useMemo(
+		() => spriteMap[centerY]?.[centerX],
+		[spriteMap, centerY, centerX]
+	);
+	const [currentItem, setCurrentItem] = React.useState<TSpriteMapItem | undefined>(initialItem);
 
 	// =============================================================================
 	// Events
@@ -57,7 +66,7 @@ export const GazeExpression: React.FC<TGazeExpressionProps> = (props) => {
 
 			const item = spriteMap[pos.y]?.[pos.x];
 			if (item != null) {
-				setImageUrl(item.spriteUrl);
+				setCurrentItem(item);
 			}
 		}
 
@@ -69,18 +78,40 @@ export const GazeExpression: React.FC<TGazeExpressionProps> = (props) => {
 	// UI
 	// =============================================================================
 
+	if (currentItem == null) {
+		return null;
+	}
+
+	const backgroundX = -currentItem.spriteSheetX;
+	const backgroundY = -currentItem.spriteSheetY;
+
 	return (
 		<div ref={containerRef} className="flex items-center justify-center">
-			<img src={imageUrl} alt="expression" width={size} height={size} className="object-contain" />
+			<div
+				style={{
+					width: size,
+					height: size,
+					backgroundImage: `url(${spriteSheetUrl})`,
+					backgroundSize: `${spriteSheetWidth}px ${spriteSheetHeight}px`,
+					backgroundPosition: `${backgroundX}px ${backgroundY}px`,
+					backgroundRepeat: 'no-repeat'
+				}}
+				className="object-contain"
+			/>
 		</div>
 	);
 };
 
-interface TGazeExpressionProps {
+interface TGazeExpressionSheetProps {
 	spriteMap: TSpriteMapItem[][];
 	size: number;
+	spriteSheetUrl: string;
 }
 
 interface TSpriteMapItem {
 	spriteUrl: string;
+	width: number;
+	height: number;
+	spriteSheetX: number;
+	spriteSheetY: number;
 }

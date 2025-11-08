@@ -1,11 +1,11 @@
 import { FileOutput } from 'replicate';
 import { Err, Ok, type TResult } from 'tuple-result';
-import { replicate, replicateConfig, type TExpressionEditorInput } from '@/.server/environment';
+import { replicate, replicateConfig, TExpressionEditorInput } from '@/.server/environment';
 
 export async function generateExpressionGrid(
 	config: TGenerateExpressionGridConfig
 ): Promise<TResult<TExpressionGridItem[], string>> {
-	const { imageUrl, gridSize } = config;
+	const { image, gridSize } = config;
 	const centerX = (gridSize - 1) / 2;
 	const centerY = (gridSize - 1) / 2;
 
@@ -37,7 +37,7 @@ export async function generateExpressionGrid(
 			const promise: Promise<TResult<TExpressionGridItem, string>> = replicate
 				.run(modelConfig.id, {
 					input: {
-						image: imageUrl,
+						image,
 						rotate_yaw,
 						rotate_pitch,
 						pupil_x,
@@ -90,14 +90,14 @@ export async function generateExpressionGrid(
 	return Ok(items);
 }
 
-interface TExpressionGridItem {
+export interface TExpressionGridItem {
 	x: number;
 	y: number;
 	image: FileOutput;
 }
 
-interface TGenerateExpressionGridConfig {
-	imageUrl: string;
+export interface TGenerateExpressionGridConfig {
+	image: string | Buffer;
 	gridSize: number;
 }
 

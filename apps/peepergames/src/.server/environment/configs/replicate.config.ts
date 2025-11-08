@@ -28,7 +28,7 @@ export const replicateConfig = {
 } as const;
 
 export type TExpressionEditorInput = {
-	image: string;
+	image: string | Buffer;
 	rotate_pitch?: number;
 	rotate_yaw?: number;
 	rotate_roll?: number;

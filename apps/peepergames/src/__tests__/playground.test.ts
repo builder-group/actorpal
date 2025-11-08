@@ -1,9 +1,9 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { appConfig, replicate, replicateConfig } from '../.server/environment';
-import { generateExpressionGrid } from '../features/expression-grid/.server';
+import { createGridMetadata } from '../features/expression-grid/.server';
 
 describe('playground', () => {
 	it('should have environment variables loaded', () => {
@@ -31,27 +31,50 @@ describe('playground', () => {
 
 	it('should generate grid of images looking toward center', async () => {
 		const gridSize = 2;
-		const imageUrl =
-			'https://replicate.delivery/pbxt/Lg7pzAsHjoZlGHtrfI4wnVZchV8G9XCyXXMG37YMyb4NoBiU/PhotoMaker_00001_.png';
+		const folderName = 'girl-1';
 
 		const __dirname = dirname(fileURLToPath(import.meta.url));
-		const outputDir = join(__dirname, 'resources/.local/girl-1/v1');
+		const resourcesDir = join(__dirname, 'resources/.local', folderName);
+		const outputDir = join(resourcesDir, 'v1');
+		const inputImagePath = join(resourcesDir, 'input.png');
+
 		await mkdir(outputDir, { recursive: true });
 
-		const items = (
-			await generateExpressionGrid({
-				imageUrl,
-				gridSize
+		const imageBuffer = await readFile(inputImagePath);
+
+		type TMetadata = {
+			filename: string;
+			x: number;
+			y: number;
+			url: string;
+		};
+
+		const metadata = (
+			await createGridMetadata<TMetadata>({
+				image: imageBuffer,
+				gridSize,
+				middleware: async (item): Promise<TMetadata> => {
+					const filename = `grid_${gridSize}x${gridSize}_x${item.x}y${item.y}.webp`;
+					const filepath = join(outputDir, filename);
+
+					// @ts-expect-error - FileOutput extends ReadableStream and writeFile accepts it
+					await writeFile(filepath, item.image);
+					console.log(`✓ Saved ${filename}`);
+
+					return {
+						filename,
+						x: item.x,
+						y: item.y,
+						url: item.image.url().toString()
+					};
+				}
 			})
 		).unwrap();
 
-		for (const item of items) {
-			const filename = `grid_${gridSize}x${gridSize}_x${item.x}y${item.y}.webp`;
-			const filepath = join(outputDir, filename);
-			await writeFile(filepath, item.image as any);
-			console.log(`✓ Saved ${filename}`);
-		}
+		const metadataPath = join(outputDir, 'metadata.json');
+		await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+		console.log(`✓ Saved metadata.json`);
 
-		console.log(`✓ Generated ${items.length} images in ${gridSize}x${gridSize} grid`);
+		console.log(`✓ Generated ${gridSize * gridSize} images in ${gridSize}x${gridSize} grid`);
 	});
 });

@@ -7,7 +7,9 @@ export const PongGazers = React.forwardRef<TPongGazersRef, TPongGazersProps>((pr
 		leftSpriteSheetUrl,
 		rightSpriteMap,
 		rightSpriteSheetUrl,
-		expressionSize = 256
+		expressionSize = 256,
+		smoothness,
+		shouldAnimate
 	} = props;
 	const containerRef = React.useRef<HTMLDivElement>(null);
 	const [gridDimensions, setGridDimensions] = React.useState({ cols: 0, rows: 0 });
@@ -17,18 +19,10 @@ export const PongGazers = React.forwardRef<TPongGazersRef, TPongGazersProps>((pr
 		y: undefined
 	});
 
-	const totalExpressions = React.useMemo(
-		() => gridDimensions.cols * gridDimensions.rows,
-		[gridDimensions.cols, gridDimensions.rows]
-	);
-	const gridWidth = React.useMemo(
-		() => gridDimensions.cols * expressionSize,
-		[gridDimensions.cols, expressionSize]
-	);
-	const gridHeight = React.useMemo(
-		() => gridDimensions.rows * expressionSize,
-		[gridDimensions.rows, expressionSize]
-	);
+	// Grid calculations
+	const totalExpressions = gridDimensions.cols * gridDimensions.rows;
+	const gridWidth = gridDimensions.cols * expressionSize;
+	const gridHeight = gridDimensions.rows * expressionSize;
 
 	// =============================================================================
 	// Effects
@@ -79,7 +73,6 @@ export const PongGazers = React.forwardRef<TPongGazersRef, TPongGazersProps>((pr
 				}}
 			>
 				{Array.from({ length: totalExpressions }).map((_, index) => {
-					// Determine which side this tile is on (left or right)
 					const col = index % gridDimensions.cols;
 					const isLeftSide = col < gridDimensions.cols / 2;
 					const spriteMap = isLeftSide ? leftSpriteMap : rightSpriteMap;
@@ -98,6 +91,8 @@ export const PongGazers = React.forwardRef<TPongGazersRef, TPongGazersProps>((pr
 								spriteMap={spriteMap}
 								size={expressionSize}
 								spriteSheetUrl={spriteSheetUrl}
+								smoothness={smoothness}
+								shouldAnimate={shouldAnimate}
 							/>
 						</div>
 					);
@@ -114,6 +109,8 @@ export interface TPongGazersProps {
 	rightSpriteMap: TSpriteMapItem[][];
 	rightSpriteSheetUrl: string;
 	expressionSize?: number;
+	smoothness?: number;
+	shouldAnimate?: boolean;
 }
 
 export interface TPongGazersRef {

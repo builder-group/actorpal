@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { appConfig, replicate, replicateConfig } from '../.server/environment';
-import { createGridMetadata } from '../features/expression-grid/.server';
+import { generateExpressionGrid } from '../features/expression-grid/.server';
 
 describe('playground', () => {
 	it('should have environment variables loaded', () => {
@@ -42,18 +42,16 @@ describe('playground', () => {
 
 		const imageBuffer = await readFile(inputImagePath);
 
-		type TMetadata = {
-			filename: string;
-			x: number;
-			y: number;
-			url: string;
-		};
-
 		const metadata = (
-			await createGridMetadata<TMetadata>({
+			await generateExpressionGrid<{
+				filename: string;
+				x: number;
+				y: number;
+				url: string;
+			}>({
 				image: imageBuffer,
 				gridSize,
-				middleware: async (item): Promise<TMetadata> => {
+				middleware: async (item) => {
 					const filename = `grid_${gridSize}x${gridSize}_x${item.x}y${item.y}.webp`;
 					const filepath = join(outputDir, filename);
 

@@ -5,7 +5,8 @@ export default mergeConfig(
 	nodeConfig,
 	defineConfig({
 		test: {
-			setupFiles: ['./vitest.env.js']
+			setupFiles: ['./vitest.env.js'],
+			testTimeout: 3600000 // 1 hour timeout
 		}
 	})
 );

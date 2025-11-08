@@ -71,7 +71,7 @@ const Page: React.FC = () => {
 							rel="noopener noreferrer"
 							className="font-semibold text-gray-900 transition-colors hover:text-gray-700"
 						>
-							benno builder
+							@bennobuilder
 						</a>
 					</p>
 				</div>

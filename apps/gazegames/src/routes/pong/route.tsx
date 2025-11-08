@@ -3,17 +3,29 @@ import { useLoaderData } from 'react-router';
 import { PongCanvas, PongGazers, type TPongGazersRef } from '@/features/pong';
 
 export async function loader({ request }: { request: Request }) {
-	const url = new URL('/girl-1_sprite-map.json', new URL(request.url).origin);
-	const response = await fetch(url);
-	if (!response.ok) {
-		throw new Response('Failed to load sprite map', { status: response.status });
+	const origin = new URL(request.url).origin;
+
+	// Load sprite maps
+	const [leftResponse, rightResponse] = await Promise.all([
+		fetch(new URL('/girl-1_sprite-map.json', origin)),
+		fetch(new URL('/hide-the-pain-harold-1_sprite-map.json', origin))
+	]);
+	if (!leftResponse.ok) {
+		throw new Response('Failed to load left sprite map', { status: leftResponse.status });
 	}
-	const spriteMap = await response.json();
-	return { spriteMap };
+	if (!rightResponse.ok) {
+		throw new Response('Failed to load right sprite map', { status: rightResponse.status });
+	}
+	const [leftSpriteMap, rightSpriteMap] = await Promise.all([
+		leftResponse.json(),
+		rightResponse.json()
+	]);
+
+	return { leftSpriteMap, rightSpriteMap };
 }
 
 const Page: React.FC = () => {
-	const { spriteMap } = useLoaderData<typeof loader>();
+	const { leftSpriteMap, rightSpriteMap } = useLoaderData<typeof loader>();
 	const canvasContainerRef = React.useRef<HTMLDivElement>(null);
 	const pongGazersRef = React.useRef<TPongGazersRef>(null);
 
@@ -50,8 +62,10 @@ const Page: React.FC = () => {
 				{/* Background grid of expressions */}
 				<PongGazers
 					ref={pongGazersRef}
-					spriteMap={spriteMap}
-					spriteSheetUrl="/girl-1_sprite-sheet.webp"
+					leftSpriteMap={leftSpriteMap}
+					leftSpriteSheetUrl="/girl-1_sprite-sheet.webp"
+					rightSpriteMap={rightSpriteMap}
+					rightSpriteSheetUrl="/hide-the-pain-harold-1_sprite-sheet.webp"
 				/>
 
 				{/* Pong canvas centered */}

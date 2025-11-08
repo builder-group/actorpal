@@ -32,7 +32,7 @@ describe('playground', () => {
 
 	it('should generate expression sprite map (separate sprite files) looking toward center', async () => {
 		const mapSize = 9;
-		const folderName = 'girl-1';
+		const folderName = 'hide-the-pain-harold-1';
 
 		const __dirname = dirname(fileURLToPath(import.meta.url));
 		const resourcesDir = join(__dirname, 'resources/.local', folderName);

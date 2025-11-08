@@ -5,15 +5,15 @@ import { replicate, replicateConfig, TExpressionEditorInput } from '@/.server/en
 export async function generateExpressionSprites(
 	config: TGenerateExpressionSpritesConfig
 ): Promise<TResult<TExpressionSprite[], string>> {
-	const { image, gridSize } = config;
-	const centerX = (gridSize - 1) / 2;
-	const centerY = (gridSize - 1) / 2;
+	const { image, mapSize } = config;
+	const centerX = (mapSize - 1) / 2;
+	const centerY = (mapSize - 1) / 2;
 
-	// Generate sprites for all grid positions in parallel
+	// Generate sprites for all positions in the sprite map (mapSize x mapSize)
 	// Each sprite represents a gaze direction: sprite at position (x,y) looks toward center
 	const promises: Promise<TResult<TExpressionSprite, string>>[] = [];
-	for (let y = 0; y < gridSize; y++) {
-		for (let x = 0; x < gridSize; x++) {
+	for (let y = 0; y < mapSize; y++) {
+		for (let x = 0; x < mapSize; x++) {
 			// Direction from current position to center
 			// Example: x0y0 (top-left) → center: dx=+2, dy=+2 (right and down)
 			const dx = centerX - x;
@@ -99,7 +99,7 @@ export interface TExpressionSprite {
 
 export interface TGenerateExpressionSpritesConfig {
 	image: string | Buffer;
-	gridSize: number;
+	mapSize: number;
 }
 
 const modelConfig = replicateConfig.models['expression-editor'];

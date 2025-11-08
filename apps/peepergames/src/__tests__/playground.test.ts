@@ -3,7 +3,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { appConfig, replicate, replicateConfig } from '../.server/environment';
-import { createExpressionAtlas } from '../features/gaze-expression/.server';
+import { getImageDimensions, readableStreamToBuffer } from '../.server/lib';
+import { createSpriteMap, createSpriteSheet } from '../features/gaze-expression/.server';
 
 describe('playground', () => {
 	it('should have environment variables loaded', () => {
@@ -29,47 +30,99 @@ describe('playground', () => {
 		}
 	});
 
-	it('should generate expression atlas (separate sprite files) looking toward center', async () => {
-		const gridSize = 3;
+	it('should generate expression sprite map (separate sprite files) looking toward center', async () => {
+		const mapSize = 10;
 		const folderName = 'girl-1';
 
 		const __dirname = dirname(fileURLToPath(import.meta.url));
 		const resourcesDir = join(__dirname, 'resources/.local', folderName);
-		const outputDir = join(resourcesDir, 'v1');
+		const outputDir = join(resourcesDir, 'v3.1');
 		const inputImagePath = join(resourcesDir, 'input.png');
 
 		await mkdir(outputDir, { recursive: true });
 
 		const imageBuffer = await readFile(inputImagePath);
 
-		// Generate expression atlas: collection of separate sprite files organized by gaze direction
-		const atlas = (
-			await createExpressionAtlas<{
+		// Step 1: Generate sprite map
+		const spriteSize = 512;
+		const spriteMap = (
+			await createSpriteMap<{
 				filename: string;
-				url: string;
+				spriteUrl: string;
+				buffer: Buffer;
+				width: number;
+				height: number;
+				spriteSheetX: number;
+				spriteSheetY: number;
 			}>({
 				image: imageBuffer,
-				gridSize,
+				mapSize,
 				middleware: async (item) => {
-					const filename = `grid_${gridSize}x${gridSize}_x${item.x}y${item.y}.webp`;
-					const filepath = join(outputDir, filename);
-
-					// @ts-expect-error - FileOutput extends ReadableStream and writeFile accepts it
-					await writeFile(filepath, item.image);
-					console.log(`✓ Saved ${filename}`);
+					const buffer = (await readableStreamToBuffer(item.image)).unwrap();
+					const dimensions = (await getImageDimensions(buffer)).unwrap();
 
 					return {
-						filename,
-						url: item.image.url().toString()
+						filename: `sprite_${mapSize}x${mapSize}_x${item.x}y${item.y}.webp`,
+						spriteUrl: item.image.url().toString(),
+						buffer,
+						width: dimensions.width,
+						height: dimensions.height,
+						spriteSheetX: item.x * spriteSize,
+						spriteSheetY: item.y * spriteSize
 					};
 				}
 			})
 		).unwrap();
 
-		const metadataPath = join(outputDir, 'metadata.json');
-		await writeFile(metadataPath, JSON.stringify(atlas, null, 2));
-		console.log(`✓ Saved metadata.json`);
+		// Step 2: Write individual sprite files
+		for (let y = 0; y < mapSize; y++) {
+			for (let x = 0; x < mapSize; x++) {
+				const item = spriteMap[y]?.[x];
+				if (item == null) continue;
 
-		console.log(`✓ Generated ${gridSize * gridSize} sprites in ${gridSize}x${gridSize} atlas`);
+				const filepath = join(outputDir, item.filename);
+				await writeFile(filepath, item.buffer);
+				console.log(`✓ Saved ${item.filename}`);
+			}
+		}
+
+		// Step 3: Create sprite sheet from buffers
+		const spriteBuffers: (Buffer | null)[][] = [];
+		for (let y = 0; y < mapSize; y++) {
+			const row: (Buffer | null)[] = [];
+			for (let x = 0; x < mapSize; x++) {
+				const item = spriteMap[y]?.[x];
+				row[x] = item?.buffer ?? null;
+			}
+			spriteBuffers[y] = row;
+		}
+		const spriteSheetBuffer = (
+			await createSpriteSheet({
+				spriteBuffers,
+				mapSize,
+				spriteSize
+			})
+		).unwrap();
+
+		const spriteSheetPath = join(outputDir, `sprite-sheet_${mapSize}x${mapSize}.webp`);
+		await writeFile(spriteSheetPath, spriteSheetBuffer);
+		console.log(`✓ Created sprite sheet: ${spriteSheetPath}`);
+
+		// Step 4: Save sprite map metadata (without buffers for JSON)
+		const spriteMapMetadata = spriteMap.map((row) =>
+			row.map((item) => ({
+				filename: item.filename,
+				spriteUrl: item.spriteUrl,
+				width: item.width,
+				height: item.height,
+				spriteSheetX: item.spriteSheetX,
+				spriteSheetY: item.spriteSheetY
+			}))
+		);
+		const spriteMapPath = join(outputDir, 'sprite-map.json');
+		await writeFile(spriteMapPath, JSON.stringify(spriteMapMetadata, null, 2));
+		console.log(`✓ Saved sprite-map.json`);
+
+		console.log(`✓ Generated ${mapSize * mapSize} sprites in ${mapSize}x${mapSize} sprite map`);
 	});
 });

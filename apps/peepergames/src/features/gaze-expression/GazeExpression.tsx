@@ -1,17 +1,18 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 
-export const GazeExpression: React.FC<TGazeExpressionProps> = ({ atlas, size }) => {
-	const containerRef = useRef<HTMLDivElement>(null);
-	const gridSize = atlas.length;
-	const centerX = (gridSize - 1) / 2;
-	const centerY = (gridSize - 1) / 2;
+export const GazeExpression: React.FC<TGazeExpressionProps> = (props) => {
+	const { spriteMap, size } = props;
+	const containerRef = React.useRef<HTMLDivElement>(null);
+	const mapSize = spriteMap.length;
+	const centerX = (mapSize - 1) / 2;
+	const centerY = (mapSize - 1) / 2;
 
 	// Initial image from center position
-	const initialUrl = atlas[centerY]?.[centerX]?.url ?? '';
-	const [imageUrl, setImageUrl] = useState<string>(initialUrl);
+	const initialUrl = spriteMap[centerY]?.[centerX]?.spriteUrl ?? '';
+	const [imageUrl, setImageUrl] = React.useState<string>(initialUrl);
 
-	// Calculate which atlas position to use based on cursor direction
-	const getAtlasPosition = React.useCallback(
+	// Calculate which sprite map position to use based on cursor direction
+	const getSpriteMapPosition = React.useCallback(
 		(cursorX: number, cursorY: number, containerRect: DOMRect): { x: number; y: number } => {
 			// Cursor position relative to container center
 			const relativeX = cursorX - (containerRect.left + containerRect.width / 2);
@@ -22,36 +23,36 @@ export const GazeExpression: React.FC<TGazeExpressionProps> = ({ atlas, size }) 
 			const normalizedX = relativeX / maxDistance;
 			const normalizedY = relativeY / maxDistance;
 
-			// Map to atlas coordinates (invert Y because screen Y increases downward)
-			// Cursor top-left → face looks top-left → use bottom-right atlas position
-			const atlasX = Math.round(centerX - normalizedX * centerX);
-			const atlasY = Math.round(centerY - normalizedY * centerY);
+			// Map to sprite map coordinates (invert Y because screen Y increases downward)
+			// Cursor top-left → face looks top-left → use bottom-right sprite position
+			const mapX = Math.round(centerX - normalizedX * centerX);
+			const mapY = Math.round(centerY - normalizedY * centerY);
 
-			// Clamp to atlas bounds
+			// Clamp to sprite map bounds
 			return {
-				x: Math.max(0, Math.min(gridSize - 1, atlasX)),
-				y: Math.max(0, Math.min(gridSize - 1, atlasY))
+				x: Math.max(0, Math.min(mapSize - 1, mapX)),
+				y: Math.max(0, Math.min(mapSize - 1, mapY))
 			};
 		},
-		[centerX, centerY, gridSize]
+		[centerX, centerY, mapSize]
 	);
 
-	useEffect(() => {
+	React.useEffect(() => {
 		function handleMouseMove(event: MouseEvent) {
 			if (containerRef.current == null) return;
 
 			const rect = containerRef.current.getBoundingClientRect();
-			const pos = getAtlasPosition(event.clientX, event.clientY, rect);
+			const pos = getSpriteMapPosition(event.clientX, event.clientY, rect);
 
-			const item = atlas[pos.y]?.[pos.x];
+			const item = spriteMap[pos.y]?.[pos.x];
 			if (item != null) {
-				setImageUrl(item.url);
+				setImageUrl(item.spriteUrl);
 			}
 		}
 
 		window.addEventListener('mousemove', handleMouseMove);
 		return () => window.removeEventListener('mousemove', handleMouseMove);
-	}, [atlas, getAtlasPosition]);
+	}, [spriteMap, getSpriteMapPosition]);
 
 	return (
 		<div ref={containerRef} className="flex items-center justify-center">
@@ -61,11 +62,11 @@ export const GazeExpression: React.FC<TGazeExpressionProps> = ({ atlas, size }) 
 };
 
 interface TGazeExpressionProps {
-	atlas: TGridItem[][];
+	spriteMap: TSpriteMapItem[][];
 	size: number;
 }
 
-interface TGridItem {
-	url: string;
+interface TSpriteMapItem {
+	spriteUrl: string;
 	filename?: string;
 }

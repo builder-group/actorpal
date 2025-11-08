@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { appConfig, replicate, replicateConfig } from '../.server/environment';
-import { generateExpressionGrid } from '../features/expression-grid/.server';
+import { createExpressionAtlas } from '../features/gaze-expression/.server';
 
 describe('playground', () => {
 	it('should have environment variables loaded', () => {
@@ -14,7 +14,7 @@ describe('playground', () => {
 		console.log('✓ Environment variables loaded successfully');
 	});
 
-	it('should generate single image', async () => {
+	it('should generate gaze expression image', async () => {
 		const input = {
 			image:
 				'https://replicate.delivery/pbxt/Lg7pzAsHjoZlGHtrfI4wnVZchV8G9XCyXXMG37YMyb4NoBiU/PhotoMaker_00001_.png',
@@ -29,8 +29,8 @@ describe('playground', () => {
 		}
 	});
 
-	it('should generate grid of images looking toward center', async () => {
-		const gridSize = 2;
+	it('should generate expression atlas (separate sprite files) looking toward center', async () => {
+		const gridSize = 3;
 		const folderName = 'girl-1';
 
 		const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -42,11 +42,10 @@ describe('playground', () => {
 
 		const imageBuffer = await readFile(inputImagePath);
 
-		const metadata = (
-			await generateExpressionGrid<{
+		// Generate expression atlas: collection of separate sprite files organized by gaze direction
+		const atlas = (
+			await createExpressionAtlas<{
 				filename: string;
-				x: number;
-				y: number;
 				url: string;
 			}>({
 				image: imageBuffer,
@@ -61,8 +60,6 @@ describe('playground', () => {
 
 					return {
 						filename,
-						x: item.x,
-						y: item.y,
 						url: item.image.url().toString()
 					};
 				}
@@ -70,9 +67,9 @@ describe('playground', () => {
 		).unwrap();
 
 		const metadataPath = join(outputDir, 'metadata.json');
-		await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+		await writeFile(metadataPath, JSON.stringify(atlas, null, 2));
 		console.log(`✓ Saved metadata.json`);
 
-		console.log(`✓ Generated ${gridSize * gridSize} images in ${gridSize}x${gridSize} grid`);
+		console.log(`✓ Generated ${gridSize * gridSize} sprites in ${gridSize}x${gridSize} atlas`);
 	});
 });

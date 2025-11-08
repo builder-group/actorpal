@@ -2,15 +2,16 @@ import { FileOutput } from 'replicate';
 import { Err, Ok, type TResult } from 'tuple-result';
 import { replicate, replicateConfig, TExpressionEditorInput } from '@/.server/environment';
 
-export async function generateExpressionGridItems(
-	config: TGenerateExpressionGridItemsConfig
-): Promise<TResult<TExpressionGridItem[], string>> {
+export async function generateExpressionSprites(
+	config: TGenerateExpressionSpritesConfig
+): Promise<TResult<TExpressionSprite[], string>> {
 	const { image, gridSize } = config;
 	const centerX = (gridSize - 1) / 2;
 	const centerY = (gridSize - 1) / 2;
 
-	// Generate grid position promises
-	const promises: Array<Promise<TResult<TExpressionGridItem, string>>> = [];
+	// Generate sprites for all grid positions in parallel
+	// Each sprite represents a gaze direction: sprite at position (x,y) looks toward center
+	const promises: Promise<TResult<TExpressionSprite, string>>[] = [];
 	for (let y = 0; y < gridSize; y++) {
 		for (let x = 0; x < gridSize; x++) {
 			// Direction from current position to center
@@ -34,7 +35,7 @@ export async function generateExpressionGridItems(
 				(pupilXRange.max + pupilXRange.min) / 2;
 			const pupil_y = -normalizedDy * ((pupilYRange.max - pupilYRange.min) / 2);
 
-			const promise: Promise<TResult<TExpressionGridItem, string>> = replicate
+			const promise: Promise<TResult<TExpressionSprite, string>> = replicate
 				.run(modelConfig.id, {
 					input: {
 						image,
@@ -44,7 +45,7 @@ export async function generateExpressionGridItems(
 						pupil_y
 					} satisfies TExpressionEditorInput
 				})
-				.then((output): TResult<TExpressionGridItem, string> => {
+				.then((output): TResult<TExpressionSprite, string> => {
 					if (!Array.isArray(output) || output.length === 0) {
 						return Err(`No output for position [x${x}y${y}]`);
 					}
@@ -60,7 +61,7 @@ export async function generateExpressionGridItems(
 
 					return Err(`Invalid output type for position [x${x}y${y}]`);
 				})
-				.catch((error): TResult<TExpressionGridItem, string> => {
+				.catch((error): TResult<TExpressionSprite, string> => {
 					return Err(
 						`Failed at [x${x}y${y}]: ${error instanceof Error ? error.message : String(error)}`
 					);
@@ -73,7 +74,7 @@ export async function generateExpressionGridItems(
 	const results = await Promise.all(promises);
 
 	// Categorize results into items and errors
-	const items: TExpressionGridItem[] = [];
+	const items: TExpressionSprite[] = [];
 	const errors: string[] = [];
 	for (const result of results) {
 		if (result.isOk()) {
@@ -90,13 +91,13 @@ export async function generateExpressionGridItems(
 	return Ok(items);
 }
 
-export interface TExpressionGridItem {
+export interface TExpressionSprite {
 	x: number;
 	y: number;
 	image: FileOutput;
 }
 
-export interface TGenerateExpressionGridItemsConfig {
+export interface TGenerateExpressionSpritesConfig {
 	image: string | Buffer;
 	gridSize: number;
 }

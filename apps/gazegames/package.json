@@ -17,7 +17,7 @@
 	"scripts": {
 		"build": "pnpm typecheck && react-router build",
 		"build:prod": "export NODE_ENV=production && pnpm build",
-		"clean": "shx rm -rf dist && shx rm -rf build && shx rm -rf .turbo && shx rm -rf node_modules",
+		"clean": "shx rm -rf build && shx rm -rf .react-router && shx rm -rf .turbo && shx rm -rf node_modules",
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"install:clean": "pnpm run clean && pnpm install",
 		"lint": "eslint . --fix",
@@ -39,14 +39,14 @@
 		"feature-state": "^0.0.64",
 		"hono": "^4.10.4",
 		"isbot": "^5.1.32",
-		"lucide-react": "^0.552.0",
+		"lucide-react": "^0.553.0",
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
 		"react-router": "^7.9.5",
 		"react-router-hono-server": "^2.22.0",
 		"replicate": "^1.3.1",
 		"sharp": "^0.34.5",
-		"tailwind-merge": "^3.3.1",
+		"tailwind-merge": "^3.4.0",
 		"tuple-result": "^0.0.10",
 		"zod": "^4.1.12"
 	},
@@ -59,7 +59,7 @@
 		"@types/node": "^24.10.0",
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
-		"daisyui": "^5.4.5",
+		"daisyui": "^5.4.7",
 		"tailwindcss": "^4.1.17",
 		"vite-tsconfig-paths": "^5.1.4"
 	}

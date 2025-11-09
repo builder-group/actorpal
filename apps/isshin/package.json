@@ -1,26 +1,42 @@
 {
-  "name": "isshin",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
-  },
-  "dependencies": {
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
-  },
-  "devDependencies": {
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "typescript": "~5.8.3",
-    "vite": "^7.0.4",
-    "@tauri-apps/cli": "^2"
-  }
+	"name": "@repo/isshin",
+	"version": "0.0.1",
+	"private": true,
+	"description": "",
+	"keywords": [],
+	"bugs": {
+		"url": "https://github.com/builder-group/lab/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/builder-group/lab.git"
+	},
+	"license": "AGPL-3.0-or-later",
+	"author": "@bennobuilder",
+	"type": "module",
+	"scripts": {
+		"build": "tauri build",
+		"clean": "shx rm -rf dist && shx rm -rf .turbo && shx rm -rf node_modules",
+		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
+		"install:clean": "pnpm run clean && pnpm install",
+		"lint": "eslint . --fix",
+		"start:dev": "tauri dev",
+		"test": "echo \"🧪 No tests defined yet.\"",
+		"typecheck": "tsc --noEmit",
+		"update:latest": "pnpm update --latest",
+		"vite:build": "pnpm typecheck && vite build",
+		"vite:dev": "vite"
+	},
+	"dependencies": {
+		"@tauri-apps/api": "^2.9.0",
+		"@tauri-apps/plugin-opener": "^2.5.2",
+		"react": "^19.2.0",
+		"react-dom": "^19.2.0"
+	},
+	"devDependencies": {
+		"@tauri-apps/cli": "^2.9.4",
+		"@types/react": "^19.2.2",
+		"@types/react-dom": "^19.2.2",
+		"@vitejs/plugin-react": "^5.1.0"
+	}
 }

@@ -1,668 +1,668 @@
 [
-  [
-    {
-      "filename": "sprite_9x9_x0y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/UrKXzoRmzXb4B5zZxmDKkEwfUVkoVvFH5t7eyxUnEGf9pqOrA/expression_edit_preview584.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x1y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/p75gEASDuhoYHFkh6TK1KdhI6FZPK9dxWubdLY5iLXYGV1ZF/expression_edit_preview561.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x2y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/Wwjy9mWYpdI3IlSJLXRnS6d33FH0Asc6wRMbR2RC2CoXV1ZF/expression_edit_preview620.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x3y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/UcdKNyn3PeTPYSLNfdvM8H7uCv5g50fgH9CbfteBPCq3jq6sC/expression_edit_preview568.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x4y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/tReT2ZnvnbW0AafSHFbF0lNGC8csCubAeRoodZL7tNKzqqOrA/expression_edit_preview613.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x5y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/ykfeq2fG8jHXIIfZQ0HRCHILmYPMF8fCVytul2D87mDjrq6sC/expression_edit_preview618.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x6y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/GphDhXE0HY5faqa5QHflai9raYfjxiNsaGozfYbldQLtVVdWB/expression_edit_preview616.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x7y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/RxqfRlwefWJfRT4Wf7YUNTj3vCTMOR7ogENomYaEmy4Dsq6sC/expression_edit_preview1.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 0
-    },
-    {
-      "filename": "sprite_9x9_x8y0.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/xn5BRFUUAuLNIpfCyQQAMEqCGsPSKOknOVzeF6k2tfzvpqOrA/expression_edit_preview575.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 0
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/0oYbLEachOYQDdaw0NibkGnUzQuNsodaR8XGZ0xFlg9TV1ZF/expression_edit_preview603.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x1y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/pe84WysZIry5E6wZVbZyrfhUWfzZM2LZFazbBHecfEM8oq6sC/expression_edit_preview595.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x2y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/fvmvKsMucAwwcyfp867w8inAEkxp4oJffgqe8tiK3gclqq6sC/expression_edit_preview609.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x3y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/O9TYQc8PLeS4UalsIQFxG8rzMcRwLdxYFpOKVsahq2JNqqzKA/expression_edit_preview563.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x4y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/MZi6YlnZutKIP9UomCDCyoER0XfXgHQewPCDjJiqM18bVVnVA/expression_edit_preview615.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x5y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/efw8xs3DdXgVNEn00DiYSEE6xZARvXpRbkyYspeEIhCxoqOrA/expression_edit_preview559.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x6y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/A2aKhfCehwgywEtyVUFnmxRAZcI2utv2TRB96zjyTqZEVVnVA/expression_edit_preview591.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x7y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/S5IymtagpJb6KVyqwmipH7YwBXMqht0HefhpGMaqXfY9qqOrA/expression_edit_preview619.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 512
-    },
-    {
-      "filename": "sprite_9x9_x8y1.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/bnn9KOf6zel170f3yyegKfDHUrAgkOnBuKUn7fhNeQvZgqqzKA/expression_edit_preview586.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 512
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/TVqrt1eAB4S1HKcfRYgyeB5gepNUm2E78DjyMix7X2ylRVdWB/expression_edit_preview560.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x1y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/rUhPacicy94eGCfGNKZmwdrAYpGCu1mXBOmQApkTFiLaUVnVA/expression_edit_preview562.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x2y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/Q9VSYyfgjcwsGi2X1IZcffWhespAikG6ffrD0rXYOUgTCV1ZF/expression_edit_preview549.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x3y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/QeAFtsA609xpXqOKrd84FIVd9e2DFMM2emvnjns8RM4wpqOrA/expression_edit_preview577.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x4y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/ELGz7f1mx1VMISHNGqyDcjRwA6cmIrILzWdX4RM1tGTEqqzKA/expression_edit_preview546.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x5y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/GefySXweywMXnJeb2SgBB6jr6I8AzYvIeYTNLzKZs3felqqzKA/expression_edit_preview599.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x6y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/ZwxcGf0WPPUmAKWo1z4vwGWeF9pOmePFOOGJAxAqSuaTqqOrA/expression_edit_preview596.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x7y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/dHdfkJdHsA0vFiHSmFedAtftskg9OPTMW4Yc6cB9HfHYQVdWB/expression_edit_preview545.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 1024
-    },
-    {
-      "filename": "sprite_9x9_x8y2.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/yN4wJ8JfQwyoL6AA9B6sHJGvoe6vLegDcAavwzWV7ytFqqOrA/expression_edit_preview589.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 1024
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/9WFE0fPxyzQfR0my4G5DWGM3q6QIiXY0UeptX6z0kIwioqOrA/expression_edit_preview551.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x1y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/GlGIW1zWP6K0EVN7xb7gaVF3sXlQURPnaLmDe64hCD6qqqzKA/expression_edit_preview610.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x2y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/P0OIifdjZj2XEqbTtR3aXFSGa0W6bXNoTVIsOlRlaM0wqqzKA/expression_edit_preview623.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x3y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/RAJQeUveDJuf5IcrI7ZfUcvg6cnY6YNyv9bE7Nte4tRPqq6sC/expression_edit_preview606.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x4y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/L9Jo8studFJGBJfKeAqK9jZ2jEIANGZzB8YUbpGXJ0ULUVnVA/expression_edit_preview550.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x5y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/MaYEShv6F4rTPxAzZs8BSI6dJfOfffEXu6hQsiIfhFP7qq6sC/expression_edit_preview611.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x6y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/7f7StnTihZ2EHy1zRI62CiR0T2GYvzDffBwfgeIhe3huQV1ZF/expression_edit_preview588.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x7y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/j9eIb4ZfRqqGlU1I3bHvR5HjeDlS08ch1LBAPGLgQbJ3pqOrA/expression_edit_preview580.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 1536
-    },
-    {
-      "filename": "sprite_9x9_x8y3.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/lWTuSDPqW2JfeUfHK5fUVJnQQxbZFyXEui5v0mrVaYaaRVdWB/expression_edit_preview556.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 1536
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/8vR1Mt0HRgKOHB8b3DG6eiluDcJmatWWqbf7aPXmhWtRVVnVA/expression_edit_preview605.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x1y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/eLlWlZscdZVBf0FfAxBjiRLYmkAeP829SVm2dThtLflNkq6sC/expression_edit_preview572.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x2y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/spYz4KtsGA40PFGJrckT205DHgSuMN1meCotyty3zyROqqzKA/expression_edit_preview565.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x3y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/nmDPUBnltezLU6Spel6uiKG7L8Ecek3N83cqhYWcTKPnqqOrA/expression_edit_preview608.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x4y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/9NqC3DFtCA60JR5yTXBlk1ICppROtYEQXft7whnPtgkmqqzKA/expression_edit_preview601.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x5y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/Xmp8dvmcUlZEG5ENfdFddiBRM4avlYUSOUBJ4a4aoTefqqOrA/expression_edit_preview622.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x6y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/phsMF3lxglbfRqn5fENqaf8enmU1A6qDm5rBFgoayaRfiq6sC/expression_edit_preview558.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x7y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/YmLjVC3nv95IIJnru3NMs88Bbf6JteTSVVzo9bZAUn2WUVnVA/expression_edit_preview557.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 2048
-    },
-    {
-      "filename": "sprite_9x9_x8y4.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/FeKVHyOexbpo700lxUU45na1gQXPn8pDeCT4q1wxiuV2pqOrA/expression_edit_preview581.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 2048
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/Rlj8D7UWI96VCxc6y4FtgoUVdMFpRUqRRanijKvou7HHV1ZF/expression_edit_preview564.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x1y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/PA2fVb2KOXUCH6u6gEfa8AKO2zBM8roOpNcKOphiYrwTVVnVA/expression_edit_preview607.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x2y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/bLxi0cB0sjaQGhVrApJ6lMGJdJmGI8afXMlR4i6HjmwlqqzKA/expression_edit_preview598.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x3y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/txu7de18e1uI70sGyzzOABHYMny1eP7YHLRcTwt4et54RVdWB/expression_edit_preview569.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x4y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/RcCHmhGhBR5KLFMXeh0UzauTGpxhKcxL4uNxwrxBK3IKqqzKA/expression_edit_preview554.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x5y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/OQY6VtIButaFANQ3eMRzgv48RwLd1kZlMlI7foBpeLWkoqOrA/expression_edit_preview553.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x6y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/Z5W5Xe5lX90VT6OoffJkfCnuLju74iJqI8JOJ7xJljoAVVdWB/expression_edit_preview604.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x7y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/FrlzXksJk4ZOPdjwnzTmfhI68kGeKbvMA4L5tiRDKBWcVVnVA/expression_edit_preview617.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 2560
-    },
-    {
-      "filename": "sprite_9x9_x8y5.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/M1jAlVYp9IYjH13euEnIdOJlnRwhV4CyUkcYUE3XKUeIUVnVA/expression_edit_preview547.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 2560
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/pw4V98KYs86nFN5ktv9KRxNObj6B1eCtSzcSsugGap2kqqzKA/expression_edit_preview597.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x1y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/UiJf5ke3z6gOt0jhUAqKjwZarfFa4ABu82cREfdPOCv1RVdWB/expression_edit_preview567.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x2y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/XfZkAudpbb1VUCdHOFGe5ynbdHdieeqXTDEg4S5nreKeVV1ZF/expression_edit_preview612.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x3y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/94dLF1fNBmzqcCZMWlMVH1NFFCJ03xenuNyV1JCUbuCjUVnVA/expression_edit_preview574.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x4y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/TgPjqEAJYVocGZDzDlTgziBYOxmTqisN2Kfeemh78kBApqOrA/expression_edit_preview570.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x5y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/Ne92Usbf3JnZME4oe7QbPfVlbmOE1n9ddmefhMujiexpjqqzKA/expression_edit_preview594.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x6y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/oboXkbrZOfVWYacp9YeuTszogwbgwRctMpMkmp4W8tz9UVnVA/expression_edit_preview583.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x7y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/w93VGTRibIopLBBUUH9HLiy85NSol5XG8EVWqJJdcagEV1ZF/expression_edit_preview552.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 3072
-    },
-    {
-      "filename": "sprite_9x9_x8y6.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/NIdj9d5j5RqQEVILOREKCAh98IGaVOfnxIDOvRham1hsqqzKA/expression_edit_preview614.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 3072
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/sKk4L1dcLsrMOhfP5y9bfh2Y2J3KO0NuJ20pKopEat88UVnVA/expression_edit_preview582.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x1y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/SZCN5mHB5f0FFSMD77AQbwpt4sIutukzw5EJ0tA16KrEqqzKA/expression_edit_preview548.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x2y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/d4tQAcFFOOrXN9mKEbdHy5cDZS4OvUfXQy5qbCleZ36UUVnVA/expression_edit_preview555.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x3y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/FwA7fj8B5K1AEiMGzTpsSpyA71QLptFGg2C3ZejozJwAVVnVA/expression_edit_preview587.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x4y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/JXQM7FeJx6TlOCWiSVSKFM1e3M243qU6uGqO5OOhN25OVVnVA/expression_edit_preview602.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x5y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/CdXijHnb2LJCB9ZSDtQdd9aK28Dg5rvDzarBk0DeNjXcqqzKA/expression_edit_preview576.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x6y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/3gfpipMAmwzoGqj9KriqNM8r7Bl0MCk0S7XYevu8rGmfqqOrA/expression_edit_preview621.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x7y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/Q6yWIrMkMk45NNY97yGGvef4mqCJqX8kE73qAAw3zfC6oqOrA/expression_edit_preview566.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 3584
-    },
-    {
-      "filename": "sprite_9x9_x8y7.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/AO1ek0etTvhezIEUcVwFWTquxou6UU64RLaeceI9vgqDkq6sC/expression_edit_preview571.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 3584
-    }
-  ],
-  [
-    {
-      "filename": "sprite_9x9_x0y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/h6fu0ZwUqU0aYCZqKIE9BaRhV6muxFfbxPum5KBmamN6UVnVA/expression_edit_preview579.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 0,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x1y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/T162nAa7OHrVFJkH2f4H4QrZn6ymKYQSEGk22vWJn7UfUVnVA/expression_edit_preview585.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 512,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x2y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/TwfzP7FZf1k2F0qfRMLRy8kCXybokVfddNrk33APnt9XUVdWB/expression_edit_preview592.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1024,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x3y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/9iu366SVCWpMCRxTXlMfCbqAkLGhVCeJiDFCW7df1KeISVdWB/expression_edit_preview573.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 1536,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x4y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/U5eHkfWBmeZ9Eow9sCVAk6ZZfjpY5R5H3qkI0U8W1YxQUVdWB/expression_edit_preview590.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2048,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x5y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/SZeL3LyrCZzpWylHNiyekiXILJ9g0fk2Nwrzv5KJxePXUVdWB/expression_edit_preview593.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 2560,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x6y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/acBffNfRlpSxKI3DliifNnwbm5bzWdnxwA9ajYMrYsV2UVdWB/expression_edit_preview600.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3072,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x7y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/uoTU6fKAHmXHUKFVnRd3sIhxCcOjSkS6cXK00A1EosmwqqzKA/expression_edit_preview624.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 3584,
-      "spriteSheetY": 4096
-    },
-    {
-      "filename": "sprite_9x9_x8y8.webp",
-      "spriteUrl": "https://replicate.delivery/xezq/bfdzqoIl9U0gQCY7aYPRPGriZMCgdBSbWAynHHzt5IOdqqzKA/expression_edit_preview578.webp",
-      "width": 512,
-      "height": 512,
-      "spriteSheetX": 4096,
-      "spriteSheetY": 4096
-    }
-  ]
+	[
+		{
+			"filename": "sprite_9x9_x0y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/UrKXzoRmzXb4B5zZxmDKkEwfUVkoVvFH5t7eyxUnEGf9pqOrA/expression_edit_preview584.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x1y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/p75gEASDuhoYHFkh6TK1KdhI6FZPK9dxWubdLY5iLXYGV1ZF/expression_edit_preview561.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x2y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/Wwjy9mWYpdI3IlSJLXRnS6d33FH0Asc6wRMbR2RC2CoXV1ZF/expression_edit_preview620.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x3y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/UcdKNyn3PeTPYSLNfdvM8H7uCv5g50fgH9CbfteBPCq3jq6sC/expression_edit_preview568.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x4y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/tReT2ZnvnbW0AafSHFbF0lNGC8csCubAeRoodZL7tNKzqqOrA/expression_edit_preview613.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x5y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/ykfeq2fG8jHXIIfZQ0HRCHILmYPMF8fCVytul2D87mDjrq6sC/expression_edit_preview618.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x6y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/GphDhXE0HY5faqa5QHflai9raYfjxiNsaGozfYbldQLtVVdWB/expression_edit_preview616.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x7y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/RxqfRlwefWJfRT4Wf7YUNTj3vCTMOR7ogENomYaEmy4Dsq6sC/expression_edit_preview1.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 0
+		},
+		{
+			"filename": "sprite_9x9_x8y0.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/xn5BRFUUAuLNIpfCyQQAMEqCGsPSKOknOVzeF6k2tfzvpqOrA/expression_edit_preview575.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 0
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/0oYbLEachOYQDdaw0NibkGnUzQuNsodaR8XGZ0xFlg9TV1ZF/expression_edit_preview603.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x1y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/pe84WysZIry5E6wZVbZyrfhUWfzZM2LZFazbBHecfEM8oq6sC/expression_edit_preview595.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x2y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/fvmvKsMucAwwcyfp867w8inAEkxp4oJffgqe8tiK3gclqq6sC/expression_edit_preview609.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x3y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/O9TYQc8PLeS4UalsIQFxG8rzMcRwLdxYFpOKVsahq2JNqqzKA/expression_edit_preview563.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x4y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/MZi6YlnZutKIP9UomCDCyoER0XfXgHQewPCDjJiqM18bVVnVA/expression_edit_preview615.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x5y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/efw8xs3DdXgVNEn00DiYSEE6xZARvXpRbkyYspeEIhCxoqOrA/expression_edit_preview559.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x6y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/A2aKhfCehwgywEtyVUFnmxRAZcI2utv2TRB96zjyTqZEVVnVA/expression_edit_preview591.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x7y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/S5IymtagpJb6KVyqwmipH7YwBXMqht0HefhpGMaqXfY9qqOrA/expression_edit_preview619.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 512
+		},
+		{
+			"filename": "sprite_9x9_x8y1.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/bnn9KOf6zel170f3yyegKfDHUrAgkOnBuKUn7fhNeQvZgqqzKA/expression_edit_preview586.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 512
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/TVqrt1eAB4S1HKcfRYgyeB5gepNUm2E78DjyMix7X2ylRVdWB/expression_edit_preview560.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x1y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/rUhPacicy94eGCfGNKZmwdrAYpGCu1mXBOmQApkTFiLaUVnVA/expression_edit_preview562.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x2y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/Q9VSYyfgjcwsGi2X1IZcffWhespAikG6ffrD0rXYOUgTCV1ZF/expression_edit_preview549.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x3y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/QeAFtsA609xpXqOKrd84FIVd9e2DFMM2emvnjns8RM4wpqOrA/expression_edit_preview577.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x4y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/ELGz7f1mx1VMISHNGqyDcjRwA6cmIrILzWdX4RM1tGTEqqzKA/expression_edit_preview546.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x5y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/GefySXweywMXnJeb2SgBB6jr6I8AzYvIeYTNLzKZs3felqqzKA/expression_edit_preview599.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x6y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/ZwxcGf0WPPUmAKWo1z4vwGWeF9pOmePFOOGJAxAqSuaTqqOrA/expression_edit_preview596.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x7y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/dHdfkJdHsA0vFiHSmFedAtftskg9OPTMW4Yc6cB9HfHYQVdWB/expression_edit_preview545.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 1024
+		},
+		{
+			"filename": "sprite_9x9_x8y2.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/yN4wJ8JfQwyoL6AA9B6sHJGvoe6vLegDcAavwzWV7ytFqqOrA/expression_edit_preview589.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 1024
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/9WFE0fPxyzQfR0my4G5DWGM3q6QIiXY0UeptX6z0kIwioqOrA/expression_edit_preview551.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x1y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/GlGIW1zWP6K0EVN7xb7gaVF3sXlQURPnaLmDe64hCD6qqqzKA/expression_edit_preview610.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x2y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/P0OIifdjZj2XEqbTtR3aXFSGa0W6bXNoTVIsOlRlaM0wqqzKA/expression_edit_preview623.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x3y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/RAJQeUveDJuf5IcrI7ZfUcvg6cnY6YNyv9bE7Nte4tRPqq6sC/expression_edit_preview606.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x4y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/L9Jo8studFJGBJfKeAqK9jZ2jEIANGZzB8YUbpGXJ0ULUVnVA/expression_edit_preview550.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x5y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/MaYEShv6F4rTPxAzZs8BSI6dJfOfffEXu6hQsiIfhFP7qq6sC/expression_edit_preview611.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x6y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/7f7StnTihZ2EHy1zRI62CiR0T2GYvzDffBwfgeIhe3huQV1ZF/expression_edit_preview588.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x7y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/j9eIb4ZfRqqGlU1I3bHvR5HjeDlS08ch1LBAPGLgQbJ3pqOrA/expression_edit_preview580.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 1536
+		},
+		{
+			"filename": "sprite_9x9_x8y3.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/lWTuSDPqW2JfeUfHK5fUVJnQQxbZFyXEui5v0mrVaYaaRVdWB/expression_edit_preview556.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 1536
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/8vR1Mt0HRgKOHB8b3DG6eiluDcJmatWWqbf7aPXmhWtRVVnVA/expression_edit_preview605.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x1y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/eLlWlZscdZVBf0FfAxBjiRLYmkAeP829SVm2dThtLflNkq6sC/expression_edit_preview572.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x2y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/spYz4KtsGA40PFGJrckT205DHgSuMN1meCotyty3zyROqqzKA/expression_edit_preview565.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x3y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/nmDPUBnltezLU6Spel6uiKG7L8Ecek3N83cqhYWcTKPnqqOrA/expression_edit_preview608.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x4y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/9NqC3DFtCA60JR5yTXBlk1ICppROtYEQXft7whnPtgkmqqzKA/expression_edit_preview601.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x5y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/Xmp8dvmcUlZEG5ENfdFddiBRM4avlYUSOUBJ4a4aoTefqqOrA/expression_edit_preview622.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x6y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/phsMF3lxglbfRqn5fENqaf8enmU1A6qDm5rBFgoayaRfiq6sC/expression_edit_preview558.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x7y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/YmLjVC3nv95IIJnru3NMs88Bbf6JteTSVVzo9bZAUn2WUVnVA/expression_edit_preview557.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 2048
+		},
+		{
+			"filename": "sprite_9x9_x8y4.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/FeKVHyOexbpo700lxUU45na1gQXPn8pDeCT4q1wxiuV2pqOrA/expression_edit_preview581.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 2048
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/Rlj8D7UWI96VCxc6y4FtgoUVdMFpRUqRRanijKvou7HHV1ZF/expression_edit_preview564.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x1y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/PA2fVb2KOXUCH6u6gEfa8AKO2zBM8roOpNcKOphiYrwTVVnVA/expression_edit_preview607.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x2y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/bLxi0cB0sjaQGhVrApJ6lMGJdJmGI8afXMlR4i6HjmwlqqzKA/expression_edit_preview598.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x3y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/txu7de18e1uI70sGyzzOABHYMny1eP7YHLRcTwt4et54RVdWB/expression_edit_preview569.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x4y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/RcCHmhGhBR5KLFMXeh0UzauTGpxhKcxL4uNxwrxBK3IKqqzKA/expression_edit_preview554.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x5y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/OQY6VtIButaFANQ3eMRzgv48RwLd1kZlMlI7foBpeLWkoqOrA/expression_edit_preview553.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x6y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/Z5W5Xe5lX90VT6OoffJkfCnuLju74iJqI8JOJ7xJljoAVVdWB/expression_edit_preview604.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x7y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/FrlzXksJk4ZOPdjwnzTmfhI68kGeKbvMA4L5tiRDKBWcVVnVA/expression_edit_preview617.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 2560
+		},
+		{
+			"filename": "sprite_9x9_x8y5.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/M1jAlVYp9IYjH13euEnIdOJlnRwhV4CyUkcYUE3XKUeIUVnVA/expression_edit_preview547.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 2560
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/pw4V98KYs86nFN5ktv9KRxNObj6B1eCtSzcSsugGap2kqqzKA/expression_edit_preview597.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x1y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/UiJf5ke3z6gOt0jhUAqKjwZarfFa4ABu82cREfdPOCv1RVdWB/expression_edit_preview567.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x2y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/XfZkAudpbb1VUCdHOFGe5ynbdHdieeqXTDEg4S5nreKeVV1ZF/expression_edit_preview612.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x3y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/94dLF1fNBmzqcCZMWlMVH1NFFCJ03xenuNyV1JCUbuCjUVnVA/expression_edit_preview574.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x4y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/TgPjqEAJYVocGZDzDlTgziBYOxmTqisN2Kfeemh78kBApqOrA/expression_edit_preview570.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x5y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/Ne92Usbf3JnZME4oe7QbPfVlbmOE1n9ddmefhMujiexpjqqzKA/expression_edit_preview594.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x6y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/oboXkbrZOfVWYacp9YeuTszogwbgwRctMpMkmp4W8tz9UVnVA/expression_edit_preview583.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x7y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/w93VGTRibIopLBBUUH9HLiy85NSol5XG8EVWqJJdcagEV1ZF/expression_edit_preview552.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 3072
+		},
+		{
+			"filename": "sprite_9x9_x8y6.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/NIdj9d5j5RqQEVILOREKCAh98IGaVOfnxIDOvRham1hsqqzKA/expression_edit_preview614.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 3072
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/sKk4L1dcLsrMOhfP5y9bfh2Y2J3KO0NuJ20pKopEat88UVnVA/expression_edit_preview582.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x1y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/SZCN5mHB5f0FFSMD77AQbwpt4sIutukzw5EJ0tA16KrEqqzKA/expression_edit_preview548.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x2y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/d4tQAcFFOOrXN9mKEbdHy5cDZS4OvUfXQy5qbCleZ36UUVnVA/expression_edit_preview555.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x3y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/FwA7fj8B5K1AEiMGzTpsSpyA71QLptFGg2C3ZejozJwAVVnVA/expression_edit_preview587.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x4y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/JXQM7FeJx6TlOCWiSVSKFM1e3M243qU6uGqO5OOhN25OVVnVA/expression_edit_preview602.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x5y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/CdXijHnb2LJCB9ZSDtQdd9aK28Dg5rvDzarBk0DeNjXcqqzKA/expression_edit_preview576.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x6y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/3gfpipMAmwzoGqj9KriqNM8r7Bl0MCk0S7XYevu8rGmfqqOrA/expression_edit_preview621.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x7y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/Q6yWIrMkMk45NNY97yGGvef4mqCJqX8kE73qAAw3zfC6oqOrA/expression_edit_preview566.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 3584
+		},
+		{
+			"filename": "sprite_9x9_x8y7.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/AO1ek0etTvhezIEUcVwFWTquxou6UU64RLaeceI9vgqDkq6sC/expression_edit_preview571.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 3584
+		}
+	],
+	[
+		{
+			"filename": "sprite_9x9_x0y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/h6fu0ZwUqU0aYCZqKIE9BaRhV6muxFfbxPum5KBmamN6UVnVA/expression_edit_preview579.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 0,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x1y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/T162nAa7OHrVFJkH2f4H4QrZn6ymKYQSEGk22vWJn7UfUVnVA/expression_edit_preview585.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 512,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x2y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/TwfzP7FZf1k2F0qfRMLRy8kCXybokVfddNrk33APnt9XUVdWB/expression_edit_preview592.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1024,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x3y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/9iu366SVCWpMCRxTXlMfCbqAkLGhVCeJiDFCW7df1KeISVdWB/expression_edit_preview573.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 1536,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x4y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/U5eHkfWBmeZ9Eow9sCVAk6ZZfjpY5R5H3qkI0U8W1YxQUVdWB/expression_edit_preview590.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2048,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x5y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/SZeL3LyrCZzpWylHNiyekiXILJ9g0fk2Nwrzv5KJxePXUVdWB/expression_edit_preview593.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 2560,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x6y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/acBffNfRlpSxKI3DliifNnwbm5bzWdnxwA9ajYMrYsV2UVdWB/expression_edit_preview600.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3072,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x7y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/uoTU6fKAHmXHUKFVnRd3sIhxCcOjSkS6cXK00A1EosmwqqzKA/expression_edit_preview624.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 3584,
+			"spriteSheetY": 4096
+		},
+		{
+			"filename": "sprite_9x9_x8y8.webp",
+			"spriteUrl": "https://replicate.delivery/xezq/bfdzqoIl9U0gQCY7aYPRPGriZMCgdBSbWAynHHzt5IOdqqzKA/expression_edit_preview578.webp",
+			"width": 512,
+			"height": 512,
+			"spriteSheetX": 4096,
+			"spriteSheetY": 4096
+		}
+	]
 ]

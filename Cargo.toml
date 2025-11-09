@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = ["apps/*/src-tauri"]
+
+[workspace.package]
+authors = ["@bennobuilder"]
+license = "AGPL-3.0-or-later"
+edition = "2021"

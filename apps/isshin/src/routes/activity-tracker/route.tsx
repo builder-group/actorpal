@@ -1,11 +1,13 @@
 import { listen } from '@tauri-apps/api/event';
 import { confirm } from '@tauri-apps/plugin-dialog';
-import { ClockIcon, TrashIcon } from 'lucide-react';
+import { ArrowLeftIcon, ClockIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
+import { useNavigate } from 'react-router';
 import { specta } from '@/environment';
 import { formatDuration, formatDurationLong } from '@/lib';
 
 const Page: React.FC = () => {
+	const navigate = useNavigate();
 	const [currentActivity, setCurrentActivity] = React.useState<TActivityUpdatePayload | null>(null);
 	const [todayStats, setTodayStats] = React.useState<specta.DailyStats | null>(null);
 	const [isClearing, setIsClearing] = React.useState(false);
@@ -78,6 +80,13 @@ const Page: React.FC = () => {
 		<main className="min-h-screen bg-gray-50 p-8">
 			<div className="mx-auto max-w-7xl">
 				<header className="mb-8">
+					<button
+						onClick={() => navigate(-1)}
+						className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
+					>
+						<ArrowLeftIcon className="h-5 w-5" />
+						Back
+					</button>
 					<div className="flex items-center justify-between">
 						<div>
 							<h1 className="mb-2 text-3xl font-bold text-gray-900">Activity Tracker</h1>

@@ -12,9 +12,22 @@
 	"app": {
 		"windows": [
 			{
-				"title": "isshin",
+				"label": "main",
+				"title": "Isshin",
 				"width": 800,
-				"height": 600
+				"height": 600,
+				"visible": false,
+				"skipTaskbar": true
+			},
+			{
+				"label": "settings",
+				"title": "Settings",
+				"url": "/settings",
+				"width": 600,
+				"height": 400,
+				"visible": false,
+				"skipTaskbar": true,
+				"center": true
 			}
 		],
 		"security": {

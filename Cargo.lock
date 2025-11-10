@@ -534,8 +534,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "145052bdd345b87320e369255277e3fb5152762ad123a901ef5c262dd38fe8d2"
 dependencies = [
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-link 0.2.1",
 ]
 
@@ -1866,6 +1868,8 @@ name = "isshin"
 version = "0.0.1"
 dependencies = [
  "active-win-pos-rs",
+ "chrono",
+ "dirs",
  "serde",
  "serde_json",
  "specta",
@@ -1876,6 +1880,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-opener",
  "tauri-specta",
+ "tokio",
 ]
 
 [[package]]

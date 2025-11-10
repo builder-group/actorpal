@@ -43,6 +43,33 @@ async getBlockedWebsites() : Promise<Result<string[], string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getActivityEntries() : Promise<Result<ActivityEntry[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_activity_entries") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getTodayStats() : Promise<Result<DailyStats, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_today_stats") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearTrackingData() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_tracking_data") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async showSettingsWindow() : Promise<void> {
+    await TAURI_INVOKE("show_settings_window");
 }
 }
 
@@ -56,6 +83,9 @@ async getBlockedWebsites() : Promise<Result<string[], string>> {
 
 /** user-defined types **/
 
+export type ActivityEntry = { application: string; window_title: string | null; start_time: number; end_time: number; duration_seconds: number }
+export type ActivitySummary = { application: string; total_duration_seconds: number; percentage: number }
+export type DailyStats = { date: string; total_time_seconds: number; activities: ActivitySummary[] }
 export type ProcessInfo = { id: string; nume: string; running_time_formatted: string; memory_in_bytes: number }
 
 /** tauri-specta globals **/

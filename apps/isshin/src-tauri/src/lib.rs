@@ -3,8 +3,94 @@ mod features;
 use features::app;
 use features::hosts;
 use features::process;
+use features::tracking;
 use specta_typescript::Typescript;
+use tauri::{
+    menu::{Menu, MenuBuilder, MenuItem},
+    tray::{TrayIcon, TrayIconBuilder},
+    AppHandle, Manager, WebviewWindow, WindowEvent,
+};
 use tauri_specta::{collect_commands, Builder};
+
+fn show_window(app: &AppHandle, label: &str) {
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+fn toggle_window(app: &AppHandle, label: &str) {
+    if let Some(window) = app.get_webview_window(label) {
+        if window.is_visible().unwrap_or(false) {
+            let _ = window.hide();
+        } else {
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }
+}
+
+fn setup_tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
+    let show_dashboard =
+        MenuItem::with_id(app, "show_dashboard", "Show Dashboard", true, None::<&str>)?;
+    let show_settings =
+        MenuItem::with_id(app, "show_settings", "Show Settings", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+
+    MenuBuilder::new(app)
+        .item(&show_dashboard)
+        .item(&show_settings)
+        .separator()
+        .item(&quit)
+        .build()
+}
+
+fn handle_tray_menu_event(app: &AppHandle, event_id: &str) {
+    match event_id {
+        "show_dashboard" => show_window(app, "main"),
+        "show_settings" => show_window(app, "settings"),
+        "quit" => app.exit(0),
+        _ => {}
+    }
+}
+
+fn setup_window_close_handler(window: &WebviewWindow) {
+    let window_clone = window.clone();
+    window.on_window_event(move |event| {
+        if let WindowEvent::CloseRequested { api, .. } = event {
+            api.prevent_close();
+            let _ = window_clone.hide();
+        }
+    });
+}
+
+fn setup_tray(app: &AppHandle) -> tauri::Result<TrayIcon<tauri::Wry>> {
+    let menu = setup_tray_menu(app)?;
+
+    TrayIconBuilder::new()
+        .icon(app.default_window_icon().unwrap().clone())
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .tooltip("Isshin")
+        .on_menu_event(|app, event| handle_tray_menu_event(app, event.id().as_ref()))
+        .on_tray_icon_event(|tray, event| {
+            if let tauri::tray::TrayIconEvent::Click {
+                button: tauri::tray::MouseButton::Left,
+                button_state: tauri::tray::MouseButtonState::Up,
+                ..
+            } = event
+            {
+                toggle_window(tray.app_handle(), "main");
+            }
+        })
+        .build(app)
+}
+
+#[tauri::command]
+#[specta::specta]
+fn show_settings_window(app: AppHandle) {
+    show_window(&app, "settings");
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,7 +102,11 @@ pub fn run() {
         app::commands::get_focused_application,
         hosts::commands::block_websites,
         hosts::commands::unblock_website,
-        hosts::commands::get_blocked_websites
+        hosts::commands::get_blocked_websites,
+        tracking::commands::get_activity_entries,
+        tracking::commands::get_today_stats,
+        tracking::commands::clear_tracking_data,
+        show_settings_window
     ]);
 
     #[cfg(debug_assertions)]
@@ -32,7 +122,29 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
+            // https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html
             builder.mount_events(app);
+
+            #[cfg(target_os = "macos")]
+            {
+                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                let _ = setup_tray(app.handle());
+            }
+
+            // Setup window close handlers to hide instead of quit
+            if let Some(main_window) = app.get_webview_window("main") {
+                setup_window_close_handler(&main_window);
+            }
+            if let Some(settings_window) = app.get_webview_window("settings") {
+                setup_window_close_handler(&settings_window);
+            }
+
+            // Start background activity monitoring
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                tracking::monitor::start_monitoring(handle).await;
+            });
+
             Ok(())
         })
         .run(tauri::generate_context!())

@@ -1,13 +1,18 @@
 import { invoke } from '@tauri-apps/api/core';
+import { confirm, message } from '@tauri-apps/plugin-dialog';
+import { ArrowLeftIcon, XIcon } from 'lucide-react';
 import React from 'react';
+import { useNavigate } from 'react-router';
 import { ProcessCard } from '@/components';
 import { formatBytes } from '@/lib';
 import { TProcessInfo } from '@/types';
 
 const Page: React.FC = () => {
+	const navigate = useNavigate();
 	const [processes, setProcesses] = React.useState<TProcessInfo[]>([]);
 	const [maxMemoryProcess, setMaxMemoryProcess] = React.useState<TProcessInfo | null>(null);
 	const [maxRunningProcess, setMaxRunningProcess] = React.useState<TProcessInfo | null>(null);
+	const [killingProcessId, setKillingProcessId] = React.useState<string | null>(null);
 
 	React.useEffect(() => {
 		async function loadData() {
@@ -23,10 +28,41 @@ const Page: React.FC = () => {
 		return () => clearInterval(interval);
 	}, []);
 
+	async function handleKillProcess(processId: string, processName: string) {
+		const confirmed = await confirm(
+			`Are you sure you want to kill "${processName}" (PID: ${processId})?`,
+			{
+				title: 'Kill Process',
+				kind: 'warning'
+			}
+		);
+		if (!confirmed) {
+			return;
+		}
+
+		setKillingProcessId(processId);
+		const success = await invoke<boolean>('kill_process', { id: processId });
+		setKillingProcessId(null);
+
+		if (!success) {
+			await message(`Failed to kill process "${processName}"`, {
+				title: 'Error',
+				kind: 'error'
+			});
+		}
+	}
+
 	return (
 		<main className="min-h-screen bg-gray-50 p-8">
 			<div className="mx-auto max-w-7xl">
 				<header className="mb-8">
+					<button
+						onClick={() => navigate(-1)}
+						className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-gray-600 transition-colors hover:text-gray-900"
+					>
+						<ArrowLeftIcon className="h-5 w-5" />
+						Back
+					</button>
 					<h1 className="mb-2 text-3xl font-bold text-gray-900">Process Monitor</h1>
 					<p className="text-gray-600">Real-time system process information</p>
 				</header>
@@ -60,6 +96,9 @@ const Page: React.FC = () => {
 									<th className="px-6 py-3 text-left text-xs font-medium tracking-wider text-gray-500 uppercase">
 										Memory
 									</th>
+									<th className="px-6 py-3 text-right text-xs font-medium tracking-wider text-gray-500 uppercase">
+										Actions
+									</th>
 								</tr>
 							</thead>
 							<tbody className="divide-y divide-gray-200 bg-white">
@@ -78,6 +117,17 @@ const Page: React.FC = () => {
 											<p className="text-sm text-gray-900">
 												{formatBytes(process.memory_in_bytes)}
 											</p>
+										</td>
+										<td className="px-6 py-4 text-right whitespace-nowrap">
+											<button
+												onClick={() => handleKillProcess(process.id, process.nume)}
+												disabled={killingProcessId === process.id}
+												className="inline-flex items-center gap-1 rounded-md bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+												title={`Kill ${process.nume}`}
+											>
+												<XIcon className="h-4 w-4" />
+												{killingProcessId === process.id ? 'Killing...' : 'Kill'}
+											</button>
 										</td>
 									</tr>
 								))}

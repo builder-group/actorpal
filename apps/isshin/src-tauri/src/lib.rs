@@ -104,14 +104,28 @@ fn list_process() -> Vec<ProcessInfo> {
     return processes;
 }
 
+#[tauri::command]
+fn kill_process(id: &str) -> bool {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
+    return sys
+        .processes()
+        .iter()
+        .find(|(pid, _)| pid.to_string().eq_ignore_ascii_case(id))
+        .map_or(false, |(_, process)| process.kill());
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             list_process,
             max_running_process,
-            max_memory
+            max_memory,
+            kill_process
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

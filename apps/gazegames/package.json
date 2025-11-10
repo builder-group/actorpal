@@ -16,7 +16,6 @@
 	"type": "module",
 	"scripts": {
 		"build": "pnpm typecheck && react-router build",
-		"build:prod": "export NODE_ENV=production && pnpm build",
 		"clean": "shx rm -rf build && shx rm -rf .react-router && shx rm -rf .turbo && shx rm -rf node_modules",
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"install:clean": "pnpm run clean && pnpm install",

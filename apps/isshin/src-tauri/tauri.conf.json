@@ -4,10 +4,10 @@
 	"version": "0.0.1",
 	"identifier": "com.buildergroup.isshin",
 	"build": {
-		"beforeDevCommand": "pnpm vite:dev",
+		"beforeDevCommand": "pnpm pre:dev",
 		"devUrl": "http://localhost:1420",
-		"beforeBuildCommand": "pnpm vite:build",
-		"frontendDist": "../dist"
+		"beforeBuildCommand": "pnpm pre:build",
+		"frontendDist": "../build/client"
 	},
 	"app": {
 		"windows": [

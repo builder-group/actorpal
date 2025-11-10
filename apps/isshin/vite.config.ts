@@ -1,13 +1,12 @@
+import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 const host = process.env['TAURI_DEV_HOST'];
 
-// https://vite.dev/config/
-export default defineConfig(async () => ({
-	plugins: [tailwindcss(), react(), tsconfigPaths()],
+export default defineConfig({
+	plugins: [tailwindcss(), reactRouter(), tsconfigPaths()],
 
 	// Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
 	//
@@ -30,4 +29,4 @@ export default defineConfig(async () => ({
 			ignored: ['**/src-tauri/**']
 		}
 	}
-}));
+});

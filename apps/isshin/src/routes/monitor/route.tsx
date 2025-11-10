@@ -3,9 +3,8 @@ import React from 'react';
 import { ProcessCard } from '@/components';
 import { formatBytes } from '@/lib';
 import { TProcessInfo } from '@/types';
-import './styles.css';
 
-const App: React.FC = () => {
+const Page: React.FC = () => {
 	const [processes, setProcesses] = React.useState<TProcessInfo[]>([]);
 	const [maxMemoryProcess, setMaxMemoryProcess] = React.useState<TProcessInfo | null>(null);
 	const [maxRunningProcess, setMaxRunningProcess] = React.useState<TProcessInfo | null>(null);
@@ -91,4 +90,4 @@ const App: React.FC = () => {
 	);
 };
 
-export default App;
+export default Page;

@@ -16,29 +16,34 @@
 	"type": "module",
 	"scripts": {
 		"build": "tauri build",
-		"clean": "shx rm -rf dist && shx rm -rf target && shx rm -rf .turbo && shx rm -rf node_modules",
+		"clean": "shx rm -rf target && shx rm -rf build && shx rm -rf .react-router && shx rm -rf .turbo && shx rm -rf node_modules",
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"install:clean": "pnpm run clean && pnpm install",
 		"lint": "eslint . --fix",
+		"pre:build": "pnpm typecheck && react-router build",
+		"pre:dev": "react-router dev",
 		"start:dev": "tauri dev",
 		"test": "echo \"🧪 No tests defined yet.\"",
-		"typecheck": "tsc --noEmit",
-		"update:latest": "pnpm update --latest",
-		"vite:build": "pnpm typecheck && vite build",
-		"vite:dev": "vite"
+		"typecheck": "react-router typegen && tsc --noEmit",
+		"update:latest": "pnpm update --latest"
 	},
 	"dependencies": {
+		"@react-router/fs-routes": "^7.9.5",
+		"@react-router/node": "^7.9.5",
+		"@react-router/serve": "^7.9.5",
 		"@tauri-apps/api": "^2.9.0",
 		"@tauri-apps/plugin-opener": "^2.5.2",
+		"isbot": "^5.1.32",
 		"react": "^19.2.0",
-		"react-dom": "^19.2.0"
+		"react-dom": "^19.2.0",
+		"react-router": "^7.9.5"
 	},
 	"devDependencies": {
+		"@react-router/dev": "^7.9.5",
 		"@tailwindcss/vite": "^4.1.17",
 		"@tauri-apps/cli": "^2.9.4",
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
-		"@vitejs/plugin-react": "^5.1.0",
 		"tailwindcss": "^4.1.17",
 		"vite-tsconfig-paths": "^5.1.4"
 	}

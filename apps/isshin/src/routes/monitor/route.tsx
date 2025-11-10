@@ -13,15 +13,18 @@ const Page: React.FC = () => {
 	const [maxMemoryProcess, setMaxMemoryProcess] = React.useState<TProcessInfo | null>(null);
 	const [maxRunningProcess, setMaxRunningProcess] = React.useState<TProcessInfo | null>(null);
 	const [killingProcessId, setKillingProcessId] = React.useState<string | null>(null);
+	const [focusedApp, setFocusedApp] = React.useState<string | null>(null);
 
 	React.useEffect(() => {
 		async function loadData() {
 			const processList = await invoke<TProcessInfo[]>('list_process');
 			const maxMemoryProcess = await invoke<TProcessInfo>('max_memory');
 			const maxRunningProcess = await invoke<TProcessInfo>('max_running_process');
+			const focused = await invoke<string | null>('get_focused_application');
 			setMaxMemoryProcess(maxMemoryProcess);
 			setMaxRunningProcess(maxRunningProcess);
 			setProcesses(processList);
+			setFocusedApp(focused);
 		}
 
 		const interval = setInterval(loadData, 1000);
@@ -67,7 +70,18 @@ const Page: React.FC = () => {
 					<p className="text-gray-600">Real-time system process information</p>
 				</header>
 
-				<div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+				<div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+					{focusedApp != null && (
+						<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+							<h3 className="mb-4 text-sm font-medium tracking-wide text-gray-500 uppercase">
+								Active Application
+							</h3>
+							<div>
+								<p className="text-lg font-semibold text-gray-900">{focusedApp}</p>
+								<p className="mt-1 text-xs text-gray-400">Currently in focus</p>
+							</div>
+						</div>
+					)}
 					{maxMemoryProcess != null && (
 						<ProcessCard title="Max Memory Process" process={maxMemoryProcess} />
 					)}

@@ -4,12 +4,6 @@ use sysinfo::{Process, ProcessStatus, System};
 #[cfg(target_os = "macos")]
 const APPLICATION_DIRS: &[&str] = &["/Applications", "/Users/*/Applications"];
 
-#[cfg(target_os = "windows")]
-const APPLICATION_DIRS: &[&str] = &["C:\\Program Files", "C:\\Program Files (x86)"];
-
-#[cfg(target_os = "linux")]
-const APPLICATION_DIRS: &[&str] = &["/usr/bin", "/usr/local/bin", "/opt"];
-
 const HELPER_KEYWORDS: &[&str] = &["helper", "service", "daemon", "agent", "."];
 
 #[derive(Serialize, Deserialize)]
@@ -116,6 +110,13 @@ fn kill_process(id: &str) -> bool {
         .map_or(false, |(_, process)| process.kill());
 }
 
+#[tauri::command]
+fn get_focused_application() -> Option<String> {
+    active_win_pos_rs::get_active_window()
+        .ok()
+        .map(|window| window.app_name)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -125,7 +126,8 @@ pub fn run() {
             list_process,
             max_running_process,
             max_memory,
-            kill_process
+            kill_process,
+            get_focused_application
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

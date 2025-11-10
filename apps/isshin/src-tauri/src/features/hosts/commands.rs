@@ -48,6 +48,7 @@ fn write_hosts_file(hosts: &HostsFile) -> Result<(), String> {
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn block_websites(domains: Vec<String>) -> Result<usize, String> {
     if domains.is_empty() {
         return Ok(0);
@@ -70,11 +71,12 @@ pub fn block_websites(domains: Vec<String>) -> Result<usize, String> {
     hosts.add(new_sites.clone());
     write_hosts_file(&hosts)?;
 
-    Ok(new_sites.len())
+    return Ok(new_sites.len());
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn unblock_website(domain: String) -> Result<bool, String> {
     let hosts_path = PathBuf::from(HOSTS_PATH);
     let mut hosts =
@@ -88,15 +90,16 @@ pub fn unblock_website(domain: String) -> Result<bool, String> {
     hosts.delete(vec![domain]);
     write_hosts_file(&hosts)?;
 
-    Ok(true)
+    return Ok(true);
 }
 
 #[cfg(target_os = "macos")]
 #[tauri::command]
+#[specta::specta]
 pub fn get_blocked_websites() -> Result<Vec<String>, String> {
     let hosts_path = PathBuf::from(HOSTS_PATH);
     let hosts =
         HostsFile::new(hosts_path).map_err(|e| format!("Failed to read hosts file: {}", e))?;
 
-    Ok(hosts.blocked_sites())
+    return Ok(hosts.blocked_sites());
 }

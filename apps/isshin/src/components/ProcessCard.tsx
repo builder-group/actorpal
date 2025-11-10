@@ -1,6 +1,6 @@
 import React from 'react';
+import { specta } from '@/environment';
 import { formatBytes } from '@/lib';
-import { TProcessInfo } from '@/types';
 
 export const ProcessCard: React.FC<TProcessCardProps> = (props) => {
 	const { title, process } = props;
@@ -32,5 +32,5 @@ export const ProcessCard: React.FC<TProcessCardProps> = (props) => {
 
 interface TProcessCardProps {
 	title: string;
-	process: TProcessInfo;
+	process: specta.ProcessInfo;
 }

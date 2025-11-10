@@ -6,7 +6,7 @@ const APPLICATION_DIRS: &[&str] = &["/Applications", "/Users/*/Applications"];
 
 const HELPER_KEYWORDS: &[&str] = &["helper", "service", "daemon", "agent", "."];
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, specta::Type)]
 pub struct ProcessInfo {
     pub id: String,
     pub nume: String,
@@ -60,6 +60,7 @@ fn get_system_with_processes() -> System {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn list_process() -> Vec<ProcessInfo> {
     let sys = get_system_with_processes();
 
@@ -71,37 +72,43 @@ pub fn list_process() -> Vec<ProcessInfo> {
         .collect();
 
     processes.sort_by(|a, b| a.nume.to_lowercase().cmp(&b.nume.to_lowercase()));
-    processes
+    return processes;
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn max_running_process() -> Option<ProcessInfo> {
     let sys = get_system_with_processes();
 
-    sys.processes()
+    return sys
+        .processes()
         .iter()
         .filter(|(_, process)| is_valid_process(process))
         .max_by_key(|(_, process)| process.run_time())
-        .map(|(id, process)| create_process_info(id, process))
+        .map(|(id, process)| create_process_info(id, process));
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn max_memory() -> Option<ProcessInfo> {
     let sys = get_system_with_processes();
 
-    sys.processes()
+    return sys
+        .processes()
         .iter()
         .filter(|(_, process)| is_valid_process(process))
         .max_by_key(|(_, process)| process.memory())
-        .map(|(id, process)| create_process_info(id, process))
+        .map(|(id, process)| create_process_info(id, process));
 }
 
 #[tauri::command]
+#[specta::specta]
 pub fn kill_process(id: &str) -> bool {
     let sys = get_system_with_processes();
 
-    sys.processes()
+    return sys
+        .processes()
         .iter()
         .find(|(pid, _)| pid.to_string().eq_ignore_ascii_case(id))
-        .map_or(false, |(_, process)| process.kill())
+        .map_or(false, |(_, process)| process.kill());
 }

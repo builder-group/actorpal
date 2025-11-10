@@ -1,26 +1,25 @@
-import { invoke } from '@tauri-apps/api/core';
-import { confirm, message } from '@tauri-apps/plugin-dialog';
+import { confirm } from '@tauri-apps/plugin-dialog';
 import { ArrowLeftIcon, XIcon } from 'lucide-react';
 import React from 'react';
 import { useNavigate } from 'react-router';
 import { ProcessCard } from '@/components';
+import { specta } from '@/environment';
 import { formatBytes } from '@/lib';
-import { TProcessInfo } from '@/types';
 
 const Page: React.FC = () => {
 	const navigate = useNavigate();
-	const [processes, setProcesses] = React.useState<TProcessInfo[]>([]);
-	const [maxMemoryProcess, setMaxMemoryProcess] = React.useState<TProcessInfo | null>(null);
-	const [maxRunningProcess, setMaxRunningProcess] = React.useState<TProcessInfo | null>(null);
+	const [processes, setProcesses] = React.useState<specta.ProcessInfo[]>([]);
+	const [maxMemoryProcess, setMaxMemoryProcess] = React.useState<specta.ProcessInfo | null>(null);
+	const [maxRunningProcess, setMaxRunningProcess] = React.useState<specta.ProcessInfo | null>(null);
 	const [killingProcessId, setKillingProcessId] = React.useState<string | null>(null);
 	const [focusedApp, setFocusedApp] = React.useState<string | null>(null);
 
 	React.useEffect(() => {
 		async function loadData() {
-			const processList = await invoke<TProcessInfo[]>('list_process');
-			const maxMemoryProcess = await invoke<TProcessInfo>('max_memory');
-			const maxRunningProcess = await invoke<TProcessInfo>('max_running_process');
-			const focused = await invoke<string | null>('get_focused_application');
+			const processList = await specta.commands.listProcess();
+			const maxMemoryProcess = await specta.commands.maxMemory();
+			const maxRunningProcess = await specta.commands.maxRunningProcess();
+			const focused = await specta.commands.getFocusedApplication();
 			setMaxMemoryProcess(maxMemoryProcess);
 			setMaxRunningProcess(maxRunningProcess);
 			setProcesses(processList);
@@ -44,15 +43,8 @@ const Page: React.FC = () => {
 		}
 
 		setKillingProcessId(processId);
-		const success = await invoke<boolean>('kill_process', { id: processId });
+		await specta.commands.killProcess(processId);
 		setKillingProcessId(null);
-
-		if (!success) {
-			await message(`Failed to kill process "${processName}"`, {
-				title: 'Error',
-				kind: 'error'
-			});
-		}
 	}
 
 	return (

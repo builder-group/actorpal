@@ -1,8 +1,8 @@
-import { invoke } from '@tauri-apps/api/core';
 import { confirm, message } from '@tauri-apps/plugin-dialog';
 import { ArrowLeftIcon, PlusIcon, TrashIcon, XIcon } from 'lucide-react';
 import React from 'react';
 import { useNavigate } from 'react-router';
+import { specta } from '@/environment';
 
 const Page: React.FC = () => {
 	const navigate = useNavigate();
@@ -11,16 +11,16 @@ const Page: React.FC = () => {
 	const [newSite, setNewSite] = React.useState('');
 	const [isLoading, setIsLoading] = React.useState(false);
 
-	React.useEffect(() => {
-		loadBlockedSites();
-	}, []);
-
 	async function loadBlockedSites() {
-		try {
-			const sites = await invoke<string[]>('get_blocked_websites');
-			setBlockedSites(sites);
-		} catch (error) {
-			console.error('Failed to load blocked sites:', error);
+		const result = await specta.commands.getBlockedWebsites();
+		if (result.status === 'ok') {
+			setBlockedSites(result.data);
+		} else {
+			console.error('Failed to load blocked sites:', result.error);
+			await message(`Failed to load blocked sites: ${result.error}`, {
+				title: 'Error',
+				kind: 'error'
+			});
 		}
 	}
 
@@ -84,22 +84,21 @@ const Page: React.FC = () => {
 		}
 
 		setIsLoading(true);
-		try {
-			const count = await invoke<number>('block_websites', { domains: pendingSites });
+		const result = await specta.commands.blockWebsites(pendingSites);
+		if (result.status === 'ok') {
 			setPendingSites([]);
 			await loadBlockedSites();
-			await message(`Successfully blocked ${count} website${count === 1 ? '' : 's'}`, {
+			await message(`Successfully blocked ${result.data} website${result.data === 1 ? '' : 's'}`, {
 				title: 'Success',
 				kind: 'info'
 			});
-		} catch (error) {
-			await message(`Failed to block websites: ${error}`, {
+		} else {
+			await message(`Failed to block websites: ${result.error}`, {
 				title: 'Error',
 				kind: 'error'
 			});
-		} finally {
-			setIsLoading(false);
 		}
+		setIsLoading(false);
 	}
 
 	async function handleRemoveSite(domain: string) {
@@ -113,9 +112,9 @@ const Page: React.FC = () => {
 		}
 
 		setIsLoading(true);
-		try {
-			const result = await invoke<boolean>('unblock_website', { domain });
-			if (result) {
+		const result = await specta.commands.unblockWebsite(domain);
+		if (result.status === 'ok') {
+			if (result.data) {
 				await loadBlockedSites();
 				await message(`Successfully unblocked ${domain}`, {
 					title: 'Success',
@@ -127,14 +126,13 @@ const Page: React.FC = () => {
 					kind: 'info'
 				});
 			}
-		} catch (error) {
-			await message(`Failed to unblock ${domain}: ${error}`, {
+		} else {
+			await message(`Failed to unblock ${domain}: ${result.error}`, {
 				title: 'Error',
 				kind: 'error'
 			});
-		} finally {
-			setIsLoading(false);
 		}
+		setIsLoading(false);
 	}
 
 	async function handleUnblockAll() {
@@ -155,49 +153,42 @@ const Page: React.FC = () => {
 		}
 
 		setIsLoading(true);
-		try {
-			let successCount = 0;
-			let failCount = 0;
+		let successCount = 0;
+		let failCount = 0;
 
-			for (const domain of blockedSites) {
-				try {
-					const result = await invoke<boolean>('unblock_website', { domain });
-					if (result) {
-						successCount++;
-					}
-				} catch (error) {
-					failCount++;
-					console.error(`Failed to unblock ${domain}:`, error);
-				}
-			}
-
-			await loadBlockedSites();
-
-			if (failCount === 0) {
-				await message(
-					`Successfully unblocked all ${successCount} website${successCount === 1 ? '' : 's'}`,
-					{
-						title: 'Success',
-						kind: 'info'
-					}
-				);
+		for (const domain of blockedSites) {
+			const result = await specta.commands.unblockWebsite(domain);
+			if (result.status === 'ok' && result.data) {
+				successCount++;
 			} else {
-				await message(
-					`Unblocked ${successCount} website${successCount === 1 ? '' : 's'}, ${failCount} failed`,
-					{
-						title: 'Partial Success',
-						kind: 'warning'
-					}
+				failCount++;
+				console.error(
+					`Failed to unblock ${domain}:`,
+					result.status === 'error' ? result.error : 'Not blocked'
 				);
 			}
-		} catch (error) {
-			await message(`Failed to unblock websites: ${error}`, {
-				title: 'Error',
-				kind: 'error'
-			});
-		} finally {
-			setIsLoading(false);
 		}
+
+		await loadBlockedSites();
+
+		if (failCount === 0) {
+			await message(
+				`Successfully unblocked all ${successCount} website${successCount === 1 ? '' : 's'}`,
+				{
+					title: 'Success',
+					kind: 'info'
+				}
+			);
+		} else {
+			await message(
+				`Unblocked ${successCount} website${successCount === 1 ? '' : 's'}, ${failCount} failed`,
+				{
+					title: 'Partial Success',
+					kind: 'warning'
+				}
+			);
+		}
+		setIsLoading(false);
 	}
 
 	async function handleKeyPress(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -205,6 +196,10 @@ const Page: React.FC = () => {
 			await handleAddToPending();
 		}
 	}
+
+	React.useEffect(() => {
+		void loadBlockedSites();
+	}, []);
 
 	return (
 		<main className="min-h-screen bg-gray-50 p-8">

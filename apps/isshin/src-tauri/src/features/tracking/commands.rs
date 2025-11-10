@@ -1,5 +1,5 @@
 use super::storage::ActivityStorage;
-use super::types::{ActivityEntry, ActivitySummary, DailyStats};
+use super::types::{ActivityEntry, ActivitySummary, DailyStats, WebsiteSummary};
 use chrono::{Local, Timelike};
 use std::collections::HashMap;
 
@@ -33,19 +33,35 @@ pub fn get_today_stats() -> Result<DailyStats, String> {
         .collect();
 
     // Calculate total time and per-app summaries
-    let mut app_durations: HashMap<String, u64> = HashMap::new();
+    // Group by identifier (bundle_id if available, otherwise application name)
+    let mut app_durations: HashMap<String, (String, Option<String>, u64)> = HashMap::new(); // (identifier, (display_name, bundle_id, duration))
+    let mut website_durations: HashMap<String, u64> = HashMap::new();
     let mut total_time: u64 = 0;
 
     for entry in today_entries {
         let duration = entry.duration_seconds;
-        *app_durations.entry(entry.application.clone()).or_insert(0) += duration;
+        let identifier = entry.identifier();
+
+        // Use the most recent application name and bundle_id for display (in case it changed)
+        app_durations
+            .entry(identifier)
+            .and_modify(|(_, _, d)| *d += duration)
+            .or_insert((entry.application.clone(), entry.bundle_id.clone(), duration));
+
+        // Extract domain from URL if present
+        if let Some(ref url) = entry.url {
+            if let Some(domain) = extract_domain(url) {
+                *website_durations.entry(domain).or_insert(0) += duration;
+            }
+        }
+
         total_time += duration;
     }
 
-    // Create summaries
+    // Create app summaries
     let mut activities: Vec<ActivitySummary> = app_durations
         .into_iter()
-        .map(|(app, duration)| {
+        .map(|(_, (display_name, bundle_id, duration))| {
             let percentage = if total_time > 0 {
                 (duration as f64 / total_time as f64) * 100.0
             } else {
@@ -53,7 +69,8 @@ pub fn get_today_stats() -> Result<DailyStats, String> {
             };
 
             ActivitySummary {
-                application: app,
+                application: display_name,
+                bundle_id,
                 total_duration_seconds: duration,
                 percentage,
             }
@@ -63,11 +80,63 @@ pub fn get_today_stats() -> Result<DailyStats, String> {
     // Sort by duration (descending)
     activities.sort_by(|a, b| b.total_duration_seconds.cmp(&a.total_duration_seconds));
 
+    // Create website summaries
+    let mut websites: Vec<WebsiteSummary> = website_durations
+        .into_iter()
+        .map(|(domain, duration)| {
+            let percentage = if total_time > 0 {
+                (duration as f64 / total_time as f64) * 100.0
+            } else {
+                0.0
+            };
+
+            WebsiteSummary {
+                domain,
+                total_duration_seconds: duration,
+                percentage,
+            }
+        })
+        .collect();
+
+    // Sort by duration (descending)
+    websites.sort_by(|a, b| b.total_duration_seconds.cmp(&a.total_duration_seconds));
+
     Ok(DailyStats {
         date: today,
         total_time_seconds: total_time,
         activities,
+        websites,
     })
+}
+
+fn extract_domain(url: &str) -> Option<String> {
+    // Simple domain extraction - handles http://, https://, and www.
+    let url = url.trim();
+
+    if url.is_empty() {
+        return None;
+    }
+
+    // Remove protocol
+    let url = url
+        .strip_prefix("http://")
+        .or_else(|| url.strip_prefix("https://"))
+        .unwrap_or(url);
+
+    // Get domain part (before first /)
+    let domain = url.split('/').next().unwrap_or(url);
+
+    // Remove www. prefix
+    let domain = domain.strip_prefix("www.").unwrap_or(domain);
+
+    // Remove port if present
+    let domain = domain.split(':').next().unwrap_or(domain);
+
+    if domain.is_empty() {
+        None
+    } else {
+        Some(domain.to_string())
+    }
 }
 
 #[tauri::command]

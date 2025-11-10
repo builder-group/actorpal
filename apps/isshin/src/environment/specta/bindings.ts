@@ -83,10 +83,11 @@ async showSettingsWindow() : Promise<void> {
 
 /** user-defined types **/
 
-export type ActivityEntry = { application: string; window_title: string | null; start_time: number; end_time: number; duration_seconds: number }
-export type ActivitySummary = { application: string; total_duration_seconds: number; percentage: number }
-export type DailyStats = { date: string; total_time_seconds: number; activities: ActivitySummary[] }
+export type ActivityEntry = { application: string; bundle_id: string | null; window_title: string | null; url: string | null; start_time: number; end_time: number; duration_seconds: number }
+export type ActivitySummary = { application: string; bundle_id: string | null; total_duration_seconds: number; percentage: number }
+export type DailyStats = { date: string; total_time_seconds: number; activities: ActivitySummary[]; websites: WebsiteSummary[] }
 export type ProcessInfo = { id: string; nume: string; running_time_formatted: string; memory_in_bytes: number }
+export type WebsiteSummary = { domain: string; total_duration_seconds: number; percentage: number }
 
 /** tauri-specta globals **/
 

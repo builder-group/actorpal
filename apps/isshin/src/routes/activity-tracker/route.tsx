@@ -115,7 +115,24 @@ const Page: React.FC = () => {
 									Currently Active
 								</h3>
 								<p className="text-2xl font-bold text-blue-900">{currentActivity.application}</p>
-								{currentActivity.window_title != null && (
+								{currentActivity.bundle_id != null && (
+									<p className="mt-1 font-mono text-xs text-blue-600">
+										{currentActivity.bundle_id}
+									</p>
+								)}
+								{currentActivity.url != null && (
+									<p className="mt-1 text-sm break-all text-blue-600">
+										<a
+											href={currentActivity.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="hover:underline"
+										>
+											{currentActivity.url}
+										</a>
+									</p>
+								)}
+								{currentActivity.window_title != null && currentActivity.url == null && (
 									<p className="mt-1 text-sm text-blue-700">{currentActivity.window_title}</p>
 								)}
 								<p className="mt-2 text-sm font-medium text-blue-600">
@@ -129,7 +146,7 @@ const Page: React.FC = () => {
 				{/* Today's Stats */}
 				{todayStats != null && (
 					<>
-						<div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+						<div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
 							<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
 								<h3 className="mb-4 text-sm font-medium tracking-wide text-gray-500 uppercase">
 									Total Time Today
@@ -153,10 +170,20 @@ const Page: React.FC = () => {
 									<p className="mt-1 text-sm text-gray-500">Different applications used</p>
 								</div>
 							</div>
+
+							<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+								<h3 className="mb-4 text-sm font-medium tracking-wide text-gray-500 uppercase">
+									Websites Tracked
+								</h3>
+								<div>
+									<p className="text-3xl font-bold text-gray-900">{todayStats.websites.length}</p>
+									<p className="mt-1 text-sm text-gray-500">Different websites visited</p>
+								</div>
+							</div>
 						</div>
 
 						{/* Application Breakdown */}
-						<div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+						<div className="mb-8 rounded-lg border border-gray-200 bg-white shadow-sm">
 							<div className="border-b border-gray-200 px-6 py-4">
 								<h2 className="text-xl font-semibold text-gray-900">Application Breakdown</h2>
 								<p className="mt-1 text-sm text-gray-500">Time spent in each application today</p>
@@ -180,6 +207,11 @@ const Page: React.FC = () => {
 													<p className="text-sm font-medium text-gray-900">
 														{activity.application}
 													</p>
+													{activity.bundle_id != null && (
+														<p className="mt-0.5 font-mono text-xs text-gray-400">
+															{activity.bundle_id}
+														</p>
+													)}
 													<p className="mt-1 text-xs text-gray-500">
 														{formatDurationLong(activity.total_duration_seconds)}
 													</p>
@@ -207,6 +239,48 @@ const Page: React.FC = () => {
 								</div>
 							)}
 						</div>
+
+						{/* Website Breakdown */}
+						{todayStats.websites.length > 0 && (
+							<div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+								<div className="border-b border-gray-200 px-6 py-4">
+									<h2 className="text-xl font-semibold text-gray-900">Website Breakdown</h2>
+									<p className="mt-1 text-sm text-gray-500">Time spent on each website today</p>
+								</div>
+
+								<div className="divide-y divide-gray-200">
+									{todayStats.websites.map((website) => (
+										<div key={website.domain} className="px-6 py-4">
+											<div className="flex items-center justify-between">
+												<div className="flex-1">
+													<p className="text-sm font-medium text-gray-900">{website.domain}</p>
+													<p className="mt-1 text-xs text-gray-500">
+														{formatDurationLong(website.total_duration_seconds)}
+													</p>
+												</div>
+												<div className="ml-4 flex items-center gap-4">
+													<div className="text-right">
+														<p className="text-sm font-semibold text-gray-900">
+															{formatDuration(website.total_duration_seconds)}
+														</p>
+														<p className="text-xs text-gray-500">
+															{website.percentage.toFixed(1)}%
+														</p>
+													</div>
+												</div>
+											</div>
+											{/* Progress bar */}
+											<div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
+												<div
+													className="h-full rounded-full bg-green-600 transition-all"
+													style={{ width: `${website.percentage}%` }}
+												/>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
 					</>
 				)}
 
@@ -225,6 +299,8 @@ export default Page;
 
 interface TActivityUpdatePayload {
 	application: string;
+	bundle_id: string | null;
 	window_title: string | null;
+	url: string | null;
 	duration_seconds: number;
 }

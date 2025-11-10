@@ -233,26 +233,58 @@ pub async fn start_monitoring(handle: AppHandle) {
             .map(|bid| bid.clone())
             .unwrap_or_else(|| app_name.clone());
 
+        // Check if current app is a browser
+        let is_browser = bundle_id
+            .as_ref()
+            .map(|bid| {
+                bid.contains("chrome")
+                    || bid.contains("safari")
+                    || bid.contains("firefox")
+                    || bid.contains("edge")
+                    || bid.contains("brave")
+                    || bid.contains("opera")
+                    || bid.contains("arc")
+                    || bid.contains("Browser")
+            })
+            .unwrap_or(false);
+
         let mut current = current_activity.lock().unwrap();
 
         match current.as_mut() {
-            Some(activity) if activity.identifier() != current_identifier => {
-                // Activity changed (different app/bundle)
-                activity.update_end_time();
-                save_activity(&storage, activity);
-
-                *current = Some(ActivityEntry::new(
-                    app_name.clone(),
-                    bundle_id.clone(),
-                    window_title.clone(),
-                    url.clone(),
-                ));
-                emit_activity_changed(&handle, app_name, bundle_id.clone(), window_title, url, 0);
-            }
             Some(activity) => {
-                // Same activity, just update duration
-                activity.update_end_time();
-                emit_activity_updated(&handle, activity);
+                let identifier_changed = activity.identifier() != current_identifier;
+
+                // For browsers, also check if URL changed (tab switch)
+                let url_changed =
+                    is_browser && activity.url != url && (activity.url.is_some() || url.is_some());
+
+                if identifier_changed || url_changed {
+                    // Activity changed (different app/bundle or different tab in browser)
+                    activity.update_end_time();
+                    save_activity(&storage, activity);
+
+                    *current = Some(ActivityEntry::new(
+                        app_name.clone(),
+                        bundle_id.clone(),
+                        window_title.clone(),
+                        url.clone(),
+                    ));
+                    emit_activity_changed(
+                        &handle,
+                        app_name,
+                        bundle_id.clone(),
+                        window_title,
+                        url,
+                        0,
+                    );
+                } else {
+                    // Same activity, just update duration and URL if it changed
+                    if activity.url != url {
+                        activity.url = url.clone();
+                    }
+                    activity.update_end_time();
+                    emit_activity_updated(&handle, activity);
+                }
             }
             None => {
                 // First activity

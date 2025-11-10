@@ -9,8 +9,9 @@ fn write_hosts_with_elevated_privileges(content: &str) -> Result<(), String> {
     let temp_file = format!("/tmp/hosts_{}", std::process::id());
     fs::write(&temp_file, content).map_err(|e| format!("Failed to write temp file: {}", e))?;
 
+    // Copy hosts file and flush DNS cache in one command
     let script = format!(
-        r#"do shell script "cp {} /etc/hosts" with administrator privileges"#,
+        r#"do shell script "cp {} /etc/hosts && dscacheutil -flushcache && killall -HUP mDNSResponder" with administrator privileges"#,
         temp_file
     );
 
@@ -35,10 +36,13 @@ fn write_hosts_with_elevated_privileges(content: &str) -> Result<(), String> {
 fn write_hosts_file(hosts: &HostsFile) -> Result<(), String> {
     // Try direct write first (works if app has permissions)
     if hosts.write().is_ok() {
+        // Flush DNS cache after successful write (no admin needed for user-level cache)
+        let _ = Command::new("dscacheutil").arg("-flushcache").output();
         return Ok(());
     }
 
     // Fall back to AppleScript with admin privileges (prompts for password)
+    // This also flushes DNS cache
     write_hosts_with_elevated_privileges(&hosts.content())
 }
 

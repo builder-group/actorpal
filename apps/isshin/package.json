@@ -34,9 +34,12 @@
 		"react-dom": "^19.2.0"
 	},
 	"devDependencies": {
+		"@tailwindcss/vite": "^4.1.17",
 		"@tauri-apps/cli": "^2.9.4",
 		"@types/react": "^19.2.2",
 		"@types/react-dom": "^19.2.2",
-		"@vitejs/plugin-react": "^5.1.0"
+		"@vitejs/plugin-react": "^5.1.0",
+		"tailwindcss": "^4.1.17",
+		"vite-tsconfig-paths": "^5.1.4"
 	}
 }

@@ -9,6 +9,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 
 [[package]]
+name = "accessibility-sys"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46a6a8e90a1d8b96a48249e7c8f5b4058447bea8847280db7bfccb6dcab6b8e1"
+dependencies = [
+ "core-foundation-sys",
+]
+
+[[package]]
 name = "active-win-pos-rs"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1870,6 +1879,7 @@ dependencies = [
  "active-win-pos-rs",
  "chrono",
  "dirs",
+ "mado",
  "serde",
  "serde_json",
  "specta",
@@ -2099,6 +2109,18 @@ name = "mac"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
+
+[[package]]
+name = "mado"
+version = "0.0.1"
+dependencies = [
+ "accessibility-sys",
+ "core-foundation 0.10.1",
+ "libc",
+ "objc2 0.6.3",
+ "thiserror 2.0.17",
+ "x11",
+]
 
 [[package]]
 name = "malloc_buf"

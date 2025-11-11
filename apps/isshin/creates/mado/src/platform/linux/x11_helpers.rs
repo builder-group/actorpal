@@ -47,9 +47,9 @@ pub(super) unsafe fn get_active_window(
     {
         let window = *(prop as *const xlib::Window);
         xlib::XFree(prop as *mut c_void);
-        window
+        return window;
     } else {
-        0
+        return 0;
     }
 }
 
@@ -113,7 +113,7 @@ pub(super) unsafe fn get_window_title(
         return Some(title);
     }
 
-    None
+    return None;
 }
 
 /// Get window class (application name)
@@ -149,7 +149,7 @@ pub(super) unsafe fn get_window_class(
         return Some(class);
     }
 
-    None
+    return None;
 }
 
 /// Get window PID
@@ -185,7 +185,7 @@ pub(super) unsafe fn get_window_pid(
         return Some(pid);
     }
 
-    None
+    return None;
 }
 
 /// X11 error handler - ignores BadWindow errors

@@ -1,256 +1,231 @@
 //! NSWorkspace monitoring for app switches
 //!
-//! This module uses NSWorkspace notifications to detect when the user switches
-//! between applications. It's the primary mechanism for app-level monitoring.
-//!
-//! ## Why Unsafe?
-//!
-//! We use Objective-C APIs through the objc2 crate, which requires:
-//! - FFI calls to AppKit framework
-//! - Creating Objective-C classes at runtime
-//! - Handling raw Objective-C objects and pointers
-//!
-//! ## Architecture
-//!
-//! 1. We create a custom Objective-C class (AppMonitorObserver) that implements
-//!    the notification callback method
-//! 2. We register this observer with NSWorkspace's notification center
-//! 3. When an app activates, the callback fires and we invoke the Rust handler
+//! This module uses NSWorkspace notifications via objc2-app-kit to detect when
+//! the user switches between applications. It uses objc2's `define_class!` with
+//! instance variables to store the handler, eliminating the need for global state.
 
-use std::ffi::CStr;
-use std::ptr;
+use std::cell::RefCell;
+use std::sync::{Arc, RwLock};
 
-use core_foundation::base::TCFType;
-use core_foundation::runloop::CFRunLoop;
-use core_foundation::string::CFString;
-use objc2::runtime::{AnyObject, ClassBuilder, Sel};
-use objc2::{class, msg_send, sel};
+use objc2::rc::Retained;
+use objc2::runtime::ProtocolObject;
+use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
+use objc2_app_kit::{
+    NSApplication, NSApplicationDelegate, NSRunningApplication, NSWorkspace,
+    NSWorkspaceApplicationKey, NSWorkspaceDidActivateApplicationNotification,
+};
+use objc2_foundation::{NSNotification, NSObject, NSObjectProtocol};
 
 use crate::config::MonitorConfig;
 use crate::error::Error;
+use crate::handler::EventHandler;
 use crate::types::AppInfo;
 
-use super::global_state;
+use super::accessibility;
 
-// Link to AppKit framework (required for NSWorkspace)
-#[link(name = "AppKit", kind = "framework")]
-extern "C" {}
-
-// Link to libproc for process path information
-#[link(name = "proc")]
-extern "C" {
-    fn proc_pidpath(pid: i32, buffer: *mut libc::c_char, buffersize: u32) -> i32;
+/// Instance variables for the workspace delegate
+struct WorkspaceDelegateIvars {
+    handler: Arc<RwLock<dyn EventHandler>>,
+    accessibility_monitor: RefCell<Option<accessibility::AccessibilityMonitor>>,
 }
 
-/// Monitor for app switches using NSWorkspace
-pub struct WorkspaceMonitor {
-    _config: MonitorConfig,
-}
+define_class!(
+    // SAFETY:
+    // - The superclass NSObject does not have any subclassing requirements.
+    // - `WorkspaceDelegate` does not implement `Drop`.
+    #[unsafe(super = NSObject)]
+    #[thread_kind = MainThreadOnly]
+    #[ivars = WorkspaceDelegateIvars]
+    struct WorkspaceDelegate;
 
-impl WorkspaceMonitor {
-    pub fn new(_config: MonitorConfig) -> Self {
-        Self { _config }
+    // SAFETY: `NSObjectProtocol` has no safety requirements.
+    unsafe impl NSObjectProtocol for WorkspaceDelegate {}
+
+    // SAFETY: `NSApplicationDelegate` has no safety requirements.
+    unsafe impl NSApplicationDelegate for WorkspaceDelegate {
+        // SAFETY: The signature is correct.
+        #[unsafe(method(applicationDidFinishLaunching:))]
+        fn did_finish_launching(&self, _notification: &NSNotification) {
+            // Initialize accessibility monitor for current app
+            if let Some(pid) = get_current_pid() {
+                let handler = self.ivars().handler.clone();
+                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(handler, pid) {
+                    *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                }
+            }
+        }
     }
 
-    pub fn start(&self) -> Result<(), Error> {
-        setup_notifications()
-    }
+    impl WorkspaceDelegate {
+        /// Handle app activation notification
+        #[unsafe(method(didActivateApplication:))]
+        fn did_activate_application(&self, notification: &NSNotification) {
+            if let Some(app_info) = extract_app_from_notification(notification) {
+                let handler = self.ivars().handler.clone();
 
-    pub fn run(&self) -> Result<(), Error> {
-        let run_loop = CFRunLoop::get_current();
-        global_state::set_run_loop(run_loop.clone());
-
-        CFRunLoop::run_current();
-
-        global_state::clear_all();
-        Ok(())
-    }
-
-    pub fn stop() -> Result<(), Error> {
-        global_state::stop_run_loop();
-        Ok(())
-    }
-}
-
-/// Setup NSWorkspace notifications for app activation
-fn setup_notifications() -> Result<(), Error> {
-    unsafe {
-        // Objective-C callbacks can't capture Rust closures, so we create a custom class
-        let class_name = CStr::from_bytes_with_nul(b"AppMonitorObserver\0")
-            .map_err(|_| Error::Platform("Invalid class name".to_string()))?;
-        let mut decl = ClassBuilder::new(class_name, class!(NSObject))
-            .ok_or_else(|| Error::Platform("Failed to create observer class".to_string()))?;
-
-        extern "C" fn app_did_activate(_this: &AnyObject, _cmd: Sel, notification: *mut AnyObject) {
-            unsafe {
-                if notification.is_null() {
-                    return;
+                // Stop old accessibility monitor
+                if let Some(mut old_monitor) = self.ivars().accessibility_monitor.borrow_mut().take() {
+                    let _ = old_monitor.stop();
                 }
 
-                let handler = match global_state::get_handler() {
-                    Some(h) => h,
-                    None => return,
-                };
+                // Create accessibility observer for the new app
+                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(handler.clone(), app_info.pid) {
+                    *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                }
 
-                if let Some(app_info) = extract_app(notification) {
-                    // NSWorkspace tells us about app switches, Accessibility API tells us about windows
-                    if let Err(e) =
-                        crate::platform::macos::accessibility::AccessibilityMonitor::create_for_app(
-                            app_info.pid,
-                        )
-                    {
-                        eprintln!("Failed to create accessibility observer: {:?}", e);
-                    }
-
-                    // Send focus change event
-                    // window_change_callback only fires for window/title changes within an app,
-                    // not for app switches themselves, so we need to send the event here
-                    if let Some(window) = crate::platform::macos::window_info::get_current_window()
-                    {
-                        // Skip if window state isn't ready yet (e.g., after unminimizing)
-                        // The Accessibility observer will report it when the window becomes ready
-                        if window.window_id != 0 {
-                            if let Ok(guard) = handler.read() {
-                                guard.on_focus_change(window);
-                            }
+                // Send focus change event
+                // window_change_callback only fires for window/title changes within an app,
+                // not for app switches themselves, so we need to send the event here
+                // Use build_window_info for efficiency (we already have app_info)
+                if let Some(window) = crate::platform::macos::window_info::build_window_info(
+                    app_info.pid,
+                    String::new(), // Title will be empty initially, but window_id check will handle it
+                    Some(app_info.clone()),
+                ) {
+                    // Skip if window state isn't ready yet (e.g., after unminimizing)
+                    // The Accessibility observer will report it when the window becomes ready
+                    if window.window_id != 0 {
+                        if let Ok(guard) = handler.read() {
+                            guard.on_focus_change(window);
                         }
                     }
                 }
             }
         }
+    }
+);
 
-        decl.add_method(
-            sel!(applicationDidActivate:),
-            app_did_activate as extern "C" fn(_, _, _),
-        );
+impl WorkspaceDelegate {
+    fn new(handler: Arc<RwLock<dyn EventHandler>>, mtm: MainThreadMarker) -> Retained<Self> {
+        use std::cell::RefCell;
+        let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
+            handler,
+            accessibility_monitor: RefCell::new(None),
+        });
+        // SAFETY: The signature of `NSObject`'s `init` method is correct.
+        unsafe { msg_send![super(this), init] }
+    }
+}
 
-        let observer: *mut AnyObject = msg_send![decl.register(), alloc];
-        let observer: *mut AnyObject = msg_send![observer, init];
+/// Monitor for app switches using NSWorkspace
+pub struct WorkspaceMonitor {
+    _config: MonitorConfig,
+    delegate: Retained<WorkspaceDelegate>,
+    app: Retained<NSApplication>,
+}
 
-        let workspace: *mut AnyObject = msg_send![class!(NSWorkspace), sharedWorkspace];
-        let center: *mut AnyObject = msg_send![workspace, notificationCenter];
-        let name = CFString::from_static_string("NSWorkspaceDidActivateApplicationNotification");
-        let name_obj: *mut AnyObject = name.as_concrete_TypeRef() as *mut AnyObject;
+impl WorkspaceMonitor {
+    pub fn new(
+        handler: Arc<RwLock<dyn EventHandler>>,
+        config: MonitorConfig,
+    ) -> Result<Self, Error> {
+        let mtm = MainThreadMarker::new()
+            .ok_or_else(|| Error::Platform("Not on main thread".to_string()))?;
 
-        let _: () = msg_send![
-            center,
-            addObserver: observer,
-            selector: sel!(applicationDidActivate:),
-            name: name_obj,
-            object: ptr::null_mut::<AnyObject>()
-        ];
+        let delegate = WorkspaceDelegate::new(handler.clone(), mtm);
+        let app = NSApplication::sharedApplication(mtm);
 
-        Ok(())
+        return Ok(Self {
+            _config: config,
+            delegate,
+            app,
+        });
+    }
+
+    pub fn handler(&self) -> &Arc<RwLock<dyn EventHandler>> {
+        &self.delegate.ivars().handler
+    }
+
+    pub fn start(&mut self) -> Result<(), Error> {
+        unsafe {
+            let workspace = NSWorkspace::sharedWorkspace();
+            let center = workspace.notificationCenter();
+
+            // Subscribe to app activation notifications
+            center.addObserver_selector_name_object(
+                self.delegate.as_ref(),
+                objc2::sel!(didActivateApplication:),
+                Some(NSWorkspaceDidActivateApplicationNotification),
+                Some(workspace.as_ref()),
+            );
+
+            // Set app delegate
+            let delegate_obj = ProtocolObject::from_ref(&*self.delegate);
+            self.app.setDelegate(Some(delegate_obj));
+        }
+
+        return Ok(());
+    }
+
+    pub fn run(&self) -> Result<(), Error> {
+        // Run the NSApplication event loop
+        // This blocks until the app is terminated
+        self.app.run();
+        return Ok(());
+    }
+
+    pub fn stop() {
+        // Stop the NSApplication run loop
+        // This needs to be called from the main thread
+        if let Some(mtm) = MainThreadMarker::new() {
+            let app = NSApplication::sharedApplication(mtm);
+            app.terminate(None);
+        }
     }
 }
 
 /// Extract app information from an NSNotification
-unsafe fn extract_app(notification: *mut AnyObject) -> Option<AppInfo> {
-    let user_info: *mut AnyObject = msg_send![notification, userInfo];
-    if user_info.is_null() {
-        return None;
-    }
+fn extract_app_from_notification(notification: &NSNotification) -> Option<AppInfo> {
+    let user_info = notification.userInfo()?;
+    let app_key = unsafe { NSWorkspaceApplicationKey };
+    let app_any = user_info.objectForKey(app_key)?;
+    let app: Retained<NSRunningApplication> = app_any.downcast().ok()?;
 
-    let app_key = CFString::from_static_string("NSWorkspaceApplicationKey");
-    let app_key_obj: *mut AnyObject = app_key.as_concrete_TypeRef() as *mut AnyObject;
-    let app: *mut AnyObject = msg_send![user_info, objectForKey: app_key_obj,];
-    if app.is_null() {
-        return None;
-    }
-
-    let pid: i32 = msg_send![app, processIdentifier];
-    let name = extract_app_name(app);
-    let bundle_id = extract_bundle_id(app).unwrap_or_default();
+    let pid = app.processIdentifier();
+    let name = app
+        .localizedName()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "Unknown".to_string());
+    let bundle_id = app
+        .bundleIdentifier()
+        .map(|s| s.to_string())
+        .unwrap_or_default();
     let process_path = get_process_path(pid).unwrap_or_default();
 
-    Some(AppInfo {
+    return Some(AppInfo {
         pid,
         name,
         bundle_id,
         process_path,
-    })
-}
-
-/// Extract the localized app name from an NSRunningApplication
-unsafe fn extract_app_name(app: *mut AnyObject) -> String {
-    let name: *mut AnyObject = msg_send![app, localizedName];
-    if name.is_null() {
-        return "Unknown".to_string();
-    }
-
-    let str_ptr: *const std::ffi::c_char = msg_send![name, UTF8String];
-    if str_ptr.is_null() {
-        return "Unknown".to_string();
-    }
-
-    std::ffi::CStr::from_ptr(str_ptr)
-        .to_str()
-        .map(|s| s.to_string())
-        .unwrap_or_else(|_| "Unknown".to_string())
-}
-
-/// Extract the bundle ID from an NSRunningApplication
-unsafe fn extract_bundle_id(app: *mut AnyObject) -> Option<String> {
-    let bundle_id: *mut AnyObject = msg_send![app, bundleIdentifier];
-    if bundle_id.is_null() {
-        return None;
-    }
-
-    let str_ptr: *const std::ffi::c_char = msg_send![bundle_id, UTF8String];
-    if str_ptr.is_null() {
-        return None;
-    }
-
-    std::ffi::CStr::from_ptr(str_ptr)
-        .to_str()
-        .map(|s| s.to_string())
-        .ok()
+    });
 }
 
 /// Get current frontmost app PID
 pub fn get_current_pid() -> Option<i32> {
-    unsafe {
-        let workspace: *mut AnyObject = msg_send![class!(NSWorkspace), sharedWorkspace];
-        let app: *mut AnyObject = msg_send![workspace, frontmostApplication];
-        if app.is_null() {
-            None
-        } else {
-            Some(msg_send![app, processIdentifier])
-        }
-    }
+    let workspace = NSWorkspace::sharedWorkspace();
+    let app = workspace.frontmostApplication()?;
+    return Some(app.processIdentifier());
 }
 
 /// Get app name by PID
 pub fn get_app_name(pid: i32) -> Option<String> {
-    unsafe {
-        let app: *mut AnyObject = msg_send![
-            class!(NSRunningApplication),
-            runningApplicationWithProcessIdentifier: pid
-        ];
-        if app.is_null() {
-            None
-        } else {
-            Some(extract_app_name(app))
-        }
-    }
+    let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
+    return app.localizedName().map(|s| s.to_string());
 }
 
 /// Get bundle ID by PID
 pub fn get_bundle_id(pid: i32) -> Option<String> {
-    unsafe {
-        let app: *mut AnyObject = msg_send![
-            class!(NSRunningApplication),
-            runningApplicationWithProcessIdentifier: pid
-        ];
-        if app.is_null() {
-            return None;
-        }
-        extract_bundle_id(app)
-    }
+    let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
+    return app.bundleIdentifier().map(|s| s.to_string());
 }
 
 /// Get process path by PID using proc_pidpath system call
 pub fn get_process_path(pid: i32) -> Option<String> {
+    #[link(name = "proc")]
+    extern "C" {
+        fn proc_pidpath(pid: i32, buffer: *mut libc::c_char, buffersize: u32) -> i32;
+    }
+
     unsafe {
         let mut buf = vec![0 as libc::c_char; 4096];
         let ret = proc_pidpath(pid, buf.as_mut_ptr(), 4096);
@@ -269,7 +244,7 @@ pub fn get_process_path(pid: i32) -> Option<String> {
                         .ok()
                 })
         } else {
-            None
+            return None;
         }
     }
 }

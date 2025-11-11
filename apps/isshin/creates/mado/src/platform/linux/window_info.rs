@@ -9,7 +9,7 @@ use super::x11_helpers;
 
 /// Get information about the current active application
 pub fn get_current_app() -> Option<AppInfo> {
-    get_current_window().map(|w| w.app)
+    return get_current_window().map(|w| w.app);
 }
 
 /// Get information about the current focused window
@@ -43,7 +43,7 @@ pub fn get_current_window() -> Option<WindowInfo> {
 
         x11::xlib::XCloseDisplay(display);
 
-        Some(WindowInfo {
+        return Some(WindowInfo {
             title,
             window_id: window as u32,
             bounds: WindowBounds::default(), // X11 doesn't provide bounds in property queries
@@ -53,6 +53,6 @@ pub fn get_current_window() -> Option<WindowInfo> {
                 bundle_id: app_name,         // Linux doesn't have bundle IDs
                 process_path: String::new(), // Could be implemented via /proc/{pid}/exe
             },
-        })
+        });
     }
 }

@@ -17,8 +17,6 @@
 //! - Notifies the handler of the initial window state
 
 pub mod accessibility;
-mod cg_helpers;
-mod global_state;
 pub mod window_info;
 mod workspace;
 
@@ -28,7 +26,6 @@ use crate::config::MonitorConfig;
 use crate::error::Error;
 use crate::handler::EventHandler;
 
-use accessibility::AccessibilityMonitor;
 use workspace::WorkspaceMonitor;
 
 /// Run the monitor on macOS
@@ -40,33 +37,25 @@ pub fn run(handler: Arc<RwLock<dyn EventHandler>>, config: MonitorConfig) -> Res
         return Err(Error::MissingPermissions);
     }
 
-    global_state::set_handler(handler.clone());
-
-    let workspace = WorkspaceMonitor::new(config);
-    let accessibility = AccessibilityMonitor::new(handler.clone(), config);
+    let mut monitor = WorkspaceMonitor::new(handler, config)?;
 
     // Notify initial state before starting event loop
     if let Some(window) = window_info::get_current_window() {
-        if let Ok(guard) = handler.read() {
+        if let Ok(guard) = monitor.handler().read() {
             guard.on_focus_change(window);
         }
     }
 
-    workspace.start()?;
-    accessibility.start()?;
-    workspace.run()?;
+    monitor.start()?;
+    monitor.run()?;
 
-    AccessibilityMonitor::stop()?;
-    WorkspaceMonitor::stop()?;
-
-    Ok(())
+    return Ok(());
 }
 
 /// Stop the monitor
 ///
 /// This can be called from any thread. It will signal the run loop to stop.
 pub fn stop() -> Result<(), Error> {
-    AccessibilityMonitor::stop()?;
-    WorkspaceMonitor::stop()?;
-    Ok(())
+    WorkspaceMonitor::stop();
+    return Ok(());
 }

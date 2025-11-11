@@ -32,10 +32,11 @@ use crate::types::WindowInfo;
 
 use super::x11_helpers;
 
-/// Self-pipe for interrupting the event loop
+/// Global interrupt pipe write end for stop() to access
 ///
-/// Only accessed on the main thread. Initialized in `run()`, cleaned up on exit.
-static mut INTERRUPT_PIPE: [RawFd; 2] = [-1, -1];
+/// This is necessary because stop() is static and needs to signal the event loop
+/// to stop. The write end is stored here when run() starts, and cleared when run() exits.
+static INTERRUPT_WRITE: std::sync::OnceLock<RawFd> = std::sync::OnceLock::new();
 
 /// X11 monitor for window focus changes
 pub struct X11Monitor {
@@ -50,16 +51,20 @@ impl X11Monitor {
     /// Start monitoring (blocks until stopped)
     pub fn run(&self) -> Result<(), Error> {
         unsafe {
-            if pipe(INTERRUPT_PIPE.as_mut_ptr()) != 0 {
+            let mut interrupt_pipe = [-1, -1];
+            if pipe(interrupt_pipe.as_mut_ptr()) != 0 {
                 return Err(Error::Platform(
                     "Failed to create interrupt pipe".to_string(),
                 ));
             }
 
+            // Store write end globally so stop() can access it
+            let _ = INTERRUPT_WRITE.set(interrupt_pipe[1]);
+
             let display = xlib::XOpenDisplay(std::ptr::null());
             if display.is_null() {
-                close(INTERRUPT_PIPE[0]);
-                close(INTERRUPT_PIPE[1]);
+                close(interrupt_pipe[0]);
+                close(interrupt_pipe[1]);
                 return Err(Error::Linux("Failed to open X11 display".to_string()));
             }
 
@@ -94,8 +99,8 @@ impl X11Monitor {
             let mut in_fds: fd_set = std::mem::zeroed();
             FD_ZERO(&mut in_fds);
             FD_SET(x11_fd, &mut in_fds);
-            FD_SET(INTERRUPT_PIPE[0], &mut in_fds);
-            let max_fd = x11_fd.max(INTERRUPT_PIPE[0]) + 1;
+            FD_SET(interrupt_pipe[0], &mut in_fds);
+            let max_fd = x11_fd.max(interrupt_pipe[0]) + 1;
 
             // Notify initial state before entering event loop
             if let Some(window_info) = get_window_info(
@@ -126,9 +131,9 @@ impl X11Monitor {
                 );
 
                 if select_result > 0 {
-                    if libc::FD_ISSET(INTERRUPT_PIPE[0], &read_fds) {
+                    if libc::FD_ISSET(interrupt_pipe[0], &read_fds) {
                         let mut buf = [0u8; 1];
-                        read(INTERRUPT_PIPE[0], buf.as_mut_ptr() as *mut c_void, 1);
+                        read(interrupt_pipe[0], buf.as_mut_ptr() as *mut c_void, 1);
                         break;
                     }
 
@@ -236,11 +241,11 @@ impl X11Monitor {
             // Reset error handler before cleanup
             xlib::XSetErrorHandler(old_handler);
             xlib::XCloseDisplay(display);
-            close(INTERRUPT_PIPE[0]);
-            close(INTERRUPT_PIPE[1]);
+            close(interrupt_pipe[0]);
+            close(interrupt_pipe[1]);
         }
 
-        Ok(())
+        return Ok(());
     }
 
     /// Stop the monitor
@@ -249,16 +254,15 @@ impl X11Monitor {
     /// to stop the event loop.
     pub fn stop() -> Result<(), Error> {
         unsafe {
-            // Check if pipe is initialized (monitor is running)
-            if INTERRUPT_PIPE[1] == -1 {
-                return Err(Error::Platform("Monitor not running".to_string()));
+            if let Some(write_fd) = INTERRUPT_WRITE.get() {
+                let buf = [0u8; 1];
+                if write(*write_fd, buf.as_ptr() as *const c_void, 1) != 1 {
+                    return Err(Error::Platform("Failed to send stop signal".to_string()));
+                }
+                return Ok(());
             }
-            let buf = [0u8; 1];
-            if write(INTERRUPT_PIPE[1], buf.as_ptr() as *const c_void, 1) != 1 {
-                return Err(Error::Platform("Failed to send stop signal".to_string()));
-            }
+            return Err(Error::Platform("Monitor not running".to_string()));
         }
-        Ok(())
     }
 }
 
@@ -282,7 +286,7 @@ unsafe fn get_window_info(
         .unwrap_or_else(|| "Unknown".to_string());
     let pid = x11_helpers::get_window_pid(display, window, net_wm_pid_atom).unwrap_or(0);
 
-    Some(WindowInfo {
+    return Some(WindowInfo {
         title,
         window_id: window as u32,
         bounds: crate::types::WindowBounds::default(), // X11 doesn't provide bounds in property notifications
@@ -292,5 +296,5 @@ unsafe fn get_window_info(
             bundle_id: app_name,         // Linux doesn't have bundle IDs
             process_path: String::new(), // Could be implemented via /proc/{pid}/exe
         },
-    })
+    });
 }

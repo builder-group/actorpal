@@ -17,6 +17,12 @@ pub struct AppInfo {
 pub struct BrowserInfo {
     /// Current URL of the active tab
     pub url: Option<String>,
+    /// Whether the window is in private/incognito mode
+    ///
+    /// `None` if detection failed or not supported.
+    /// `Some(true)` if private mode is active.
+    /// `Some(false)` if private mode is not active.
+    pub is_private: Option<bool>,
 }
 
 /// Information about a window

@@ -59,6 +59,11 @@ fn main() -> Result<(), mado::Error> {
                             "      URL:        (not available - may need Automation permission)"
                         );
                     }
+                    if let Some(is_private) = browser.is_private {
+                        if is_private {
+                            println!("      Mode:       Private/Incognito");
+                        }
+                    }
                 }
             }
             Err(e) => eprintln!("❌ Error getting window: {}", e),

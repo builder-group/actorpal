@@ -7,6 +7,7 @@
 - 🪟 **Query current state** - Get active app/window information on demand
 - 📡 **Monitor changes** - Listen to app switches and window changes in real-time
 - 📑 **Tab switch detection** - Detects browser tab switches (macOS & Linux)
+- 🌐 **Browser URL extraction** - Get current browser tab URL (macOS only, optional)
 - 🎯 **Simple API** - Query functions + event listeners
 - 🧩 **Clean architecture** - KISS principle throughout
 - 🚀 **Cross-platform** - macOS and Linux support
@@ -22,6 +23,7 @@
 **macOS:**
 - macOS 10.9+
 - **Accessibility permissions** required (System Settings > Privacy & Security > Accessibility)
+- **Automation permissions** (optional, for browser URL extraction): System Settings > Privacy & Security > Automation
 
 **Linux:**
 - X11 display server
@@ -105,6 +107,48 @@ fn main() -> Result<(), mado::Error> {
 
 See `examples/listen.rs` for a complete example.
 
+### Browser URL extraction (macOS only)
+
+Enable browser URL extraction to get the current tab URL from browser windows:
+
+```rust
+use mado::{EventHandler, Monitor, MonitorConfig, WindowInfo};
+
+struct MyHandler;
+
+impl EventHandler for MyHandler {
+    fn on_focus_change(&self, window: WindowInfo) {
+        println!("Window: {}", window.title);
+        
+        // Check if browser info is available
+        if let Some(browser) = &window.browser {
+            if let Some(url) = &browser.url {
+                println!("  URL: {}", url);
+            }
+            
+            // Check if in private mode
+            if let Some(is_private) = browser.is_private {
+                if is_private {
+                    println!("  Mode: Private/Incognito");
+                }
+            }
+        }
+    }
+}
+
+fn main() -> Result<(), mado::Error> {
+    // Enable browser URL extraction
+    let config = MonitorConfig {
+        allow_browser: true, // Requires Automation permission on macOS
+    };
+    
+    let monitor = Monitor::with_config(MyHandler, config);
+    monitor.run()
+}
+```
+
+**Note:** Browser URL extraction requires Automation permission on macOS. If not granted, `window.browser` will be `None`. This feature is disabled by default to avoid requiring additional permissions.
+
 ### Stop monitoring from another thread
 
 ```rust
@@ -161,8 +205,25 @@ pub struct WindowInfo {
     pub window_id: u32,        // Unique window ID
     pub bounds: WindowBounds,  // Position and size (macOS only)
     pub app: AppInfo,          // Associated app info
+    pub browser: Option<BrowserInfo>, // Browser info (if allow_browser is enabled)
 }
 ```
+
+#### `BrowserInfo`
+
+Browser-specific information (macOS only, optional):
+
+```rust
+pub struct BrowserInfo {
+    pub url: Option<String>, // Current URL of the active tab
+    pub is_private: Option<bool>, // Whether window is in private/incognito mode
+}
+```
+
+**Note:** `BrowserInfo` is only populated when:
+- `allow_browser` is enabled in `MonitorConfig`
+- The window belongs to a supported browser
+- Automation permission is granted (macOS)
 
 #### `WindowBounds`
 
@@ -191,6 +252,18 @@ pub struct WindowBounds {
 - `Monitor::with_config(handler: H, config: MonitorConfig) -> Monitor` - Create monitor with custom config
 - `monitor.run() -> Result<(), Error>` - Start monitoring (blocks until stopped)
 - `Monitor::stop() -> Result<(), Error>` - Stop monitoring (can be called from any thread)
+
+### `MonitorConfig`
+
+Configuration for the window monitor:
+
+```rust
+pub struct MonitorConfig {
+    pub allow_browser: bool, // Enable browser URL extraction (macOS only, default: false)
+}
+```
+
+**Default:** All features disabled (minimal overhead, no additional permissions required)
 
 ### `EventHandler` Trait
 

@@ -27,21 +27,28 @@ impl EventHandler for FocusListener {
 
         if app_changed {
             println!("\n🔄 App Switch");
-            println!("   App:     {}", window.app.name);
-            println!("   PID:     {}", window.app.pid);
-            println!("   Bundle:  {}", window.app.bundle_id);
-            println!("   Window:  '{}'", window.title);
-            println!(
-                "   Size:    {:.0}x{:.0}",
-                window.bounds.width, window.bounds.height
-            );
             *last_bundle = Some(window.app.bundle_id.clone());
         } else {
             println!("\n🪟 Window Change");
-            println!("   Title:   '{}'", window.title);
-            println!("   ID:      {}", window.window_id);
-            println!("   App:     {}", window.app.name);
         }
+
+        println!("   Window:");
+        println!("      Title:      '{}'", window.title);
+        println!("      Window ID:  {}", window.window_id);
+        println!(
+            "      Bounds:     ({:.0}, {:.0})",
+            window.bounds.x, window.bounds.y
+        );
+        println!(
+            "      Size:       {:.0}x{:.0}",
+            window.bounds.width, window.bounds.height
+        );
+
+        println!("   App:");
+        println!("      Name:       {}", window.app.name);
+        println!("      PID:        {}", window.app.pid);
+        println!("      Bundle ID:  {}", window.app.bundle_id);
+        println!("      Path:       {}", window.app.process_path);
     }
 }
 

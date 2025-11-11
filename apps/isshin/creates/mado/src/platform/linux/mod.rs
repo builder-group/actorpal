@@ -25,7 +25,10 @@ use x11_monitor::X11Monitor;
 /// Run the monitor on Linux
 ///
 /// This initializes the X11 monitor and blocks until stop() is called from another thread.
-pub fn run(handler: Arc<RwLock<dyn EventHandler>>, config: MonitorConfig) -> Result<(), Error> {
+pub(super) fn run(
+    handler: Arc<RwLock<dyn EventHandler>>,
+    config: MonitorConfig,
+) -> Result<(), Error> {
     let monitor = X11Monitor::new(handler, config);
     return monitor.run();
 }
@@ -33,6 +36,6 @@ pub fn run(handler: Arc<RwLock<dyn EventHandler>>, config: MonitorConfig) -> Res
 /// Stop the monitor
 ///
 /// This can be called from any thread. It will signal the event loop to stop.
-pub fn stop() -> Result<(), Error> {
+pub(super) fn stop() -> Result<(), Error> {
     return X11Monitor::stop();
 }

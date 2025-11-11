@@ -50,9 +50,10 @@ fn main() -> Result<(), mado::Error> {
     let app = mado::get_active_app()?;
     println!("Current app: {} (PID: {})", app.name, app.pid);
 
-    // Get current active window
+    // Get current active window (includes app info)
     let window = mado::get_active_window()?;
     println!("Window: '{}'", window.title);
+    println!("  App: {}", window.app.name);
     println!("  Position: ({:.0}, {:.0})", window.bounds.x, window.bounds.y);
     println!("  Size: {:.0}x{:.0}", window.bounds.width, window.bounds.height);
 
@@ -104,6 +105,37 @@ fn main() -> Result<(), mado::Error> {
 
 See `examples/listen.rs` for a complete example.
 
+### Stop monitoring from another thread
+
+```rust
+use mado::Monitor;
+use std::thread;
+use std::time::Duration;
+
+fn main() -> Result<(), mado::Error> {
+    let monitor = Monitor::new(MyHandler);
+    
+    // Stop after 5 seconds
+    thread::spawn(move || {
+        thread::sleep(Duration::from_secs(5));
+        Monitor::stop().unwrap();
+    });
+    
+    monitor.run() // Blocks until stop() is called
+}
+```
+
+### Check permissions (macOS)
+
+```rust
+if !mado::is_accessibility_trusted() {
+    eprintln!("Please grant accessibility permissions in System Settings");
+    return;
+}
+```
+
+## 📚 API Reference
+
 ### Types
 
 #### `AppInfo`
@@ -147,6 +179,29 @@ pub struct WindowBounds {
 
 **Note:** On Linux, `bounds` is always `(0, 0, 0, 0)` as X11 property queries don't provide window geometry.
 
+### Functions
+
+- `get_active_app() -> Result<AppInfo, Error>` - Get current active application
+- `get_active_window() -> Result<WindowInfo, Error>` - Get current active window
+- `is_accessibility_trusted() -> bool` - Check if accessibility permissions are granted (macOS only)
+
+### `Monitor`
+
+- `Monitor::new(handler: H) -> Monitor` - Create monitor with default config
+- `Monitor::with_config(handler: H, config: MonitorConfig) -> Monitor` - Create monitor with custom config
+- `monitor.run() -> Result<(), Error>` - Start monitoring (blocks until stopped)
+- `Monitor::stop() -> Result<(), Error>` - Stop monitoring (can be called from any thread)
+
+### `EventHandler` Trait
+
+```rust
+pub trait EventHandler: Send + Sync {
+    fn on_focus_change(&self, window: WindowInfo);
+}
+```
+
+The callback receives complete window information including app details. You can detect app switches by tracking `window.app.bundle_id`.
+
 ## 📐 Architecture
 
 ### Why Event-Driven?
@@ -184,13 +239,20 @@ We use two monitoring layers internally, but expose a unified callback:
 - **Accessibility API**: Window title
 - **CoreGraphics**: Window ID and bounds
 
+**Architecture:**
+- Uses `objc2` crate for Objective-C interop
+- `WorkspaceMonitor` manages `WorkspaceDelegate` (Objective-C delegate)
+- `AccessibilityMonitor` stored in delegate's instance variables
+- No global state - all state in structs/ivars
+- `stop()` uses `NSApplication::sharedApplication()` (framework singleton)
+
 #### Linux: X11 Property Monitoring
 
 **Implementation:**
 - Single event loop monitoring X11 property changes
 - Monitors `_NET_ACTIVE_WINDOW` property for focus changes
 - Monitors `_NET_WM_NAME` and `WM_NAME` for window titles (detects tab switches)
-- Uses `select()` with self-pipe for interruptible monitoring
+- Uses `select()` with self-pipe for interruptible event waiting
 - No separate app/window distinction (X11 is window-centric)
 
 **Why simpler?** X11 doesn't have a strong app concept like macOS - everything is window-based. Single event loop handles all focus changes.
@@ -199,25 +261,30 @@ We use two monitoring layers internally, but expose a unified callback:
 - **X11 Properties**: Window title, app name (WM_CLASS), PID (_NET_WM_PID)
 - **Window ID**: Direct X11 window ID
 
-### Global State Management *[macOS]*
+**Architecture:**
+- `X11Monitor` manages X11 connection and event loop
+- Minimal global state: `OnceLock<RawFd>` for interrupt pipe write end (needed for `stop()`)
+- `stop()` writes to interrupt pipe to wake up `select()`
 
-**Why?** macOS APIs require C-style callbacks that cannot capture Rust closures.
+### Why Static `stop()`?
 
-**Safety:**
-- Centralized with safe wrappers
-- Only accessed on the main thread (CFRunLoop thread)
-- Uses `addr_of!`/`addr_of_mut!` for Rust 2024 compatibility
+`run()` consumes `self` and blocks until stopped, so code after it won't execute:
 
 ```rust
-static mut GLOBAL_HANDLER: Option<Arc<RwLock<dyn EventHandler>>> = None;
-
-pub(super) fn set_handler(handler: Arc<RwLock<dyn EventHandler>>) {
-    unsafe {
-        let ptr = std::ptr::addr_of_mut!(GLOBAL_HANDLER);
-        *ptr = Some(handler);
-    }
-}
+let monitor = Monitor::new(handler);
+monitor.run()?;  // Blocks here - consumes monitor
+// Code here never runs until run() returns
+monitor.stop()?; // ❌ Can't call - monitor was moved!
 ```
+
+To make instance-based `stop()` work, you'd need to:
+- Store the monitor instance globally (e.g., `OnceLock<Arc<Monitor>>`)
+- Change `run()` to not consume `self` (adds complexity)
+- Store more state than needed (we only need a way to signal stop)
+
+Static `stop()` is simpler because:
+- Only stores what's needed (interrupt pipe on Linux, uses framework singleton on macOS)
+- Less state, simpler code
 
 ### Event Flow
 

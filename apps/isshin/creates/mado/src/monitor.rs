@@ -11,15 +11,12 @@ use crate::handler::EventHandler;
 /// ## Example
 ///
 /// ```rust,no_run
-/// use mado::{Monitor, EventHandler, AppInfo, WindowInfo};
+/// use mado::{Monitor, EventHandler, WindowInfo};
 ///
 /// struct MyHandler;
 /// impl EventHandler for MyHandler {
-///     fn on_app_change(&self, app: AppInfo) {
-///         println!("App: {}", app.name);
-///     }
-///     fn on_window_change(&self, window: WindowInfo) {
-///         println!("Window: {}", window.title);
+///     fn on_focus_change(&self, window: WindowInfo) {
+///         println!("Window: {} in app: {}", window.title, window.app.name);
 ///     }
 /// }
 ///
@@ -53,37 +50,11 @@ impl Monitor {
     /// # Errors
     /// Returns `Error` if platform initialization fails or permissions are missing
     pub fn run(self) -> Result<(), Error> {
-        #[cfg(target_os = "macos")]
-        {
-            crate::platform::macos::run(self.handler, self.config)
-        }
-
-        #[cfg(target_os = "linux")]
-        {
-            crate::platform::linux::run(self.handler, self.config)
-        }
-
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        {
-            Err(Error::Platform("Platform not yet implemented".to_string()))
-        }
+        crate::platform::run(self.handler, self.config)
     }
 
     /// Stop the monitor (can be called from another thread)
     pub fn stop() -> Result<(), Error> {
-        #[cfg(target_os = "macos")]
-        {
-            crate::platform::macos::stop()
-        }
-
-        #[cfg(target_os = "linux")]
-        {
-            crate::platform::linux::stop()
-        }
-
-        #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-        {
-            Err(Error::Platform("Platform not yet implemented".to_string()))
-        }
+        crate::platform::stop()
     }
 }

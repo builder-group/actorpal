@@ -19,28 +19,36 @@ fn main() -> Result<(), mado::Error> {
     }
 
     loop {
-        // Query current app
         match mado::get_active_app() {
             Ok(app) => {
                 println!("📱 Current App");
-                println!("   Name:    {}", app.name);
-                println!("   PID:     {}", app.pid);
-                println!("   Bundle:  {}", app.bundle_id);
-                println!("   Path:    {}", app.process_path);
+                println!("   Name:       {}", app.name);
+                println!("   PID:        {}", app.pid);
+                println!("   Bundle ID:  {}", app.bundle_id);
+                println!("   Path:       {}", app.process_path);
             }
             Err(e) => eprintln!("❌ Error getting app: {}", e),
         }
 
-        // Query current window
         match mado::get_active_window() {
             Ok(window) => {
                 println!("\n🪟 Current Window");
-                println!("   Title:   '{}'", window.title);
-                println!("   ID:      {}", window.window_id);
+                println!("   Title:      '{}'", window.title);
+                println!("   Window ID:  {}", window.window_id);
                 println!(
-                    "   Bounds:  ({:.0},{:.0}) size {:.0}x{:.0}",
-                    window.bounds.x, window.bounds.y, window.bounds.width, window.bounds.height
+                    "   Bounds:     ({:.0}, {:.0})",
+                    window.bounds.x, window.bounds.y
                 );
+                println!(
+                    "   Size:       {:.0}x{:.0}",
+                    window.bounds.width, window.bounds.height
+                );
+
+                println!("\n   App Info:");
+                println!("      Name:       {}", window.app.name);
+                println!("      PID:        {}", window.app.pid);
+                println!("      Bundle ID:  {}", window.app.bundle_id);
+                println!("      Path:       {}", window.app.process_path);
             }
             Err(e) => eprintln!("❌ Error getting window: {}", e),
         }

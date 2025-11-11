@@ -32,7 +32,10 @@ use workspace::WorkspaceMonitor;
 ///
 /// This initializes both workspace and accessibility monitors, then blocks
 /// until stop() is called from another thread.
-pub fn run(handler: Arc<RwLock<dyn EventHandler>>, config: MonitorConfig) -> Result<(), Error> {
+pub(super) fn run(
+    handler: Arc<RwLock<dyn EventHandler>>,
+    config: MonitorConfig,
+) -> Result<(), Error> {
     if !accessibility::is_trusted() {
         return Err(Error::MissingPermissions);
     }
@@ -55,7 +58,7 @@ pub fn run(handler: Arc<RwLock<dyn EventHandler>>, config: MonitorConfig) -> Res
 /// Stop the monitor
 ///
 /// This can be called from any thread. It will signal the run loop to stop.
-pub fn stop() -> Result<(), Error> {
+pub(super) fn stop() -> Result<(), Error> {
     WorkspaceMonitor::stop();
     return Ok(());
 }

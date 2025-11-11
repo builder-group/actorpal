@@ -42,13 +42,9 @@
 //! struct MyHandler;
 //!
 //! impl EventHandler for MyHandler {
-//!     fn on_app_change(&self, window: WindowInfo) {
+//!     fn on_focus_change(&self, window: WindowInfo) {
 //!         println!("Switched to: {}", window.app.name);
-//!         println!("  Initial window: {}", window.title);
-//!     }
-//!
-//!     fn on_window_change(&self, window: WindowInfo) {
-//!         println!("Window: {}", window.title);
+//!         println!("  Window: {}", window.title);
 //!     }
 //! }
 //!
@@ -68,18 +64,15 @@
 //! struct MyHandler;
 //!
 //! impl EventHandler for MyHandler {
-//!     fn on_app_change(&self, window: WindowInfo) {
+//!     fn on_focus_change(&self, window: WindowInfo) {
 //!         // You already have full context in window.app
 //!         println!("App: {} ({})", window.app.name, window.app.bundle_id);
+//!         println!("Window: {}", window.title);
 //!         
-//!         // But you can query for additional info if needed
+//!         // You can query for additional info if needed
 //!         if let Ok(current) = mado::get_active_window() {
 //!             println!("Confirmed: {}", current.title);
 //!         }
-//!     }
-//!
-//!     fn on_window_change(&self, _window: WindowInfo) {
-//!         // Handle window changes
 //!     }
 //! }
 //! # Ok::<(), mado::Error>(())
@@ -106,10 +99,6 @@ pub use handler::EventHandler;
 pub use monitor::Monitor;
 pub use types::{AppInfo, WindowBounds, WindowInfo};
 
-// ============================================================================
-// Query API - Get current state on demand
-// ============================================================================
-
 /// Get information about the currently active application
 ///
 /// This is a synchronous query that returns the current state immediately.
@@ -128,22 +117,7 @@ pub use types::{AppInfo, WindowBounds, WindowInfo};
 /// # Ok::<(), mado::Error>(())
 /// ```
 pub fn get_active_app() -> Result<AppInfo, Error> {
-    #[cfg(target_os = "macos")]
-    {
-        platform::macos::window_info::get_current_app()
-            .ok_or_else(|| Error::Platform("No active application found".to_string()))
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        platform::linux::get_current_app()
-            .ok_or_else(|| Error::Platform("No active application found".to_string()))
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        Err(Error::Platform("Platform not yet implemented".to_string()))
-    }
+    platform::get_active_app()
 }
 
 /// Get information about the currently active window
@@ -168,22 +142,7 @@ pub fn get_active_app() -> Result<AppInfo, Error> {
 /// # Ok::<(), mado::Error>(())
 /// ```
 pub fn get_active_window() -> Result<WindowInfo, Error> {
-    #[cfg(target_os = "macos")]
-    {
-        platform::macos::window_info::get_current_window()
-            .ok_or_else(|| Error::Platform("No active window found".to_string()))
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        platform::linux::get_current_window()
-            .ok_or_else(|| Error::Platform("No active window found".to_string()))
-    }
-
-    #[cfg(not(any(target_os = "macos", target_os = "linux")))]
-    {
-        Err(Error::Platform("Platform not yet implemented".to_string()))
-    }
+    platform::get_active_window()
 }
 
 /// Check if accessibility permissions are granted (macOS only)
@@ -200,12 +159,6 @@ pub fn get_active_window() -> Result<WindowInfo, Error> {
 ///     eprintln!("Please grant accessibility permissions in System Settings");
 /// }
 /// ```
-#[cfg(target_os = "macos")]
 pub fn is_accessibility_trusted() -> bool {
-    platform::macos::accessibility::is_trusted()
-}
-
-#[cfg(not(target_os = "macos"))]
-pub fn is_accessibility_trusted() -> bool {
-    true
+    platform::is_accessibility_trusted()
 }

@@ -65,7 +65,7 @@ impl X11Monitor {
             if display.is_null() {
                 close(interrupt_pipe[0]);
                 close(interrupt_pipe[1]);
-                return Err(Error::Linux("Failed to open X11 display".to_string()));
+                return Err(Error::Platform("Failed to open X11 display".to_string()));
             }
 
             let root = xlib::XDefaultRootWindow(display);

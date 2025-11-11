@@ -91,7 +91,6 @@ impl X11Monitor {
 
             let mut active_window: xlib::Window = 0;
             let mut last_window_info: Option<WindowInfo> = None;
-            let mut last_app_bundle_id: Option<String> = None;
 
             let old_handler = x11_helpers::setup_error_handler();
 
@@ -117,7 +116,6 @@ impl X11Monitor {
                 if let Ok(guard) = self.handler.read() {
                     guard.on_focus_change(window_info.clone());
                 }
-                last_app_bundle_id = Some(window_info.app.bundle_id.clone());
                 last_window_info = Some(window_info);
                 active_window = x11_helpers::get_active_window(display, root, active_window_atom);
             }
@@ -169,16 +167,19 @@ impl X11Monitor {
                                                 wm_class_atom,
                                                 net_wm_pid_atom,
                                             ) {
-                                                let app_changed = last_app_bundle_id.as_deref()
-                                                    != Some(&window_info.app.bundle_id);
+                                                let app_changed = last_window_info
+                                                    .as_ref()
+                                                    .map(|last| {
+                                                        last.app.bundle_id
+                                                            != window_info.app.bundle_id
+                                                    })
+                                                    .unwrap_or(true);
                                                 if self.config.track_window_changes || app_changed {
                                                     if let Ok(guard) = self.handler.read() {
                                                         guard.on_focus_change(window_info.clone());
                                                     }
                                                 }
 
-                                                last_app_bundle_id =
-                                                    Some(window_info.app.bundle_id.clone());
                                                 last_window_info = Some(window_info);
                                             }
                                         }
@@ -229,16 +230,18 @@ impl X11Monitor {
                                         wm_class_atom,
                                         net_wm_pid_atom,
                                     ) {
-                                        let app_changed = last_app_bundle_id.as_deref()
-                                            != Some(&window_info.app.bundle_id);
+                                        let app_changed = last_window_info
+                                            .as_ref()
+                                            .map(|last| {
+                                                last.app.bundle_id != window_info.app.bundle_id
+                                            })
+                                            .unwrap_or(true);
                                         if self.config.track_window_changes || app_changed {
                                             if let Ok(guard) = self.handler.read() {
                                                 guard.on_focus_change(window_info.clone());
                                             }
                                         }
 
-                                        last_app_bundle_id =
-                                            Some(window_info.app.bundle_id.clone());
                                         last_window_info = Some(window_info);
                                     }
                                 }

@@ -41,11 +41,12 @@ static INTERRUPT_WRITE: std::sync::OnceLock<RawFd> = std::sync::OnceLock::new();
 /// X11 monitor for window focus changes
 pub struct X11Monitor {
     handler: Arc<RwLock<dyn EventHandler>>,
+    config: MonitorConfig,
 }
 
 impl X11Monitor {
-    pub fn new(handler: Arc<RwLock<dyn EventHandler>>, _config: MonitorConfig) -> Self {
-        Self { handler }
+    pub fn new(handler: Arc<RwLock<dyn EventHandler>>, config: MonitorConfig) -> Self {
+        Self { handler, config }
     }
 
     /// Start monitoring (blocks until stopped)
@@ -90,6 +91,7 @@ impl X11Monitor {
 
             let mut active_window: xlib::Window = 0;
             let mut last_window_info: Option<WindowInfo> = None;
+            let mut last_app_bundle_id: Option<String> = None;
 
             let old_handler = x11_helpers::setup_error_handler();
 
@@ -115,6 +117,7 @@ impl X11Monitor {
                 if let Ok(guard) = self.handler.read() {
                     guard.on_focus_change(window_info.clone());
                 }
+                last_app_bundle_id = Some(window_info.app.bundle_id.clone());
                 last_window_info = Some(window_info);
                 active_window = x11_helpers::get_active_window(display, root, active_window_atom);
             }
@@ -166,16 +169,24 @@ impl X11Monitor {
                                                 wm_class_atom,
                                                 net_wm_pid_atom,
                                             ) {
-                                                if let Ok(guard) = self.handler.read() {
-                                                    guard.on_focus_change(window_info.clone());
+                                                let app_changed = last_app_bundle_id.as_deref()
+                                                    != Some(&window_info.app.bundle_id);
+                                                if self.config.track_window_changes || app_changed {
+                                                    if let Ok(guard) = self.handler.read() {
+                                                        guard.on_focus_change(window_info.clone());
+                                                    }
                                                 }
+
+                                                last_app_bundle_id =
+                                                    Some(window_info.app.bundle_id.clone());
                                                 last_window_info = Some(window_info);
                                             }
                                         }
                                     }
                                     // Window title changed (tab switch, document change, etc.)
-                                    else if (xproperty.atom == wm_name_atom
-                                        || xproperty.atom == net_wm_name_atom)
+                                    else if self.config.track_window_changes
+                                        && (xproperty.atom == wm_name_atom
+                                            || xproperty.atom == net_wm_name_atom)
                                         && xproperty.window == active_window
                                     {
                                         if let Some(window_info) = get_window_info(
@@ -218,9 +229,16 @@ impl X11Monitor {
                                         wm_class_atom,
                                         net_wm_pid_atom,
                                     ) {
-                                        if let Ok(guard) = self.handler.read() {
-                                            guard.on_focus_change(window_info.clone());
+                                        let app_changed = last_app_bundle_id.as_deref()
+                                            != Some(&window_info.app.bundle_id);
+                                        if self.config.track_window_changes || app_changed {
+                                            if let Ok(guard) = self.handler.read() {
+                                                guard.on_focus_change(window_info.clone());
+                                            }
                                         }
+
+                                        last_app_bundle_id =
+                                            Some(window_info.app.bundle_id.clone());
                                         last_window_info = Some(window_info);
                                     }
                                 }

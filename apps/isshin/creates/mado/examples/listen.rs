@@ -73,8 +73,9 @@ fn main() -> Result<(), mado::Error> {
 
     // Check permissions
     if !mado::is_accessibility_trusted() {
-        eprintln!("⚠️  Accessibility permissions required!");
+        eprintln!("⚠️  Accessibility permissions required for window change tracking!");
         eprintln!("   Enable in: System Settings > Privacy & Security > Accessibility");
+        eprintln!("   Or set track_window_changes: false to only track app switches");
         return Err(mado::Error::MissingPermissions);
     }
 
@@ -82,6 +83,7 @@ fn main() -> Result<(), mado::Error> {
     // Enable browser URL extraction (requires Automation permission on macOS)
     let config = mado::MonitorConfig {
         allow_browser: true,
+        track_window_changes: true, // Track app switches + window/tab changes
     };
     let monitor = Monitor::with_config(FocusListener::new(), config);
     monitor.run()

@@ -45,9 +45,11 @@ define_class!(
         #[unsafe(method(applicationDidFinishLaunching:))]
         fn did_finish_launching(&self, _notification: &NSNotification) {
             // Initialize accessibility monitor for current app
-            if let Some(pid) = get_current_pid() {
-                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(self.ivars().context.clone(), pid) {
-                    *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+            if self.ivars().context.config().track_window_changes {
+                if let Some(pid) = get_current_pid() {
+                    if let Ok(monitor) = accessibility::AccessibilityMonitor::new(self.ivars().context.clone(), pid) {
+                        *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                    }
                 }
             }
         }
@@ -66,8 +68,10 @@ define_class!(
                 }
 
                 // Create accessibility observer for the new app
-                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(context.clone(), app_info.pid) {
-                    *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                if context.config().track_window_changes {
+                    if let Ok(monitor) = accessibility::AccessibilityMonitor::new(context.clone(), app_info.pid) {
+                        *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                    }
                 }
 
                 // Send focus change event

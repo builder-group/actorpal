@@ -22,7 +22,9 @@
 
 **macOS:**
 - macOS 10.9+
-- **Accessibility permissions** required (System Settings > Privacy & Security > Accessibility)
+- **Accessibility permissions** required if `track_window_changes: true` (default)
+  - System Settings > Privacy & Security > Accessibility
+  - Not required if only tracking app switches (`track_window_changes: false`)
 - **Automation permissions** (optional, for browser URL extraction): System Settings > Privacy & Security > Automation
 
 **Linux:**
@@ -260,10 +262,13 @@ Configuration for the window monitor:
 ```rust
 pub struct MonitorConfig {
     pub allow_browser: bool, // Enable browser URL extraction (macOS only, default: false)
+    pub track_window_changes: bool, // Track window/tab changes within apps (default: true)
 }
 ```
 
-**Default:** All features disabled (minimal overhead, no additional permissions required)
+**Defaults:**
+- `allow_browser: false` - Minimal overhead, no additional permissions
+- `track_window_changes: true` - Track all changes (app switches + window/tab changes)
 
 ### `EventHandler` Trait
 

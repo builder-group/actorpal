@@ -39,7 +39,9 @@ pub(super) fn run(
     handler: Arc<RwLock<dyn EventHandler>>,
     config: MonitorConfig,
 ) -> Result<(), Error> {
-    if !accessibility::is_trusted() {
+    // Only require accessibility permissions if tracking window changes
+    // (NSWorkspace for app switches doesn't need accessibility)
+    if config.track_window_changes && !accessibility::is_trusted() {
         return Err(Error::MissingPermissions);
     }
 

@@ -9,15 +9,14 @@
 use std::collections::HashMap;
 use std::ffi;
 use std::ptr;
-use std::sync::{Arc, RwLock};
 
 use core_foundation::base::{CFType, TCFType};
 use core_foundation::runloop::{kCFRunLoopDefaultMode, CFRunLoop, CFRunLoopSource};
 use core_foundation::string::CFString;
 
 use crate::error::Error;
-use crate::handler::EventHandler;
 
+use super::event_context::EventContext;
 use super::window_info;
 use super::workspace;
 
@@ -29,14 +28,14 @@ struct ObserverInfo {
 
 /// Monitor for window changes using Accessibility API
 pub struct AccessibilityMonitor {
-    handler: Arc<RwLock<dyn EventHandler>>,
+    context: EventContext,
     observers: HashMap<i32, ObserverInfo>,
 }
 
 impl AccessibilityMonitor {
-    pub fn new(handler: Arc<RwLock<dyn EventHandler>>, pid: i32) -> Result<Self, Error> {
+    pub fn new(context: EventContext, pid: i32) -> Result<Self, Error> {
         let mut monitor = Self {
-            handler,
+            context,
             observers: HashMap::new(),
         };
 
@@ -94,25 +93,25 @@ impl AccessibilityMonitor {
                 accessibility_sys::kAXFocusedWindowChangedNotification,
             );
 
-            // Store handler pointer - AX API keeps it alive for observer lifetime
-            let handler_ptr = Box::into_raw(Box::new(self.handler.clone()));
+            // Store context pointer - AX API keeps it alive for observer lifetime
+            let context_ptr = Box::into_raw(Box::new(self.context.clone()));
 
             let result = AXObserverAddNotification(
                 observer,
                 app_element,
                 notification.as_concrete_TypeRef(),
-                handler_ptr.cast::<ffi::c_void>(),
+                context_ptr.cast::<ffi::c_void>(),
             );
 
             if result != 0 {
-                let _ = Box::from_raw(handler_ptr);
+                let _ = Box::from_raw(context_ptr);
                 return Err(Error::Platform(format!(
                     "Failed to add notification for PID {pid}: {result}"
                 )));
             }
 
             // Also observe title changes for tab switching detection
-            add_title_observer_to_focused_window(observer, app_element, &self.handler);
+            add_title_observer_to_focused_window(observer, app_element, &self.context);
 
             let run_loop_source = AXObserverGetRunLoopSource(observer);
             let run_loop = CFRunLoop::get_current();
@@ -166,7 +165,7 @@ pub fn get_window_title(_pid: i32) -> Option<String> {
 unsafe fn add_title_observer_to_focused_window(
     observer: accessibility_sys::AXObserverRef,
     app_element: accessibility_sys::AXUIElementRef,
-    handler: &Arc<RwLock<dyn EventHandler>>,
+    context: &EventContext,
 ) {
     use accessibility_sys::kAXFocusedWindowAttribute;
 
@@ -174,23 +173,23 @@ unsafe fn add_title_observer_to_focused_window(
         let notification =
             CFString::from_static_string(accessibility_sys::kAXTitleChangedNotification);
 
-        // Store handler pointer - observer keeps it alive
-        let handler_ptr = Box::into_raw(Box::new(handler.clone()));
+        // Store context pointer - observer keeps it alive
+        let context_ptr = Box::into_raw(Box::new(context.clone()));
 
         let result = accessibility_sys::AXObserverAddNotification(
             observer,
             window,
             notification.as_concrete_TypeRef(),
-            handler_ptr.cast::<ffi::c_void>(),
+            context_ptr.cast::<ffi::c_void>(),
         );
 
         if result != 0 {
             // If result is -25209 (kAXErrorNotificationAlreadyRegistered), the observer
-            // is already attached to this window, which is fine - free the handler pointer.
+            // is already attached to this window, which is fine - free the context pointer.
             // For other errors, we just won't get title change notifications (acceptable).
-            let _ = Box::from_raw(handler_ptr);
+            let _ = Box::from_raw(context_ptr);
         }
-        // If result == 0, the handler pointer is intentionally "leaked" - the AX API
+        // If result == 0, the context pointer is intentionally "leaked" - the AX API
         // keeps it alive for the observer's lifetime and will free it when the observer is removed
     }
 }
@@ -214,7 +213,8 @@ unsafe extern "C" fn window_change_callback(
         return;
     }
 
-    let handler = &*(user_info as *const Arc<RwLock<dyn EventHandler>>);
+    // Recover our EventContext from the pointer we stored when registering the observer
+    let context = &*(user_info as *const EventContext);
 
     // Get title from element (could be window or app element depending on notification type)
     let title = get_string_attribute(element, kAXTitleAttribute);
@@ -226,13 +226,12 @@ unsafe extern "C" fn window_change_callback(
             if let Some(window) = window_info::build_window_info(pid, title, None) {
                 if window.window_id != 0 {
                     // Re-add title observer when window is ready (e.g., after unminimizing)
-                    // The API returns -25209 if already registered, which we handle by freeing the handler pointer
+                    // The API returns -25209 if already registered, which we handle by freeing the callback data pointer
                     let app_element = accessibility_sys::AXUIElementCreateApplication(pid);
-                    add_title_observer_to_focused_window(observer, app_element, handler);
+                    add_title_observer_to_focused_window(observer, app_element, context);
 
-                    if let Ok(guard) = handler.read() {
-                        guard.on_focus_change(window);
-                    }
+                    // Handle the event (applies middleware and calls handler)
+                    context.handle(window);
                 }
             }
         }

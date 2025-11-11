@@ -17,6 +17,8 @@
 //! - Notifies the handler of the initial window state
 
 pub mod accessibility;
+mod browser;
+mod event_context;
 pub mod window_info;
 mod workspace;
 
@@ -26,6 +28,7 @@ use crate::config::MonitorConfig;
 use crate::error::Error;
 use crate::handler::EventHandler;
 
+use event_context::EventContext;
 use workspace::WorkspaceMonitor;
 
 /// Run the monitor on macOS
@@ -40,13 +43,12 @@ pub(super) fn run(
         return Err(Error::MissingPermissions);
     }
 
-    let mut monitor = WorkspaceMonitor::new(handler, config)?;
+    let context = EventContext::new(handler, config);
+    let mut monitor = WorkspaceMonitor::new(context)?;
 
     // Notify initial state before starting event loop
     if let Some(window) = window_info::get_current_window() {
-        if let Ok(guard) = monitor.handler().read() {
-            guard.on_focus_change(window);
-        }
+        monitor.context().handle(window);
     }
 
     monitor.start()?;

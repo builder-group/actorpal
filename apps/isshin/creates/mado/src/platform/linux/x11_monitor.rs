@@ -296,5 +296,6 @@ unsafe fn get_window_info(
             bundle_id: app_name,         // Linux doesn't have bundle IDs
             process_path: String::new(), // Could be implemented via /proc/{pid}/exe
         },
+        browser: None, // Browser info not supported on Linux yet
     });
 }

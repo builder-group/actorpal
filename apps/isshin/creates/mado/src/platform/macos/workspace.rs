@@ -5,7 +5,6 @@
 //! instance variables to store the handler, eliminating the need for global state.
 
 use std::cell::RefCell;
-use std::sync::{Arc, RwLock};
 
 use objc2::rc::Retained;
 use objc2::runtime::ProtocolObject;
@@ -16,16 +15,15 @@ use objc2_app_kit::{
 };
 use objc2_foundation::{NSNotification, NSObject, NSObjectProtocol};
 
-use crate::config::MonitorConfig;
 use crate::error::Error;
-use crate::handler::EventHandler;
 use crate::types::AppInfo;
 
 use super::accessibility;
+use super::event_context::EventContext;
 
 /// Instance variables for the workspace delegate
 struct WorkspaceDelegateIvars {
-    handler: Arc<RwLock<dyn EventHandler>>,
+    context: EventContext,
     accessibility_monitor: RefCell<Option<accessibility::AccessibilityMonitor>>,
 }
 
@@ -48,8 +46,7 @@ define_class!(
         fn did_finish_launching(&self, _notification: &NSNotification) {
             // Initialize accessibility monitor for current app
             if let Some(pid) = get_current_pid() {
-                let handler = self.ivars().handler.clone();
-                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(handler, pid) {
+                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(self.ivars().context.clone(), pid) {
                     *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
                 }
             }
@@ -61,7 +58,7 @@ define_class!(
         #[unsafe(method(didActivateApplication:))]
         fn did_activate_application(&self, notification: &NSNotification) {
             if let Some(app_info) = extract_app_from_notification(notification) {
-                let handler = self.ivars().handler.clone();
+                let context = &self.ivars().context;
 
                 // Stop old accessibility monitor
                 if let Some(mut old_monitor) = self.ivars().accessibility_monitor.borrow_mut().take() {
@@ -69,7 +66,7 @@ define_class!(
                 }
 
                 // Create accessibility observer for the new app
-                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(handler.clone(), app_info.pid) {
+                if let Ok(monitor) = accessibility::AccessibilityMonitor::new(context.clone(), app_info.pid) {
                     *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
                 }
 
@@ -85,9 +82,7 @@ define_class!(
                     // Skip if window state isn't ready yet (e.g., after unminimizing)
                     // The Accessibility observer will report it when the window becomes ready
                     if window.window_id != 0 {
-                        if let Ok(guard) = handler.read() {
-                            guard.on_focus_change(window);
-                        }
+                        context.handle(window);
                     }
                 }
             }
@@ -96,10 +91,10 @@ define_class!(
 );
 
 impl WorkspaceDelegate {
-    fn new(handler: Arc<RwLock<dyn EventHandler>>, mtm: MainThreadMarker) -> Retained<Self> {
+    fn new(context: EventContext, mtm: MainThreadMarker) -> Retained<Self> {
         use std::cell::RefCell;
         let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
-            handler,
+            context,
             accessibility_monitor: RefCell::new(None),
         });
         // SAFETY: The signature of `NSObject`'s `init` method is correct.
@@ -109,31 +104,23 @@ impl WorkspaceDelegate {
 
 /// Monitor for app switches using NSWorkspace
 pub struct WorkspaceMonitor {
-    _config: MonitorConfig,
     delegate: Retained<WorkspaceDelegate>,
     app: Retained<NSApplication>,
 }
 
 impl WorkspaceMonitor {
-    pub fn new(
-        handler: Arc<RwLock<dyn EventHandler>>,
-        config: MonitorConfig,
-    ) -> Result<Self, Error> {
+    pub fn new(context: EventContext) -> Result<Self, Error> {
         let mtm = MainThreadMarker::new()
             .ok_or_else(|| Error::Platform("Not on main thread".to_string()))?;
 
-        let delegate = WorkspaceDelegate::new(handler.clone(), mtm);
+        let delegate = WorkspaceDelegate::new(context, mtm);
         let app = NSApplication::sharedApplication(mtm);
 
-        return Ok(Self {
-            _config: config,
-            delegate,
-            app,
-        });
+        return Ok(Self { delegate, app });
     }
 
-    pub fn handler(&self) -> &Arc<RwLock<dyn EventHandler>> {
-        &self.delegate.ivars().handler
+    pub fn context(&self) -> &EventContext {
+        &self.delegate.ivars().context
     }
 
     pub fn start(&mut self) -> Result<(), Error> {

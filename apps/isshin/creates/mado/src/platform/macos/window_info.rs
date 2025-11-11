@@ -63,6 +63,7 @@ pub fn get_current_window() -> Option<WindowInfo> {
         window_id,
         bounds,
         app,
+        browser: None,
     });
 }
 
@@ -72,6 +73,8 @@ pub fn get_current_window() -> Option<WindowInfo> {
 /// - Uses the provided title instead of querying Accessibility API again
 /// - Only queries CoreGraphics for window ID and bounds
 /// - Reuses app info if provided
+///
+/// Note: Browser info is not populated here - use `browser::extend_window_info()` after building.
 pub fn build_window_info(pid: i32, title: String, app: Option<AppInfo>) -> Option<WindowInfo> {
     let app = app.or_else(get_current_app)?;
     let (window_id, bounds) = find_window_info(pid, &title).unwrap_or((0, Default::default()));
@@ -81,6 +84,7 @@ pub fn build_window_info(pid: i32, title: String, app: Option<AppInfo>) -> Optio
         window_id,
         bounds,
         app,
+        browser: None,
     });
 }
 

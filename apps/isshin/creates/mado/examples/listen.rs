@@ -49,6 +49,15 @@ impl EventHandler for FocusListener {
         println!("      PID:        {}", window.app.pid);
         println!("      Bundle ID:  {}", window.app.bundle_id);
         println!("      Path:       {}", window.app.process_path);
+
+        if let Some(browser) = &window.browser {
+            println!("   Browser:");
+            if let Some(url) = &browser.url {
+                println!("      URL:        {}", url);
+            } else {
+                println!("      URL:        (not available - may need Automation permission)");
+            }
+        }
     }
 }
 
@@ -65,6 +74,10 @@ fn main() -> Result<(), mado::Error> {
     }
 
     // Start listening (blocks until stopped)
-    let monitor = Monitor::new(FocusListener::new());
+    // Enable browser URL extraction (requires Automation permission on macOS)
+    let config = mado::MonitorConfig {
+        allow_browser: true,
+    };
+    let monitor = Monitor::with_config(FocusListener::new(), config);
     monitor.run()
 }

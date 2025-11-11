@@ -97,7 +97,7 @@ pub use config::MonitorConfig;
 pub use error::Error;
 pub use handler::EventHandler;
 pub use monitor::Monitor;
-pub use types::{AppInfo, WindowBounds, WindowInfo};
+pub use types::{AppInfo, BrowserInfo, WindowBounds, WindowInfo};
 
 /// Get information about the currently active application
 ///

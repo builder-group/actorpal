@@ -49,6 +49,17 @@ fn main() -> Result<(), mado::Error> {
                 println!("      PID:        {}", window.app.pid);
                 println!("      Bundle ID:  {}", window.app.bundle_id);
                 println!("      Path:       {}", window.app.process_path);
+
+                if let Some(browser) = &window.browser {
+                    println!("\n   Browser:");
+                    if let Some(url) = &browser.url {
+                        println!("      URL:        {}", url);
+                    } else {
+                        println!(
+                            "      URL:        (not available - may need Automation permission)"
+                        );
+                    }
+                }
             }
             Err(e) => eprintln!("❌ Error getting window: {}", e),
         }

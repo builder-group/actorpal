@@ -80,10 +80,9 @@ fn main() -> Result<(), mado::Error> {
     }
 
     // Start listening (blocks until stopped)
-    // Enable browser URL extraction (requires Automation permission on macOS)
     let config = mado::MonitorConfig {
         allow_browser: true,
-        track_window_changes: true, // Track app switches + window/tab changes
+        track_window_changes: true,
     };
     let monitor = Monitor::with_config(FocusListener::new(), config);
     monitor.run()

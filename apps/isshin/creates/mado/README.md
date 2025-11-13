@@ -412,3 +412,4 @@ All unsafe code is:
 - [winshift-rs](https://github.com/efJerryYang/winshift-rs)
 - [ferrous-focus](https://github.com/eurora-labs/ferrous-focus)
 - [aw-watcher-window](https://github.com/ActivityWatch/aw-watcher-window)
+- [nsworkspace-rs](https://github.com/mishamyrt/nsworkspace-rs)

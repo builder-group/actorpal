@@ -70,6 +70,12 @@ async clearTrackingData() : Promise<Result<null, string>> {
 },
 async showSettingsWindow() : Promise<void> {
     await TAURI_INVOKE("show_settings_window");
+},
+async isExitBlocked() : Promise<boolean> {
+    return await TAURI_INVOKE("is_exit_blocked");
+},
+async setExitBlocked(block: boolean) : Promise<void> {
+    await TAURI_INVOKE("set_exit_blocked", { block });
 }
 }
 

@@ -1,6 +1,7 @@
 mod environment;
 mod features;
 
+use environment::app_state::AppState;
 use environment::db::{Database, DatabaseState};
 use features::app;
 use features::hosts;
@@ -94,6 +95,18 @@ fn show_settings_window(app: AppHandle) {
     show_window(&app, "settings");
 }
 
+#[tauri::command]
+#[specta::specta]
+fn is_exit_blocked(state: tauri::State<'_, AppState>) -> bool {
+    state.is_exit_blocked()
+}
+
+#[tauri::command]
+#[specta::specta]
+fn set_exit_blocked(state: tauri::State<'_, AppState>, block: bool) {
+    state.set_block_exit(block);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
@@ -108,7 +121,9 @@ pub fn run() {
         tracking::commands::get_activity_entries,
         tracking::commands::get_today_stats,
         tracking::commands::clear_tracking_data,
-        show_settings_window
+        show_settings_window,
+        is_exit_blocked,
+        set_exit_blocked
     ]);
 
     #[cfg(debug_assertions)]
@@ -135,8 +150,9 @@ pub fn run() {
                 return database.pool;
             });
 
-            // Store database pool in app state
+            // Manage state
             app.manage(DatabaseState(pool.clone()));
+            app.manage(AppState::new(true));
 
             #[cfg(target_os = "macos")]
             {
@@ -160,6 +176,20 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("Error while running Tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { api, .. } => {
+                // Check if exit blocking is enabled
+                if let Some(state) = app_handle.try_state::<AppState>() {
+                    if state.is_exit_blocked() {
+                        api.prevent_exit();
+                    }
+                } else {
+                    // If state not available, prevent exit as fallback
+                    api.prevent_exit();
+                }
+            }
+            _ => {}
+        });
 }

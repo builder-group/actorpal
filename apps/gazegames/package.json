@@ -36,7 +36,7 @@
 		"ecsify": "^0.0.14",
 		"feature-react": "^0.0.66",
 		"feature-state": "^0.0.64",
-		"hono": "^4.10.4",
+		"hono": "^4.10.5",
 		"isbot": "^5.1.32",
 		"lucide-react": "^0.553.0",
 		"react": "^19.2.0",
@@ -55,10 +55,10 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/mdx": "^2.0.13",
-		"@types/node": "^24.10.0",
-		"@types/react": "^19.2.2",
-		"@types/react-dom": "^19.2.2",
-		"daisyui": "^5.4.7",
+		"@types/node": "^24.10.1",
+		"@types/react": "^19.2.4",
+		"@types/react-dom": "^19.2.3",
+		"daisyui": "^5.5.3",
 		"tailwindcss": "^4.1.17",
 		"vite-tsconfig-paths": "^5.1.4"
 	}

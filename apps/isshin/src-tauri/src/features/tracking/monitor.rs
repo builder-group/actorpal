@@ -1,7 +1,7 @@
-use super::storage::ActivityStorage;
 use super::types::ActivityEntry;
+use crate::environment::repositories::activity::ActivityRepository;
 use active_win_pos_rs::get_active_window;
-use std::sync::{Arc, Mutex};
+use sqlx::SqlitePool;
 use std::time::Duration;
 use sysinfo::{Pid, System};
 use tauri::{AppHandle, Emitter};
@@ -48,14 +48,9 @@ fn emit_activity_updated(handle: &AppHandle, activity: &ActivityEntry) {
     );
 }
 
-fn save_activity(storage: &Arc<Mutex<ActivityStorage>>, activity: &ActivityEntry) {
-    if activity.duration_seconds > 0 {
-        let mut storage_guard = storage.lock().unwrap();
-        storage_guard.add_entry(activity.clone());
-
-        if let Err(e) = storage_guard.save() {
-            eprintln!("Failed to save activity: {}", e);
-        }
+async fn save_activity(pool: &sqlx::SqlitePool, activity: &ActivityEntry) {
+    if let Err(e) = ActivityRepository::insert(pool, activity).await {
+        eprintln!("Failed to save activity: {}", e);
     }
 }
 
@@ -156,9 +151,8 @@ fn get_url_via_applescript(bundle_id: &str) -> Option<String> {
     None
 }
 
-pub async fn start_monitoring(handle: AppHandle) {
-    let storage = Arc::new(Mutex::new(ActivityStorage::load().unwrap_or_default()));
-    let current_activity = Arc::new(Mutex::new(None::<ActivityEntry>));
+pub async fn start_monitoring(handle: AppHandle, pool: SqlitePool) {
+    let current_activity = tokio::sync::Mutex::new(None::<ActivityEntry>);
 
     loop {
         tokio::time::sleep(Duration::from_secs(5)).await;
@@ -248,7 +242,7 @@ pub async fn start_monitoring(handle: AppHandle) {
             })
             .unwrap_or(false);
 
-        let mut current = current_activity.lock().unwrap();
+        let mut current = current_activity.lock().await;
 
         match current.as_mut() {
             Some(activity) => {
@@ -261,7 +255,7 @@ pub async fn start_monitoring(handle: AppHandle) {
                 if identifier_changed || url_changed {
                     // Activity changed (different app/bundle or different tab in browser)
                     activity.update_end_time();
-                    save_activity(&storage, activity);
+                    save_activity(&pool, activity).await;
 
                     *current = Some(ActivityEntry::new(
                         app_name.clone(),

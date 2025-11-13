@@ -1,19 +1,25 @@
-use super::storage::ActivityStorage;
 use super::types::{ActivityEntry, ActivitySummary, DailyStats, WebsiteSummary};
+use crate::environment::db::DatabaseState;
+use crate::environment::repositories::activity::ActivityRepository;
 use chrono::{Local, Timelike};
 use std::collections::HashMap;
+use tauri::State;
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_activity_entries() -> Result<Vec<ActivityEntry>, String> {
-    let storage = ActivityStorage::load().map_err(|e| e.to_string())?;
-    Ok(storage.entries)
+pub async fn get_activity_entries(
+    state: State<'_, DatabaseState>,
+) -> Result<Vec<ActivityEntry>, String> {
+    let pool = &state.inner().0;
+    ActivityRepository::get_all(pool)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_today_stats() -> Result<DailyStats, String> {
-    let storage = ActivityStorage::load().map_err(|e| e.to_string())?;
+pub async fn get_today_stats(state: State<'_, DatabaseState>) -> Result<DailyStats, String> {
+    let pool = &state.inner().0;
 
     let today = Local::now().format("%Y-%m-%d").to_string();
     let today_start = Local::now()
@@ -25,12 +31,10 @@ pub fn get_today_stats() -> Result<DailyStats, String> {
         .unwrap()
         .timestamp() as u64;
 
-    // Filter entries for today
-    let today_entries: Vec<_> = storage
-        .entries
-        .iter()
-        .filter(|e| e.start_time >= today_start)
-        .collect();
+    // Get entries for today
+    let today_entries = ActivityRepository::get_since(pool, today_start)
+        .await
+        .map_err(|e| e.to_string())?;
 
     // Calculate total time and per-app summaries
     // Group by identifier (bundle_id if available, otherwise application name)
@@ -38,7 +42,7 @@ pub fn get_today_stats() -> Result<DailyStats, String> {
     let mut website_durations: HashMap<String, u64> = HashMap::new();
     let mut total_time: u64 = 0;
 
-    for entry in today_entries {
+    for entry in &today_entries {
         let duration = entry.duration_seconds;
         let identifier = entry.identifier();
 
@@ -141,8 +145,9 @@ fn extract_domain(url: &str) -> Option<String> {
 
 #[tauri::command]
 #[specta::specta]
-pub fn clear_tracking_data() -> Result<(), String> {
-    let storage = ActivityStorage::default();
-    storage.save().map_err(|e| e.to_string())?;
-    Ok(())
+pub async fn clear_tracking_data(state: State<'_, DatabaseState>) -> Result<(), String> {
+    let pool = &state.inner().0;
+    ActivityRepository::delete_all(pool)
+        .await
+        .map_err(|e| e.to_string())
 }

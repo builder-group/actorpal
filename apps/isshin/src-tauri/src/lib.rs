@@ -1,5 +1,7 @@
+mod environment;
 mod features;
 
+use environment::db::{Database, DatabaseState};
 use features::app;
 use features::hosts;
 use features::process;
@@ -118,13 +120,23 @@ pub fn run() {
         .expect("Failed to export Typescript bindings");
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_sql::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(builder.invoke_handler())
         .setup(move |app| {
             // https://docs.rs/tauri-specta/2.0.0-rc.21/tauri_specta/index.html
             builder.mount_events(app);
+
+            // Initialize database
+            let pool = tauri::async_runtime::block_on(async move {
+                let database = Database::new()
+                    .await
+                    .expect("Failed to initialize database");
+                return database.pool;
+            });
+
+            // Store database pool in app state
+            app.manage(DatabaseState(pool.clone()));
 
             #[cfg(target_os = "macos")]
             {
@@ -143,7 +155,7 @@ pub fn run() {
             // Start background activity monitoring
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                tracking::monitor::start_monitoring(handle).await;
+                tracking::monitor::start_monitoring(handle, pool).await;
             });
 
             Ok(())

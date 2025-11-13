@@ -21,6 +21,7 @@
 ### Requirements
 
 **macOS:**
+
 - macOS 10.9+
 - **Accessibility permissions** required if `track_window_changes: true` (default)
   - System Settings > Privacy & Security > Accessibility
@@ -28,6 +29,7 @@
 - **Automation permissions** (optional, for browser URL extraction): System Settings > Privacy & Security > Automation
 
 **Linux:**
+
 - X11 display server
 - X11 development libraries (`libx11-dev` on Debian/Ubuntu, `libX11-devel` on Fedora)
 
@@ -91,7 +93,7 @@ impl EventHandler for FocusListener {
     fn on_focus_change(&self, window: WindowInfo) {
         let mut last_bundle = self.last_bundle_id.lock().unwrap();
         let app_changed = last_bundle.as_deref() != Some(&window.app.bundle_id);
-        
+
         if app_changed {
             println!("🔄 App Switch: {}", window.app.name);
             *last_bundle = Some(window.app.bundle_id.clone());
@@ -121,13 +123,13 @@ struct MyHandler;
 impl EventHandler for MyHandler {
     fn on_focus_change(&self, window: WindowInfo) {
         println!("Window: {}", window.title);
-        
+
         // Check if browser info is available
         if let Some(browser) = &window.browser {
             if let Some(url) = &browser.url {
                 println!("  URL: {}", url);
             }
-            
+
             // Check if in private mode
             if let Some(is_private) = browser.is_private {
                 if is_private {
@@ -143,7 +145,7 @@ fn main() -> Result<(), mado::Error> {
     let config = MonitorConfig {
         allow_browser: true, // Requires Automation permission on macOS
     };
-    
+
     let monitor = Monitor::with_config(MyHandler, config);
     monitor.run()
 }
@@ -160,13 +162,13 @@ use std::time::Duration;
 
 fn main() -> Result<(), mado::Error> {
     let monitor = Monitor::new(MyHandler);
-    
+
     // Stop after 5 seconds
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(5));
         Monitor::stop().unwrap();
     });
-    
+
     monitor.run() // Blocks until stop() is called
 }
 ```
@@ -223,6 +225,7 @@ pub struct BrowserInfo {
 ```
 
 **Note:** `BrowserInfo` is only populated when:
+
 - `allow_browser` is enabled in `MonitorConfig`
 - The window belongs to a supported browser
 - Automation permission is granted (macOS)
@@ -267,6 +270,7 @@ pub struct MonitorConfig {
 ```
 
 **Defaults:**
+
 - `allow_browser: false` - Minimal overhead, no additional permissions
 - `track_window_changes: true` - Track all changes (app switches + window/tab changes)
 
@@ -287,6 +291,7 @@ The callback receives complete window information including app details. You can
 **Problem**: Polling for window changes is inefficient and adds latency.
 
 **Solution**: Event-driven monitoring provides:
+
 - **Low latency**: Immediate notifications when changes occur
 - **Low CPU usage**: No polling loops consuming resources
 - **Battery friendly**: System wakes the process only when needed
@@ -298,12 +303,14 @@ The callback receives complete window information including app details. You can
 We use two monitoring layers internally, but expose a unified callback:
 
 **1. App Switching** (`NSWorkspace`)
+
 - Monitors `NSWorkspaceDidActivateApplicationNotification`
 - Fires when user switches to a different app (infrequent)
 - Creates Accessibility observer for the new app
 - Sends `on_focus_change()` when window info is ready
 
 **2. Window Changes** (Accessibility API)
+
 - Monitors `kAXFocusedWindowChangedNotification` and `kAXTitleChangedNotification`
 - Fires on window focus changes OR title changes (frequent)
 - Detects tab switches via title changes
@@ -313,11 +320,13 @@ We use two monitoring layers internally, but expose a unified callback:
 **Why unified callback?** The library doesn't distinguish between app and window changes - that's a consumer concern. This simplifies the API (no state tracking), gives consumers full control, and makes it easier to extend with additional data (URLs, metadata) later.
 
 **Information Gathering:**
+
 - **NSWorkspace**: App metadata (name, bundle ID, path)
 - **Accessibility API**: Window title
 - **CoreGraphics**: Window ID and bounds
 
 **Architecture:**
+
 - Uses `objc2` crate for Objective-C interop
 - `WorkspaceMonitor` manages `WorkspaceDelegate` (Objective-C delegate)
 - `AccessibilityMonitor` stored in delegate's instance variables
@@ -327,6 +336,7 @@ We use two monitoring layers internally, but expose a unified callback:
 #### Linux: X11 Property Monitoring
 
 **Implementation:**
+
 - Single event loop monitoring X11 property changes
 - Monitors `_NET_ACTIVE_WINDOW` property for focus changes
 - Monitors `_NET_WM_NAME` and `WM_NAME` for window titles (detects tab switches)
@@ -336,10 +346,12 @@ We use two monitoring layers internally, but expose a unified callback:
 **Why simpler?** X11 doesn't have a strong app concept like macOS - everything is window-based. Single event loop handles all focus changes.
 
 **Information Gathering:**
-- **X11 Properties**: Window title, app name (WM_CLASS), PID (_NET_WM_PID)
+
+- **X11 Properties**: Window title, app name (WM_CLASS), PID (\_NET_WM_PID)
 - **Window ID**: Direct X11 window ID
 
 **Architecture:**
+
 - `X11Monitor` manages X11 connection and event loop
 - Minimal global state: `OnceLock<RawFd>` for interrupt pipe write end (needed for `stop()`)
 - `stop()` writes to interrupt pipe to wake up `select()`
@@ -356,11 +368,13 @@ monitor.stop()?; // ❌ Can't call - monitor was moved!
 ```
 
 To make instance-based `stop()` work, you'd need to:
+
 - Store the monitor instance globally (e.g., `OnceLock<Arc<Monitor>>`)
 - Change `run()` to not consume `self` (adds complexity)
 - Store more state than needed (we only need a way to signal stop)
 
 Static `stop()` is simpler because:
+
 - Only stores what's needed (interrupt pipe on Linux, uses framework singleton on macOS)
 - Less state, simpler code
 
@@ -369,6 +383,7 @@ Static `stop()` is simpler because:
 All focus changes (app switches, window changes, tab switches) flow through a single `on_focus_change()` callback:
 
 **macOS - App Switch:**
+
 ```
 User switches app
 → NSWorkspace notification (app_did_activate)
@@ -377,6 +392,7 @@ User switches app
 ```
 
 **macOS - Window/Tab Switch:**
+
 ```
 User switches window/tab
 → Accessibility notification (window_change_callback)
@@ -384,6 +400,7 @@ User switches window/tab
 ```
 
 **Linux - Focus Change:**
+
 ```
 User switches window
 → X11 PropertyNotify (_NET_ACTIVE_WINDOW)
@@ -391,6 +408,7 @@ User switches window
 ```
 
 **Linux - Title Change (Tab Switch):**
+
 ```
 User switches tab
 → X11 PropertyNotify (_NET_WM_NAME)
@@ -400,6 +418,7 @@ User switches tab
 ### Memory Safety
 
 All unsafe code is:
+
 1. **Documented**: Every unsafe block explains why it should be safe
 2. **Encapsulated**: Internal to platform modules
 3. **Minimal**: Only where FFI requires it

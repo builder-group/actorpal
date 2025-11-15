@@ -5,8 +5,8 @@ use tauri::{
     AppHandle,
 };
 
+use crate::app::window::Window;
 use crate::environment::configs::app::AppConfig;
-use crate::windows::Window;
 
 struct TrayItemConfig {
     id: &'static str,

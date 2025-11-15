@@ -1,5 +1,5 @@
+use super::path::get_app_data_dir;
 use crate::environment::configs::db::DbConfig;
-use crate::library::path::get_app_data_dir;
 use sqlx::{migrate::Migrator, sqlite::SqlitePool, Pool, Sqlite};
 use tauri::App;
 

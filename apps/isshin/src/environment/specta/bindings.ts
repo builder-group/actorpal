@@ -5,40 +5,17 @@
 
 
 export const commands = {
-async listProcess() : Promise<ProcessInfo[]> {
-    return await TAURI_INVOKE("list_process");
-},
-async maxRunningProcess() : Promise<ProcessInfo | null> {
-    return await TAURI_INVOKE("max_running_process");
-},
-async maxMemory() : Promise<ProcessInfo | null> {
-    return await TAURI_INVOKE("max_memory");
-},
-async killProcess(id: string) : Promise<boolean> {
-    return await TAURI_INVOKE("kill_process", { id });
-},
-async getFocusedApplication() : Promise<string | null> {
-    return await TAURI_INVOKE("get_focused_application");
-},
-async blockWebsites(domains: string[]) : Promise<Result<number, string>> {
+async showSettingsWindow() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("block_websites", { domains }) };
+    return { status: "ok", data: await TAURI_INVOKE("show_settings_window") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async unblockWebsite(domain: string) : Promise<Result<boolean, string>> {
+async getDatabasePath() : Promise<Result<string, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("unblock_website", { domain }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async getBlockedWebsites() : Promise<Result<string[], string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_blocked_websites") };
+    return { status: "ok", data: await TAURI_INVOKE("get_database_path") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
@@ -52,30 +29,13 @@ async getActivityEntries() : Promise<Result<ActivityEntry[], string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getTodayStats() : Promise<Result<DailyStats, string>> {
+async clearActivityEntries() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_today_stats") };
+    return { status: "ok", data: await TAURI_INVOKE("clear_activity_entries") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
-},
-async clearTrackingData() : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("clear_tracking_data") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async showSettingsWindow() : Promise<void> {
-    await TAURI_INVOKE("show_settings_window");
-},
-async isExitBlocked() : Promise<boolean> {
-    return await TAURI_INVOKE("is_exit_blocked");
-},
-async setExitBlocked(block: boolean) : Promise<void> {
-    await TAURI_INVOKE("set_exit_blocked", { block });
 }
 }
 
@@ -89,11 +49,10 @@ async setExitBlocked(block: boolean) : Promise<void> {
 
 /** user-defined types **/
 
-export type ActivityEntry = { application: string; bundle_id: string | null; window_title: string | null; url: string | null; start_time: number; end_time: number; duration_seconds: number }
-export type ActivitySummary = { application: string; bundle_id: string | null; total_duration_seconds: number; percentage: number }
-export type DailyStats = { date: string; total_time_seconds: number; activities: ActivitySummary[]; websites: WebsiteSummary[] }
-export type ProcessInfo = { id: string; nume: string; running_time_formatted: string; memory_in_bytes: number }
-export type WebsiteSummary = { domain: string; total_duration_seconds: number; percentage: number }
+/**
+ * Core activity entry tracking window/app focus sessions
+ */
+export type ActivityEntry = { application: string; bundleId: string | null; pid: number | null; processPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number }
 
 /** tauri-specta globals **/
 

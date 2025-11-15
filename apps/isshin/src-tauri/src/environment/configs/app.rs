@@ -7,10 +7,6 @@ impl AppConfig {
         Path::new(env!("CARGO_MANIFEST_DIR"))
     }
 
-    pub fn activity_poll_interval_secs() -> u64 {
-        5
-    }
-
     pub fn app_name() -> &'static str {
         "Isshin"
     }

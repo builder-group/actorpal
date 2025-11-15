@@ -3,29 +3,6 @@ use specta::Type;
 use std::str::FromStr;
 use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
-mod main;
-mod settings;
-
-use main::MainWindow;
-use settings::SettingsWindow;
-
-pub struct WindowConfig {
-    pub label: &'static str,
-    pub title: &'static str,
-    pub url: &'static str,
-    pub min_size: Option<(f64, f64)>,
-    pub resizable: bool,
-    pub maximizable: bool,
-    pub minimizable: bool,
-    pub always_on_top: bool,
-    pub visible_on_all_workspaces: bool,
-}
-
-pub trait WindowInstance {
-    fn config(&self) -> WindowConfig;
-    fn setup(&self, window: &WebviewWindow);
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Type)]
 pub enum Window {
     Main,
@@ -45,34 +22,55 @@ impl FromStr for Window {
 }
 
 impl Window {
-    fn instance(&self) -> Box<dyn WindowInstance> {
+    fn config(&self) -> WindowConfig {
         return match self {
-            Window::Main => Box::new(MainWindow),
-            Window::Settings => Box::new(SettingsWindow),
+            Window::Main => WindowConfig {
+                label: "main",
+                title: "Isshin",
+                url: "/",
+                min_size: None,
+                resizable: false,
+                maximizable: false,
+                minimizable: false,
+                always_on_top: true,
+                visible_on_all_workspaces: true,
+            },
+            Window::Settings => WindowConfig {
+                label: "settings",
+                title: "Isshin Settings",
+                url: "/settings",
+                min_size: Some((600.0, 450.0)),
+                resizable: true,
+                maximizable: true,
+                minimizable: true,
+                always_on_top: false,
+                visible_on_all_workspaces: false,
+            },
         };
     }
 
     pub fn get(&self, app: &AppHandle) -> Option<WebviewWindow> {
-        let instance = self.instance();
-        let config = instance.config();
+        let config = self.config();
         return app.get_webview_window(config.label);
     }
 
     pub async fn show(&self, app: &AppHandle) -> tauri::Result<WebviewWindow> {
         if let Some(window) = self.get(app) {
+            window.show()?;
             window.set_focus()?;
             return Ok(window);
         }
 
-        return Ok(self.window_builder(app).build()?);
+        let window = self.window_builder(app).build()?;
+        window.show()?;
+        return Ok(window);
     }
 
     fn window_builder<'a>(
         &'a self,
         app: &'a AppHandle,
     ) -> WebviewWindowBuilder<'a, tauri::Wry, AppHandle> {
-        let instance = self.instance();
-        let config = instance.config();
+        let config = self.config();
         let mut builder =
             WebviewWindow::builder(app, config.label, WebviewUrl::App(config.url.into()))
                 .title(config.title)
@@ -97,8 +95,26 @@ impl Window {
 
     pub fn setup(&self, app: &AppHandle) {
         if let Some(window) = self.get(app) {
-            let instance = self.instance();
-            instance.setup(&window);
+            // Setup close handler to hide instead of quit
+            let window_clone = window.clone();
+            window.on_window_event(move |event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window_clone.hide();
+                }
+            });
         }
     }
+}
+
+pub struct WindowConfig {
+    pub label: &'static str,
+    pub title: &'static str,
+    pub url: &'static str,
+    pub min_size: Option<(f64, f64)>,
+    pub resizable: bool,
+    pub maximizable: bool,
+    pub minimizable: bool,
+    pub always_on_top: bool,
+    pub visible_on_all_workspaces: bool,
 }

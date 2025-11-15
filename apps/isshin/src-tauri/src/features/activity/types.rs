@@ -1,63 +1,77 @@
+use mado::WindowInfo;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+/// Core activity entry tracking window/app focus sessions
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct ActivityEntry {
+    // App information
     pub application: String,
     pub bundle_id: Option<String>,
+    pub pid: Option<i32>,
+    pub process_path: Option<String>,
+
+    // Window information
     pub window_title: Option<String>,
-    pub url: Option<String>,
+    pub window_id: Option<u32>,
+    pub window_x: Option<f64>,
+    pub window_y: Option<f64>,
+    pub window_width: Option<f64>,
+    pub window_height: Option<f64>,
+
+    // Browser information (if applicable)
+    pub browser_url: Option<String>,
+    pub browser_is_private: Option<bool>,
+
+    // Time tracking
     pub start_time: u64,
     pub end_time: u64,
-    pub duration_seconds: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-pub struct ActivitySummary {
-    pub application: String,
-    pub bundle_id: Option<String>,
-    pub total_duration_seconds: u64,
-    pub percentage: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-pub struct WebsiteSummary {
-    pub domain: String,
-    pub total_duration_seconds: u64,
-    pub percentage: f64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
-pub struct DailyStats {
-    pub date: String,
-    pub total_time_seconds: u64,
-    pub activities: Vec<ActivitySummary>,
-    pub websites: Vec<WebsiteSummary>,
-}
-
-impl ActivityEntry {
-    pub fn new(
-        application: String,
-        bundle_id: Option<String>,
-        window_title: Option<String>,
-        url: Option<String>,
-    ) -> Self {
+impl From<WindowInfo> for ActivityEntry {
+    fn from(window: WindowInfo) -> Self {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs();
 
+        let bundle_id = if window.app.bundle_id.is_empty() {
+            None
+        } else {
+            Some(window.app.bundle_id)
+        };
+
+        let process_path = if window.app.process_path.is_empty() {
+            None
+        } else {
+            Some(window.app.process_path)
+        };
+
+        let browser_url = window.browser.as_ref().and_then(|b| b.url.clone());
+        let browser_is_private = window.browser.as_ref().and_then(|b| b.is_private);
+
         Self {
-            application,
+            application: window.app.name,
             bundle_id,
-            window_title,
-            url,
+            pid: Some(window.app.pid),
+            process_path,
+            window_title: Some(window.title),
+            window_id: Some(window.window_id),
+            window_x: Some(window.bounds.x),
+            window_y: Some(window.bounds.y),
+            window_width: Some(window.bounds.width),
+            window_height: Some(window.bounds.height),
+            browser_url,
+            browser_is_private,
             start_time: now,
             end_time: now,
-            duration_seconds: 0,
         }
     }
+}
 
+impl ActivityEntry {
+    /// Get a unique identifier for this activity (bundle_id or application name)
     pub fn identifier(&self) -> String {
         self.bundle_id
             .as_ref()
@@ -65,6 +79,31 @@ impl ActivityEntry {
             .unwrap_or_else(|| self.application.clone())
     }
 
+    /// Extract domain from browser URL if present (simple parsing)
+    pub fn domain(&self) -> Option<String> {
+        self.browser_url.as_ref().and_then(|u| {
+            // Simple domain extraction: find the part after :// and before the next /
+            if let Some(start) = u.find("://") {
+                let after_protocol = &u[start + 3..];
+                let domain = after_protocol
+                    .split('/')
+                    .next()
+                    .and_then(|d| d.split(':').next())
+                    .map(|d| d.to_string());
+                domain
+            } else {
+                // No protocol, try to find first / or :
+                let domain = u
+                    .split('/')
+                    .next()
+                    .and_then(|d| d.split(':').next())
+                    .map(|d| d.to_string());
+                domain
+            }
+        })
+    }
+
+    /// Update end time to current time
     pub fn update_end_time(&mut self) {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -72,6 +111,10 @@ impl ActivityEntry {
             .as_secs();
 
         self.end_time = now;
-        self.duration_seconds = now - self.start_time;
+    }
+
+    /// Calculate duration in seconds from start and end time
+    pub fn duration_seconds(&self) -> u64 {
+        self.end_time.saturating_sub(self.start_time)
     }
 }

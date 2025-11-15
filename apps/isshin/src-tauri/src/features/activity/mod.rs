@@ -1,8 +1,8 @@
 pub mod commands;
-pub mod library;
+mod monitor;
+mod repository;
 pub mod types;
 
-use crate::features::activity::library::monitor;
 use tauri::AppHandle;
 
 pub fn setup(app: AppHandle) {

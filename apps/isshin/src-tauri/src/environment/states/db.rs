@@ -1,3 +1,3 @@
-use crate::library::db::Database;
+use crate::common::db::Database;
 
 pub struct DatabaseState(pub Database);

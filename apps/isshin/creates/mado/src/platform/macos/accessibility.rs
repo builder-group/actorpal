@@ -23,7 +23,9 @@ use super::workspace;
 /// Observer information for a process
 struct ObserverInfo {
     run_loop_source: CFRunLoopSource,
-    // Observer itself is managed by Core Foundation, run loop source keeps it alive
+    // Observer itself is managed by Core Foundation, run loop source keeps it alive.
+    // When the run loop source is removed, the observer and its associated context pointers
+    // are cleaned up by the AX API automatically.
 }
 
 /// Monitor for window changes using Accessibility API
@@ -128,6 +130,10 @@ impl AccessibilityMonitor {
         return Ok(());
     }
 
+    /// Stop all observers and clean up resources
+    ///
+    /// This removes all run loop sources, which causes the AX API to clean up
+    /// the associated observers and their context pointers automatically.
     pub fn stop(&mut self) -> Result<(), Error> {
         let run_loop = CFRunLoop::get_current();
         for info in self.observers.values() {
@@ -135,6 +141,8 @@ impl AccessibilityMonitor {
                 run_loop.remove_source(&info.run_loop_source, kCFRunLoopDefaultMode);
             }
         }
+        // Clearing the map ensures we don't try to remove sources twice
+        // The AX API handles cleanup of observers and context pointers when sources are removed
         self.observers.clear();
         return Ok(());
     }
@@ -200,7 +208,8 @@ unsafe fn add_title_observer_to_focused_window(
 /// 1. The focused window changes (kAXFocusedWindowChangedNotification)
 /// 2. The window title changes (kAXTitleChangedNotification) - for tab switching
 ///
-/// SAFETY: This is a C callback invoked by the Accessibility API
+/// SAFETY: This is a C callback invoked by the Accessibility API.
+/// We use catch_unwind to prevent panics from crashing the app.
 unsafe extern "C" fn window_change_callback(
     observer: accessibility_sys::AXObserverRef,
     element: accessibility_sys::AXUIElementRef,
@@ -230,8 +239,17 @@ unsafe extern "C" fn window_change_callback(
                     let app_element = accessibility_sys::AXUIElementCreateApplication(pid);
                     add_title_observer_to_focused_window(observer, app_element, context);
 
-                    // Handle the event (applies middleware and calls handler)
-                    context.handle(window);
+                    // Wrap user code in catch_unwind to prevent panics from crashing the app
+                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                        context.handle(window);
+                    }));
+
+                    // Log panic if it occurred, but don't crash the app
+                    if let Err(_) = result {
+                        eprintln!(
+                            "[AccessibilityMonitor] Panic in user handler - event was dropped"
+                        );
+                    }
                 }
             }
         }

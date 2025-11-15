@@ -30,7 +30,7 @@ impl EventHandler for ActivityHandler {
         let app = self.app.clone();
         let current_entry = Arc::clone(&self.current_entry);
 
-        tokio::spawn(async move {
+        tauri::async_runtime::spawn(async move {
             // Save previous entry if it exists
             let mut entry_guard = current_entry.lock().await;
             if let Some(mut entry) = entry_guard.take() {
@@ -58,7 +58,7 @@ impl EventHandler for ActivityHandler {
     }
 }
 
-pub async fn start_monitoring(app: AppHandle) {
+pub fn start_monitoring(app: AppHandle) {
     println!("[Activity Monitor] Starting activity monitoring");
 
     let handler = ActivityHandler::new(app);
@@ -66,9 +66,12 @@ pub async fn start_monitoring(app: AppHandle) {
     // Create monitor with default config (tracks window changes, no browser URL extraction)
     let monitor = Monitor::new(handler);
 
-    // Run monitor (blocks until stopped)
-    // This will run in the spawned task, so it won't block the main thread
-    if let Err(e) = monitor.run() {
-        eprintln!("[Activity Monitor] Error running monitor: {}", e);
-    }
+    // Use std::thread instead of Tokio because NSApplication::run() blocks indefinitely.
+    // Tokio tasks must yield to the runtime, but this event loop runs forever until terminated.
+    // A dedicated OS thread is the correct approach for long-running blocking operations.
+    std::thread::spawn(move || {
+        if let Err(e) = monitor.run() {
+            eprintln!("[Activity Monitor] Error running monitor: {}", e);
+        }
+    });
 }

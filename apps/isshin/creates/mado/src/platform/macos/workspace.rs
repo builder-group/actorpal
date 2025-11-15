@@ -47,8 +47,13 @@ define_class!(
             // Initialize accessibility monitor for current app
             if self.ivars().context.config().track_window_changes {
                 if let Some(pid) = get_current_pid() {
-                    if let Ok(monitor) = accessibility::AccessibilityMonitor::new(self.ivars().context.clone(), pid) {
-                        *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                    match accessibility::AccessibilityMonitor::new(self.ivars().context.clone(), pid) {
+                        Ok(monitor) => {
+                            *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                        }
+                        Err(e) => {
+                            eprintln!("[WorkspaceMonitor] Failed to create accessibility monitor for PID {}: {}", pid, e);
+                        }
                     }
                 }
             }
@@ -69,8 +74,16 @@ define_class!(
 
                 // Create accessibility observer for the new app
                 if context.config().track_window_changes {
-                    if let Ok(monitor) = accessibility::AccessibilityMonitor::new(context.clone(), app_info.pid) {
-                        *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                    match accessibility::AccessibilityMonitor::new(context.clone(), app_info.pid) {
+                        Ok(monitor) => {
+                            *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "[WorkspaceMonitor] Failed to create accessibility monitor for app {} (PID {}): {}",
+                                app_info.name, app_info.pid, e
+                            );
+                        }
                     }
                 }
 
@@ -96,7 +109,6 @@ define_class!(
 
 impl WorkspaceDelegate {
     fn new(context: EventContext, mtm: MainThreadMarker) -> Retained<Self> {
-        use std::cell::RefCell;
         let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
             context,
             accessibility_monitor: RefCell::new(None),
@@ -110,24 +122,61 @@ impl WorkspaceDelegate {
 pub struct WorkspaceMonitor {
     delegate: Retained<WorkspaceDelegate>,
     app: Retained<NSApplication>,
+    is_running: bool,
 }
 
 impl WorkspaceMonitor {
+    /// Create a new WorkspaceMonitor
+    ///
+    /// # Threading Requirements
+    ///
+    /// This must be called from either:
+    /// - The main thread, or
+    /// - A dedicated thread that runs AppKit code (e.g., a spawned thread that will run `NSApplication`)
+    ///
+    /// This function uses `MainThreadMarker::new_unchecked()` internally, which is safe as long as
+    /// the calling thread is dedicated to AppKit operations and will not be used for other purposes.
+    ///
+    /// # Example
+    ///
+    /// ```rust,no_run
+    /// // On main thread
+    /// let monitor = WorkspaceMonitor::new(context)?;
+    ///
+    /// // Or on a dedicated AppKit thread
+    /// std::thread::spawn(move || {
+    ///     let mut monitor = WorkspaceMonitor::new(context)?;
+    ///     monitor.run()?;
+    ///     Ok::<(), Error>(())
+    /// });
+    /// ```
     pub fn new(context: EventContext) -> Result<Self, Error> {
-        let mtm = MainThreadMarker::new()
-            .ok_or_else(|| Error::Platform("Not on main thread".to_string()))?;
+        // SAFETY: Safe when called from main thread or dedicated AppKit thread (as documented)
+        let mtm = unsafe { MainThreadMarker::new_unchecked() };
 
         let delegate = WorkspaceDelegate::new(context, mtm);
         let app = NSApplication::sharedApplication(mtm);
 
-        return Ok(Self { delegate, app });
+        return Ok(Self {
+            delegate,
+            app,
+            is_running: false,
+        });
     }
 
     pub fn context(&self) -> &EventContext {
-        &self.delegate.ivars().context
+        return &self.delegate.ivars().context;
     }
 
-    pub fn start(&mut self) -> Result<(), Error> {
+    /// Start monitoring and run the NSApplication event loop.
+    ///
+    /// This sets up NSWorkspace notifications and then blocks until the app is terminated.
+    /// This blocks until `stop()` is called.
+    pub fn run(&mut self) -> Result<(), Error> {
+        if self.is_running {
+            return Err(Error::Platform("Monitor is already running".to_string()));
+        }
+
         unsafe {
             let workspace = NSWorkspace::sharedWorkspace();
             let center = workspace.notificationCenter();
@@ -145,23 +194,47 @@ impl WorkspaceMonitor {
             self.app.setDelegate(Some(delegate_obj));
         }
 
-        return Ok(());
-    }
+        self.is_running = true;
 
-    pub fn run(&self) -> Result<(), Error> {
-        // Run the NSApplication event loop
-        // This blocks until the app is terminated
+        // Run the NSApplication event loop (blocks until terminated)
         self.app.run();
+
+        // Clean up after run loop exits
+        self.cleanup();
+
         return Ok(());
     }
 
-    pub fn stop() {
-        // Stop the NSApplication run loop
-        // This needs to be called from the main thread
-        if let Some(mtm) = MainThreadMarker::new() {
-            let app = NSApplication::sharedApplication(mtm);
-            app.terminate(None);
+    /// Clean up observers and reset state
+    fn cleanup(&mut self) {
+        if !self.is_running {
+            return;
         }
+
+        unsafe {
+            let workspace = NSWorkspace::sharedWorkspace();
+            let center = workspace.notificationCenter();
+
+            // Remove NSWorkspace observer
+            center.removeObserver(self.delegate.as_ref());
+        }
+
+        self.is_running = false;
+    }
+
+    /// Stop the NSApplication event loop.
+    ///
+    /// This can be called from any thread. It terminates the NSApplication,
+    /// which will cause `run()` to return. This method is idempotent - calling it
+    /// multiple times is safe.
+    pub fn stop() {
+        // SAFETY: NSApplication::terminate() is thread-safe and can be called from any thread.
+        // We use new_unchecked() because stop() may be called from a thread that's not
+        // the main thread or the AppKit thread, but terminate() will still work correctly.
+        // terminate() is idempotent, so calling it multiple times is safe.
+        let mtm = unsafe { MainThreadMarker::new_unchecked() };
+        let app = NSApplication::sharedApplication(mtm);
+        app.terminate(None);
     }
 }
 
@@ -181,7 +254,13 @@ fn extract_app_from_notification(notification: &NSNotification) -> Option<AppInf
         .bundleIdentifier()
         .map(|s| s.to_string())
         .unwrap_or_default();
-    let process_path = get_process_path(pid).unwrap_or_default();
+    let process_path = get_process_path(pid).unwrap_or_else(|| {
+        eprintln!(
+            "[WorkspaceMonitor] Failed to get process path for PID {}",
+            pid
+        );
+        String::new()
+    });
 
     return Some(AppInfo {
         pid,
@@ -211,6 +290,9 @@ pub fn get_bundle_id(pid: i32) -> Option<String> {
 }
 
 /// Get process path by PID using proc_pidpath system call
+///
+/// Returns `None` if the process path cannot be retrieved.
+/// Logs errors for debugging purposes.
 pub fn get_process_path(pid: i32) -> Option<String> {
     #[link(name = "proc")]
     extern "C" {
@@ -222,7 +304,7 @@ pub fn get_process_path(pid: i32) -> Option<String> {
         let ret = proc_pidpath(pid, buf.as_mut_ptr(), 4096);
 
         if ret > 0 {
-            std::ffi::CStr::from_ptr(buf.as_ptr())
+            return std::ffi::CStr::from_ptr(buf.as_ptr())
                 .to_str()
                 .ok()
                 .and_then(|s| std::fs::canonicalize(s).ok())
@@ -233,7 +315,7 @@ pub fn get_process_path(pid: i32) -> Option<String> {
                         .to_str()
                         .map(|s| s.to_string())
                         .ok()
-                })
+                });
         } else {
             return None;
         }

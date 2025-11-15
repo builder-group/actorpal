@@ -33,8 +33,20 @@ use workspace::WorkspaceMonitor;
 
 /// Run the monitor on macOS
 ///
-/// This initializes both workspace and accessibility monitors, then blocks
-/// until stop() is called from another thread.
+/// This blocks the current thread until stop() is called.
+///
+/// # Threading
+///
+/// This function must be called from a thread that can safely run AppKit code
+/// (either the main thread or a dedicated AppKit thread). See `WorkspaceMonitor::new()`
+/// for detailed threading requirements.
+///
+/// For non-blocking usage (e.g., in Tauri setup), spawn a thread:
+/// ```rust,no_run
+/// std::thread::spawn(move || {
+///     run(handler, config).expect("Monitor failed");
+/// });
+/// ```
 pub(super) fn run(
     handler: Arc<RwLock<dyn EventHandler>>,
     config: MonitorConfig,
@@ -53,7 +65,7 @@ pub(super) fn run(
         monitor.context().handle(window);
     }
 
-    monitor.start()?;
+    // Start monitoring and run the event loop (blocks)
     monitor.run()?;
 
     return Ok(());

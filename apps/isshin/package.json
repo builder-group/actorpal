@@ -28,6 +28,7 @@
 		"update:latest": "pnpm update --latest"
 	},
 	"dependencies": {
+		"@base-ui-components/react": "1.0.0-beta.4",
 		"@react-router/fs-routes": "^7.9.5",
 		"@react-router/node": "^7.9.5",
 		"@react-router/serve": "^7.9.5",

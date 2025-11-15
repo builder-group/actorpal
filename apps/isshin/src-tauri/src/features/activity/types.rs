@@ -3,8 +3,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct ActivityEntry {
-    pub application: String,       // Display name (e.g., "Google Chrome")
-    pub bundle_id: Option<String>, // Unique identifier (e.g., "com.google.Chrome")
+    pub application: String,
+    pub bundle_id: Option<String>,
     pub window_title: Option<String>,
     pub url: Option<String>,
     pub start_time: u64,
@@ -58,7 +58,6 @@ impl ActivityEntry {
         }
     }
 
-    // Get the identifier for this activity (bundle_id if available, otherwise application name)
     pub fn identifier(&self) -> String {
         self.bundle_id
             .as_ref()

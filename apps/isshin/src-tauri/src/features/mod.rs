@@ -1,4 +1,2 @@
-pub mod app;
-pub mod hosts;
-pub mod process;
-pub mod tracking;
+pub mod activity;
+pub mod settings;

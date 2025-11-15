@@ -1,4 +1,4 @@
-use crate::features::tracking::types::ActivityEntry;
+use crate::features::activity::types::ActivityEntry;
 use sqlx::{FromRow, SqlitePool};
 
 #[derive(Debug, FromRow)]
@@ -32,34 +32,32 @@ impl From<ActivityEntryRow> for ActivityEntry {
 pub struct ActivityRepository;
 
 impl ActivityRepository {
-    /// Insert a new activity entry into the database
-    pub async fn insert(
-        pool: &SqlitePool,
-        entry: &ActivityEntry,
-    ) -> Result<(), sqlx::Error> {
-        if entry.duration_seconds > 0 {
-            sqlx::query(
-                r#"
-                INSERT INTO activity_entries (
-                    application, bundle_id, window_title, url,
-                    start_time, end_time, duration_seconds
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                "#,
-            )
-            .bind(&entry.application)
-            .bind(&entry.bundle_id)
-            .bind(&entry.window_title)
-            .bind(&entry.url)
-            .bind(entry.start_time as i64)
-            .bind(entry.end_time as i64)
-            .bind(entry.duration_seconds as i64)
-            .execute(pool)
-            .await?;
+    pub async fn insert(pool: &SqlitePool, entry: &ActivityEntry) -> Result<(), sqlx::Error> {
+        if entry.duration_seconds == 0 {
+            return Ok(());
         }
+
+        sqlx::query(
+            r#"
+            INSERT INTO activity_entries (
+                application, bundle_id, window_title, url,
+                start_time, end_time, duration_seconds
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            "#,
+        )
+        .bind(&entry.application)
+        .bind(&entry.bundle_id)
+        .bind(&entry.window_title)
+        .bind(&entry.url)
+        .bind(entry.start_time as i64)
+        .bind(entry.end_time as i64)
+        .bind(entry.duration_seconds as i64)
+        .execute(pool)
+        .await?;
+
         Ok(())
     }
 
-    /// Get all activity entries, ordered by start_time descending
     pub async fn get_all(pool: &SqlitePool) -> Result<Vec<ActivityEntry>, sqlx::Error> {
         let rows = sqlx::query_as::<_, ActivityEntryRow>(
             r#"
@@ -75,7 +73,6 @@ impl ActivityRepository {
         Ok(rows.into_iter().map(ActivityEntry::from).collect())
     }
 
-    /// Get activity entries since a given timestamp
     pub async fn get_since(
         pool: &SqlitePool,
         since_timestamp: u64,
@@ -96,7 +93,6 @@ impl ActivityRepository {
         Ok(rows.into_iter().map(ActivityEntry::from).collect())
     }
 
-    /// Delete all activity entries
     pub async fn delete_all(pool: &SqlitePool) -> Result<(), sqlx::Error> {
         sqlx::query("DELETE FROM activity_entries")
             .execute(pool)
@@ -104,4 +100,3 @@ impl ActivityRepository {
         Ok(())
     }
 }
-

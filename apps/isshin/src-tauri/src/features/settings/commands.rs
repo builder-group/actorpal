@@ -1,5 +1,5 @@
 use crate::environment::states::app::AppState;
-use crate::library::window::Window;
+use crate::windows::Window;
 use tauri::AppHandle;
 
 #[tauri::command]

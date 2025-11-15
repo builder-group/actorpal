@@ -1,4 +1,3 @@
 pub mod db;
 pub mod path;
 pub mod tray;
-pub mod window;

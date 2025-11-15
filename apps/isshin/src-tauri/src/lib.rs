@@ -1,6 +1,7 @@
 mod environment;
 mod features;
 mod library;
+mod windows;
 
 use environment::states::app::AppState;
 use environment::states::db::DatabaseState;
@@ -10,10 +11,10 @@ use features::settings;
 use features::settings::commands as settings_commands;
 use library::db::Database;
 use library::tray::Tray;
-use library::window::Window;
 use specta_typescript::Typescript;
 use tauri::Manager;
 use tauri_specta::{collect_commands, Builder};
+use windows::Window;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

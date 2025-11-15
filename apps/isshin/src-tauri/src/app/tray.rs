@@ -79,6 +79,7 @@ impl Tray {
 
         return TrayIconBuilder::new()
             .icon(icon)
+            .icon_as_template(true)
             .menu(&menu)
             .show_menu_on_left_click(false)
             .tooltip(AppConfig::tray_tooltip())

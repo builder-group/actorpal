@@ -90,10 +90,9 @@ define_class!(
                 // Send focus change event
                 // window_change_callback only fires for window/title changes within an app,
                 // not for app switches themselves, so we need to send the event here
-                // Use build_window_info for efficiency (we already have app_info)
                 if let Some(window) = crate::platform::macos::window_info::build_window_info(
                     app_info.pid,
-                    String::new(), // Title will be empty initially, but window_id check will handle it
+                    None,
                     Some(app_info.clone()),
                 ) {
                     // Skip if window state isn't ready yet (e.g., after unminimizing)

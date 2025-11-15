@@ -70,13 +70,18 @@ pub fn get_current_window() -> Option<WindowInfo> {
 /// Build WindowInfo from partial data (optimized for callbacks)
 ///
 /// This is more efficient than calling `get_current_window()` because it:
-/// - Uses the provided title instead of querying Accessibility API again
+/// - Uses the provided title if available, otherwise queries Accessibility API
 /// - Only queries CoreGraphics for window ID and bounds
 /// - Reuses app info if provided
 ///
 /// Note: Browser info is not populated here - use `browser::extend_window_info()` after building.
-pub fn build_window_info(pid: i32, title: String, app: Option<AppInfo>) -> Option<WindowInfo> {
+pub fn build_window_info(
+    pid: i32,
+    title: Option<String>,
+    app: Option<AppInfo>,
+) -> Option<WindowInfo> {
     let app = app.or_else(get_current_app)?;
+    let title = title.unwrap_or_else(|| accessibility::get_window_title(pid).unwrap_or_default());
     let (window_id, bounds) = find_window_info(pid, &title).unwrap_or((0, Default::default()));
 
     return Some(WindowInfo {

@@ -229,27 +229,21 @@ unsafe extern "C" fn window_change_callback(
     let title = get_string_attribute(element, kAXTitleAttribute);
 
     if let Some(pid) = workspace::get_current_pid() {
-        // Build window info from what we have
-        let title = title.unwrap_or_default();
-        if !title.is_empty() {
-            if let Some(window) = window_info::build_window_info(pid, title, None) {
-                if window.window_id != 0 {
-                    // Re-add title observer when window is ready (e.g., after unminimizing)
-                    // The API returns -25209 if already registered, which we handle by freeing the callback data pointer
-                    let app_element = accessibility_sys::AXUIElementCreateApplication(pid);
-                    add_title_observer_to_focused_window(observer, app_element, context);
+        if let Some(window) = window_info::build_window_info(pid, title, None) {
+            if window.window_id != 0 {
+                // Re-add title observer when window is ready (e.g., after unminimizing)
+                // The API returns -25209 if already registered, which we handle by freeing the callback data pointer
+                let app_element = accessibility_sys::AXUIElementCreateApplication(pid);
+                add_title_observer_to_focused_window(observer, app_element, context);
 
-                    // Wrap user code in catch_unwind to prevent panics from crashing the app
-                    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                        context.handle(window);
-                    }));
+                // Wrap user code in catch_unwind to prevent panics from crashing the app
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    context.handle(window);
+                }));
 
-                    // Log panic if it occurred, but don't crash the app
-                    if let Err(_) = result {
-                        eprintln!(
-                            "[AccessibilityMonitor] Panic in user handler - event was dropped"
-                        );
-                    }
+                // Log panic if it occurred, but don't crash the app
+                if let Err(_) = result {
+                    eprintln!("[AccessibilityMonitor] Panic in user handler - event was dropped");
                 }
             }
         }

@@ -1,23 +1,10 @@
-//! X11 property helpers
-//!
-//! This module provides low-level functions for querying X11 window properties.
-//! These are pure data extraction functions with no event handling.
-//!
-//! ## Why Unsafe?
-//!
-//! X11 is a C API that requires:
-//! - Raw pointers and manual memory management
-//! - FFI calls to libX11
-//! - Handling of C strings and property data
-//!
-//! We encapsulate all unsafe code and provide safe public interfaces.
-
-use std::ffi::CStr;
-
 use libc::{c_char, c_int, c_ulong, c_void};
+use std::ffi::CStr;
 use x11::xlib;
 
-/// Get the currently active window ID
+/// Get the currently active window ID by querying _NET_ACTIVE_WINDOW property.
+///
+/// Returns 0 if the property cannot be retrieved or is null.
 pub(super) unsafe fn get_active_window(
     display: *mut xlib::Display,
     root: xlib::Window,
@@ -42,21 +29,20 @@ pub(super) unsafe fn get_active_window(
         &mut nitems,
         &mut bytes_after,
         &mut prop as *mut *mut c_char as *mut *mut c_uchar,
-    ) == 0
-        && !prop.is_null()
+    ) != 0
+        || prop.is_null()
     {
-        let window = *(prop as *const xlib::Window);
-        xlib::XFree(prop as *mut c_void);
-        return window;
-    } else {
         return 0;
     }
+
+    let window = *(prop as *const xlib::Window);
+    xlib::XFree(prop as *mut c_void);
+    return window;
 }
 
-/// Get window title (tries _NET_WM_NAME first, falls back to WM_NAME)
+/// Get window title (tries _NET_WM_NAME first, falls back to WM_NAME).
 ///
-/// _NET_WM_NAME is UTF-8 encoded and preferred. WM_NAME is legacy and may be
-/// in the locale encoding.
+/// _NET_WM_NAME is UTF-8 encoded and preferred. WM_NAME is legacy and may be in locale encoding.
 pub(super) unsafe fn get_window_title(
     display: *mut xlib::Display,
     window: xlib::Window,
@@ -87,7 +73,7 @@ pub(super) unsafe fn get_window_title(
         && !prop.is_null()
     {
         let title = CStr::from_ptr(prop).to_string_lossy().into_owned();
-        xlib::XFree(prop as *mut c_void); // Must free X11-allocated memory
+        xlib::XFree(prop as *mut c_void);
         return Some(title);
     }
 
@@ -109,14 +95,14 @@ pub(super) unsafe fn get_window_title(
         && !prop.is_null()
     {
         let title = CStr::from_ptr(prop).to_string_lossy().into_owned();
-        xlib::XFree(prop as *mut c_void); // Must free X11-allocated memory
+        xlib::XFree(prop as *mut c_void);
         return Some(title);
     }
 
     return None;
 }
 
-/// Get window class (application name)
+/// Get window class (application name) from WM_CLASS property.
 pub(super) unsafe fn get_window_class(
     display: *mut xlib::Display,
     window: xlib::Window,
@@ -152,7 +138,7 @@ pub(super) unsafe fn get_window_class(
     return None;
 }
 
-/// Get window PID
+/// Get window PID from _NET_WM_PID property.
 pub(super) unsafe fn get_window_pid(
     display: *mut xlib::Display,
     window: xlib::Window,
@@ -188,10 +174,10 @@ pub(super) unsafe fn get_window_pid(
     return None;
 }
 
-/// X11 error handler - ignores BadWindow errors
+/// X11 error handler that ignores BadWindow errors.
 ///
-/// BadWindow errors occur when we query properties of windows that were just destroyed.
-/// This is normal in a windowing system and we can safely ignore them.
+/// BadWindow errors occur when querying properties of windows that were just destroyed.
+/// This is normal in a windowing system and can be safely ignored.
 unsafe extern "C" fn x_error_handler(
     _: *mut xlib::Display,
     error: *mut xlib::XErrorEvent,
@@ -199,11 +185,13 @@ unsafe extern "C" fn x_error_handler(
     if (*error).error_code == xlib::BadWindow as libc::c_uchar {
         return 0;
     }
-    0
+    return 0;
 }
 
-/// Set up X11 error handler
+/// Set up X11 error handler.
+///
+/// Returns the previous error handler so it can be restored later.
 pub(super) unsafe fn setup_error_handler(
 ) -> Option<unsafe extern "C" fn(*mut xlib::Display, *mut xlib::XErrorEvent) -> c_int> {
-    xlib::XSetErrorHandler(Some(x_error_handler))
+    return xlib::XSetErrorHandler(Some(x_error_handler));
 }

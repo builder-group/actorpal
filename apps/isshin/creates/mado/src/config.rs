@@ -1,9 +1,7 @@
-//! Configuration for window monitoring
-
-/// Configuration for the window monitor
+/// Configuration for the window monitor.
 #[derive(Debug, Clone, Copy)]
 pub struct MonitorConfig {
-    /// Whether to extract browser URLs (macOS only)
+    /// Whether to extract browser URLs (macOS only).
     ///
     /// When enabled, fetches the current URL from browser windows using AppleScript.
     /// Requires Automation permission: System Settings > Privacy & Security > Automation
@@ -11,7 +9,7 @@ pub struct MonitorConfig {
     /// Default: `false` (minimal overhead, no additional permissions)
     pub allow_browser: bool,
 
-    /// Whether to track window changes within the same app
+    /// Whether to track window changes within the same app.
     ///
     /// When `true` (default), fires events for:
     /// - App switches (always tracked)

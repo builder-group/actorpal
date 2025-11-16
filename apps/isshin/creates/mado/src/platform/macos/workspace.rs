@@ -1,123 +1,123 @@
-//! NSWorkspace monitoring for app switches
-//!
-//! This module uses NSWorkspace notifications via objc2-app-kit to detect when
-//! the user switches between applications. It uses objc2's `define_class!` with
-//! instance variables to store the handler, eliminating the need for global state.
-
-use std::cell::RefCell;
-
-use objc2::rc::Retained;
-use objc2::runtime::ProtocolObject;
-use objc2::{define_class, msg_send, DefinedClass, MainThreadMarker, MainThreadOnly};
+use super::{accessibility, window_handler::WindowHandler};
+use crate::{error::Error, platform::macos::window_info::build_window_info, types::AppInfo};
+use objc2::{
+    define_class, msg_send, rc::Retained, runtime::ProtocolObject, DefinedClass, MainThreadMarker,
+    MainThreadOnly,
+};
 use objc2_app_kit::{
     NSApplication, NSApplicationDelegate, NSRunningApplication, NSWorkspace,
     NSWorkspaceApplicationKey, NSWorkspaceDidActivateApplicationNotification,
 };
 use objc2_foundation::{NSNotification, NSObject, NSObjectProtocol};
-
-use crate::error::Error;
-use crate::types::AppInfo;
-
-use super::accessibility;
-use super::event_context::EventContext;
+use std::cell::RefCell;
 
 /// Instance variables for the workspace delegate
 struct WorkspaceDelegateIvars {
-    context: EventContext,
+    handler: WindowHandler,
     accessibility_monitor: RefCell<Option<accessibility::AccessibilityMonitor>>,
 }
 
 define_class!(
-    // SAFETY:
-    // - The superclass NSObject does not have any subclassing requirements.
-    // - `WorkspaceDelegate` does not implement `Drop`.
     #[unsafe(super = NSObject)]
     #[thread_kind = MainThreadOnly]
     #[ivars = WorkspaceDelegateIvars]
     struct WorkspaceDelegate;
 
-    // SAFETY: `NSObjectProtocol` has no safety requirements.
     unsafe impl NSObjectProtocol for WorkspaceDelegate {}
 
-    // SAFETY: `NSApplicationDelegate` has no safety requirements.
     unsafe impl NSApplicationDelegate for WorkspaceDelegate {
-        // SAFETY: The signature is correct.
+        /// Called once when NSApplication finishes launching (initial setup).
         #[unsafe(method(applicationDidFinishLaunching:))]
         fn did_finish_launching(&self, _notification: &NSNotification) {
-            // Initialize accessibility monitor for current app
-            if self.ivars().context.config().track_window_changes {
-                if let Some(pid) = get_current_pid() {
-                    match accessibility::AccessibilityMonitor::new(self.ivars().context.clone(), pid) {
-                        Ok(monitor) => {
-                            *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
-                        }
-                        Err(e) => {
-                            eprintln!("[WorkspaceMonitor] Failed to create accessibility monitor for PID {}: {}", pid, e);
-                        }
-                    }
+            if !self.ivars().handler.config().track_window_changes {
+                return;
+            }
+
+            let pid = match get_current_pid() {
+                Some(pid) => pid,
+                None => return,
+            };
+
+            match accessibility::AccessibilityMonitor::new(self.ivars().handler.clone(), pid) {
+                Ok(monitor) => {
+                    *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                }
+                Err(e) => {
+                    eprintln!(
+                        "[WorkspaceMonitor] Failed to create accessibility monitor for PID {}: {}",
+                        pid, e
+                    );
                 }
             }
         }
     }
 
     impl WorkspaceDelegate {
-        /// Handle app activation notification
+        /// Called when user switches to a different application.
         #[unsafe(method(didActivateApplication:))]
         fn did_activate_application(&self, notification: &NSNotification) {
-            if let Some(app_info) = extract_app_from_notification(notification) {
-                let context = &self.ivars().context;
+            let app_info = match extract_app_from_notification(notification) {
+                Some(info) => info,
+                None => return,
+            };
+            let handler = &self.ivars().handler;
 
-                // Stop old accessibility monitor
-                if let Some(mut old_monitor) = self.ivars().accessibility_monitor.borrow_mut().take() {
-                    let _ = old_monitor.stop();
-                }
+            // Stop accessibility monitor for previous app
+            if let Some(mut old_monitor) = self.ivars().accessibility_monitor.borrow_mut().take() {
+                let _ = old_monitor.stop();
+            }
 
-                // Create accessibility observer for the new app
-                if context.config().track_window_changes {
-                    match accessibility::AccessibilityMonitor::new(context.clone(), app_info.pid) {
-                        Ok(monitor) => {
-                            *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
-                        }
-                        Err(e) => {
-                            eprintln!(
-                                "[WorkspaceMonitor] Failed to create accessibility monitor for app {} (PID {}): {}",
-                                app_info.name, app_info.pid, e
-                            );
-                        }
+            // Create accessibility monitor for new app
+            if handler.config().track_window_changes {
+                match accessibility::AccessibilityMonitor::new(handler.clone(), app_info.pid) {
+                    Ok(monitor) => {
+                        *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "[WorkspaceMonitor] Failed to create accessibility monitor for app {} (PID {}): {}",
+                            app_info.name, app_info.pid, e
+                        );
                     }
                 }
+            }
 
-                // Send focus change event
-                // window_change_callback only fires for window/title changes within an app,
-                // not for app switches themselves, so we need to send the event here
-                if let Some(window) = crate::platform::macos::window_info::build_window_info(
-                    app_info.pid,
-                    None,
-                    Some(app_info.clone()),
-                ) {
-                    // Skip if window state isn't ready yet (e.g., after unminimizing)
-                    // The Accessibility observer will report it when the window becomes ready
-                    if window.window_id != 0 {
-                        context.handle(window);
-                    }
-                }
+            // Accessibility API only fires for window/title changes within an app,
+            // not for app switches, so we must send the event here
+            let window_info = match build_window_info(
+                app_info.pid,
+                None,
+                Some(app_info),
+            ) {
+                Some(window) => window,
+                None => return,
+            };
+
+            // Skip if window not ready (e.g. after unminimizing)
+            // Accessibility observer will report when ready
+            if window_info.window_id != 0 {
+                handler.handle(window_info);
             }
         }
     }
 );
 
 impl WorkspaceDelegate {
-    fn new(context: EventContext, mtm: MainThreadMarker) -> Retained<Self> {
+    fn new(handler: WindowHandler, mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
-            context,
+            handler,
             accessibility_monitor: RefCell::new(None),
         });
-        // SAFETY: The signature of `NSObject`'s `init` method is correct.
         unsafe { msg_send![super(this), init] }
     }
 }
 
-/// Monitor for app switches using NSWorkspace
+/// Monitor for app switches using NSWorkspace.
+///
+/// Coordinates with AccessibilityMonitor to track window changes:
+/// - Detects app switches via NSWorkspace notifications
+/// - Creates/removes AccessibilityMonitor instances per app
+/// - Sends window events for app switches (Accessibility API doesn't fire on app switch)
 pub struct WorkspaceMonitor {
     delegate: Retained<WorkspaceDelegate>,
     app: Retained<NSApplication>,
@@ -140,20 +140,20 @@ impl WorkspaceMonitor {
     ///
     /// ```rust,no_run
     /// // On main thread
-    /// let monitor = WorkspaceMonitor::new(context)?;
+    /// let monitor = WorkspaceMonitor::new(handler)?;
     ///
     /// // Or on a dedicated AppKit thread
     /// std::thread::spawn(move || {
-    ///     let mut monitor = WorkspaceMonitor::new(context)?;
+    ///     let mut monitor = WorkspaceMonitor::new(handler)?;
     ///     monitor.run()?;
     ///     Ok::<(), Error>(())
     /// });
     /// ```
-    pub fn new(context: EventContext) -> Result<Self, Error> {
+    pub fn new(handler: WindowHandler) -> Result<Self, Error> {
         // SAFETY: Safe when called from main thread or dedicated AppKit thread (as documented)
         let mtm = unsafe { MainThreadMarker::new_unchecked() };
 
-        let delegate = WorkspaceDelegate::new(context, mtm);
+        let delegate = WorkspaceDelegate::new(handler, mtm);
         let app = NSApplication::sharedApplication(mtm);
 
         return Ok(Self {
@@ -163,81 +163,66 @@ impl WorkspaceMonitor {
         });
     }
 
-    pub fn context(&self) -> &EventContext {
-        return &self.delegate.ivars().context;
+    pub fn handler(&self) -> &WindowHandler {
+        return &self.delegate.ivars().handler;
     }
 
     /// Start monitoring and run the NSApplication event loop.
     ///
-    /// This sets up NSWorkspace notifications and then blocks until the app is terminated.
-    /// This blocks until `stop()` is called.
+    /// Sets up NSWorkspace notifications and blocks until `stop()` is called.
     pub fn run(&mut self) -> Result<(), Error> {
         if self.is_running {
-            return Err(Error::Platform("Monitor is already running".to_string()));
+            return Err(Error::AlreadyRunning);
         }
 
-        unsafe {
-            let workspace = NSWorkspace::sharedWorkspace();
-            let center = workspace.notificationCenter();
+        let workspace = NSWorkspace::sharedWorkspace();
+        let center = workspace.notificationCenter();
 
-            // Subscribe to app activation notifications
+        // Subscribe to app activation notifications
+        unsafe {
             center.addObserver_selector_name_object(
                 self.delegate.as_ref(),
                 objc2::sel!(didActivateApplication:),
                 Some(NSWorkspaceDidActivateApplicationNotification),
                 Some(workspace.as_ref()),
             );
-
-            // Set app delegate
-            let delegate_obj = ProtocolObject::from_ref(&*self.delegate);
-            self.app.setDelegate(Some(delegate_obj));
         }
 
+        let delegate_obj = ProtocolObject::from_ref(&*self.delegate);
+        self.app.setDelegate(Some(delegate_obj));
+
         self.is_running = true;
-
-        // Run the NSApplication event loop (blocks until terminated)
-        self.app.run();
-
-        // Clean up after run loop exits
+        self.app.run(); // Blocks until terminated
         self.cleanup();
 
         return Ok(());
     }
 
-    /// Clean up observers and reset state
     fn cleanup(&mut self) {
         if !self.is_running {
             return;
         }
 
+        let workspace = NSWorkspace::sharedWorkspace();
+        let center = workspace.notificationCenter();
         unsafe {
-            let workspace = NSWorkspace::sharedWorkspace();
-            let center = workspace.notificationCenter();
-
-            // Remove NSWorkspace observer
             center.removeObserver(self.delegate.as_ref());
         }
 
         self.is_running = false;
     }
 
-    /// Stop the NSApplication event loop.
-    ///
-    /// This can be called from any thread. It terminates the NSApplication,
-    /// which will cause `run()` to return. This method is idempotent - calling it
-    /// multiple times is safe.
+    /// Stop the NSApplication event loop (thread-safe, idempotent).
     pub fn stop() {
-        // SAFETY: NSApplication::terminate() is thread-safe and can be called from any thread.
-        // We use new_unchecked() because stop() may be called from a thread that's not
-        // the main thread or the AppKit thread, but terminate() will still work correctly.
-        // terminate() is idempotent, so calling it multiple times is safe.
+        // SAFETY: terminate() is thread-safe and idempotent.
+        // new_unchecked() is safe because terminate() works from any thread, not just the AppKit thread.
         let mtm = unsafe { MainThreadMarker::new_unchecked() };
         let app = NSApplication::sharedApplication(mtm);
         app.terminate(None);
     }
 }
 
-/// Extract app information from an NSNotification
+/// Extract AppInfo from NSWorkspace activation notification.
 fn extract_app_from_notification(notification: &NSNotification) -> Option<AppInfo> {
     let user_info = notification.userInfo()?;
     let app_key = unsafe { NSWorkspaceApplicationKey };
@@ -253,13 +238,7 @@ fn extract_app_from_notification(notification: &NSNotification) -> Option<AppInf
         .bundleIdentifier()
         .map(|s| s.to_string())
         .unwrap_or_default();
-    let process_path = get_process_path(pid).unwrap_or_else(|| {
-        eprintln!(
-            "[WorkspaceMonitor] Failed to get process path for PID {}",
-            pid
-        );
-        String::new()
-    });
+    let process_path = get_process_path(pid).unwrap_or_default();
 
     return Some(AppInfo {
         pid,
@@ -269,54 +248,46 @@ fn extract_app_from_notification(notification: &NSNotification) -> Option<AppInf
     });
 }
 
-/// Get current frontmost app PID
+/// Get PID of the currently frontmost application.
 pub fn get_current_pid() -> Option<i32> {
     let workspace = NSWorkspace::sharedWorkspace();
     let app = workspace.frontmostApplication()?;
     return Some(app.processIdentifier());
 }
 
-/// Get app name by PID
+/// Get localized name of application by PID.
 pub fn get_app_name(pid: i32) -> Option<String> {
     let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
     return app.localizedName().map(|s| s.to_string());
 }
 
-/// Get bundle ID by PID
+/// Get bundle identifier of application by PID.
 pub fn get_bundle_id(pid: i32) -> Option<String> {
     let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
     return app.bundleIdentifier().map(|s| s.to_string());
 }
 
-/// Get process path by PID using proc_pidpath system call
+/// Get process executable path by PID (uses proc_pidpath system call).
 ///
-/// Returns `None` if the process path cannot be retrieved.
-/// Logs errors for debugging purposes.
+/// Returns canonicalized path if possible, otherwise returns the raw path.
 pub fn get_process_path(pid: i32) -> Option<String> {
     #[link(name = "proc")]
     extern "C" {
         fn proc_pidpath(pid: i32, buffer: *mut libc::c_char, buffersize: u32) -> i32;
     }
 
-    unsafe {
-        let mut buf = vec![0 as libc::c_char; 4096];
-        let ret = proc_pidpath(pid, buf.as_mut_ptr(), 4096);
+    let mut buf = vec![0 as libc::c_char; 4096];
+    let ret = unsafe { proc_pidpath(pid, buf.as_mut_ptr(), 4096) };
 
-        if ret > 0 {
-            return std::ffi::CStr::from_ptr(buf.as_ptr())
-                .to_str()
-                .ok()
-                .and_then(|s| std::fs::canonicalize(s).ok())
-                .and_then(|p| p.to_str().map(|s| s.to_string()))
-                .or_else(|| {
-                    // Fallback: return non-canonicalized path
-                    std::ffi::CStr::from_ptr(buf.as_ptr())
-                        .to_str()
-                        .map(|s| s.to_string())
-                        .ok()
-                });
-        } else {
-            return None;
-        }
+    if ret <= 0 {
+        return None;
     }
+
+    let path_str = unsafe { std::ffi::CStr::from_ptr(buf.as_ptr()) }
+        .to_str()
+        .ok()?;
+    return std::fs::canonicalize(path_str)
+        .ok()
+        .and_then(|p| p.to_str().map(|s| s.to_string()))
+        .or_else(|| Some(path_str.to_string()));
 }

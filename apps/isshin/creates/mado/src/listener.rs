@@ -1,8 +1,6 @@
-//! Event handler trait for window monitoring
-
 use crate::types::WindowInfo;
 
-/// Trait for handling window and app focus events
+/// Trait for listening to window and app focus events.
 ///
 /// Implement this trait to receive notifications when focus changes.
 /// The callback receives complete window information including app details.
@@ -11,11 +9,11 @@ use crate::types::WindowInfo;
 /// # Example
 ///
 /// ```rust
-/// struct MyHandler {
+/// struct MyListener {
 ///     last_bundle_id: Option<String>,
 /// }
 ///
-/// impl EventHandler for MyHandler {
+/// impl WindowListener for MyListener {
 ///     fn on_focus_change(&self, window: WindowInfo) {
 ///         let app_changed = self.last_bundle_id.as_deref() != Some(&window.app.bundle_id);
 ///         
@@ -26,7 +24,7 @@ use crate::types::WindowInfo;
 ///     }
 /// }
 /// ```
-pub trait EventHandler: Send + Sync {
+pub trait WindowListener: Send + Sync {
     /// Called whenever the focused window changes
     ///
     /// This includes:

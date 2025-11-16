@@ -6,7 +6,7 @@
 //! - The focused window changes
 //! - A browser tab switches
 
-use mado::{EventHandler, Monitor, WindowInfo};
+use mado::{WindowInfo, WindowListener, WindowMonitor};
 
 struct FocusListener {
     last_bundle_id: std::sync::Mutex<Option<String>>,
@@ -20,7 +20,7 @@ impl FocusListener {
     }
 }
 
-impl EventHandler for FocusListener {
+impl WindowListener for FocusListener {
     fn on_focus_change(&self, window: WindowInfo) {
         let mut last_bundle = self.last_bundle_id.lock().unwrap();
         let app_changed = last_bundle.as_deref() != Some(&window.app.bundle_id);
@@ -84,6 +84,6 @@ fn main() -> Result<(), mado::Error> {
         allow_browser: true,
         track_window_changes: true,
     };
-    let monitor = Monitor::with_config(FocusListener::new(), config);
+    let monitor = WindowMonitor::with_config(FocusListener::new(), config);
     monitor.run()
 }

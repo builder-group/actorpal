@@ -74,7 +74,7 @@ See `examples/poll.rs` for a complete example.
 React to focus changes in real-time:
 
 ```rust
-use mado::{EventHandler, Monitor, WindowInfo};
+use mado::{WindowListener, WindowMonitor, WindowInfo};
 use std::sync::Mutex;
 
 struct FocusListener {
@@ -89,7 +89,7 @@ impl FocusListener {
     }
 }
 
-impl EventHandler for FocusListener {
+impl WindowListener for FocusListener {
     fn on_focus_change(&self, window: WindowInfo) {
         let mut last_bundle = self.last_bundle_id.lock().unwrap();
         let app_changed = last_bundle.as_deref() != Some(&window.app.bundle_id);
@@ -104,7 +104,7 @@ impl EventHandler for FocusListener {
 }
 
 fn main() -> Result<(), mado::Error> {
-    let monitor = Monitor::new(FocusListener::new());
+    let monitor = WindowMonitor::new(FocusListener::new());
     monitor.run() // Blocks until stopped
 }
 ```
@@ -116,11 +116,11 @@ See `examples/listen.rs` for a complete example.
 Enable browser URL extraction to get the current tab URL from browser windows:
 
 ```rust
-use mado::{EventHandler, Monitor, MonitorConfig, WindowInfo};
+use mado::{WindowListener, WindowMonitor, MonitorConfig, WindowInfo};
 
-struct MyHandler;
+struct MyListener;
 
-impl EventHandler for MyHandler {
+impl WindowListener for MyListener {
     fn on_focus_change(&self, window: WindowInfo) {
         println!("Window: {}", window.title);
 
@@ -146,7 +146,7 @@ fn main() -> Result<(), mado::Error> {
         allow_browser: true, // Requires Automation permission on macOS
     };
 
-    let monitor = Monitor::with_config(MyHandler, config);
+    let monitor = WindowMonitor::with_config(MyListener, config);
     monitor.run()
 }
 ```
@@ -156,17 +156,17 @@ fn main() -> Result<(), mado::Error> {
 ### Stop monitoring from another thread
 
 ```rust
-use mado::Monitor;
+use mado::WindowMonitor;
 use std::thread;
 use std::time::Duration;
 
 fn main() -> Result<(), mado::Error> {
-    let monitor = Monitor::new(MyHandler);
+    let monitor = WindowMonitor::new(MyListener);
 
     // Stop after 5 seconds
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(5));
-        Monitor::stop().unwrap();
+        WindowMonitor::stop().unwrap();
     });
 
     monitor.run() // Blocks until stop() is called
@@ -181,6 +181,31 @@ if !mado::is_accessibility_trusted() {
     return;
 }
 ```
+
+### Error Handling
+
+The library uses specific error types for better error handling:
+
+```rust
+use mado::Error;
+
+match mado::get_active_window() {
+    Ok(window) => println!("Window: {}", window.title),
+    Err(Error::NoActiveWindow) => eprintln!("No window is currently focused"),
+    Err(Error::MissingPermissions) => eprintln!("Missing required permissions"),
+    Err(Error::Platform(msg)) => eprintln!("Platform error: {}", msg),
+    Err(e) => eprintln!("Error: {}", e),
+}
+```
+
+**Error Types:**
+
+- `Error::Platform(String)` - Platform-specific errors (e.g., X11 connection failed, API call failed)
+- `Error::MissingPermissions` - Required permissions not granted (macOS: Accessibility permissions)
+- `Error::AlreadyRunning` - Monitor is already running
+- `Error::NotRunning` - Monitor is not running
+- `Error::NoActiveApp` - No active application found
+- `Error::NoActiveWindow` - No active window found
 
 ## 📚 API Reference
 
@@ -251,12 +276,25 @@ pub struct WindowBounds {
 - `get_active_window() -> Result<WindowInfo, Error>` - Get current active window
 - `is_accessibility_trusted() -> bool` - Check if accessibility permissions are granted (macOS only)
 
-### `Monitor`
+### Error Types
 
-- `Monitor::new(handler: H) -> Monitor` - Create monitor with default config
-- `Monitor::with_config(handler: H, config: MonitorConfig) -> Monitor` - Create monitor with custom config
+```rust
+pub enum Error {
+    Platform(String),           // Platform-specific errors
+    MissingPermissions,         // Required permissions not granted
+    AlreadyRunning,             // Monitor is already running
+    NotRunning,                 // Monitor is not running
+    NoActiveApp,                // No active application found
+    NoActiveWindow,             // No active window found
+}
+```
+
+### `WindowMonitor`
+
+- `WindowMonitor::new(listener: L) -> WindowMonitor` - Create monitor with default config
+- `WindowMonitor::with_config(listener: L, config: MonitorConfig) -> WindowMonitor` - Create monitor with custom config
 - `monitor.run() -> Result<(), Error>` - Start monitoring (blocks until stopped)
-- `Monitor::stop() -> Result<(), Error>` - Stop monitoring (can be called from any thread)
+- `WindowMonitor::stop() -> Result<(), Error>` - Stop monitoring (can be called from any thread)
 
 ### `MonitorConfig`
 
@@ -274,10 +312,10 @@ pub struct MonitorConfig {
 - `allow_browser: false` - Minimal overhead, no additional permissions
 - `track_window_changes: true` - Track all changes (app switches + window/tab changes)
 
-### `EventHandler` Trait
+### `WindowListener` Trait
 
 ```rust
-pub trait EventHandler: Send + Sync {
+pub trait WindowListener: Send + Sync {
     fn on_focus_change(&self, window: WindowInfo);
 }
 ```
@@ -361,7 +399,7 @@ We use two monitoring layers internally, but expose a unified callback:
 `run()` consumes `self` and blocks until stopped, so code after it won't execute:
 
 ```rust
-let monitor = Monitor::new(handler);
+let monitor = WindowMonitor::new(listener);
 monitor.run()?;  // Blocks here - consumes monitor
 // Code here never runs until run() returns
 monitor.stop()?; // ❌ Can't call - monitor was moved!
@@ -369,7 +407,7 @@ monitor.stop()?; // ❌ Can't call - monitor was moved!
 
 To make instance-based `stop()` work, you'd need to:
 
-- Store the monitor instance globally (e.g., `OnceLock<Arc<Monitor>>`)
+- Store the monitor instance globally (e.g., `OnceLock<Arc<WindowMonitor>>`)
 - Change `run()` to not consume `self` (adds complexity)
 - Store more state than needed (we only need a way to signal stop)
 

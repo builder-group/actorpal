@@ -37,11 +37,11 @@
 //! Monitor app switches and window changes in real-time:
 //!
 //! ```rust,no_run
-//! use mado::{EventHandler, Monitor, WindowInfo};
+//! use mado::{WindowListener, WindowMonitor, WindowInfo};
 //!
-//! struct MyHandler;
+//! struct MyListener;
 //!
-//! impl EventHandler for MyHandler {
+//! impl WindowListener for MyListener {
 //!     fn on_focus_change(&self, window: WindowInfo) {
 //!         println!("Switched to: {}", window.app.name);
 //!         println!("  Window: {}", window.title);
@@ -49,7 +49,7 @@
 //! }
 //!
 //! fn main() -> Result<(), mado::Error> {
-//!     let monitor = Monitor::new(MyHandler);
+//!     let monitor = WindowMonitor::new(MyListener);
 //!     monitor.run() // Blocks until stopped
 //! }
 //! ```
@@ -59,11 +59,11 @@
 //! Combine querying and listening:
 //!
 //! ```rust,no_run
-//! use mado::{EventHandler, Monitor, WindowInfo};
+//! use mado::{WindowListener, WindowMonitor, WindowInfo};
 //!
-//! struct MyHandler;
+//! struct MyListener;
 //!
-//! impl EventHandler for MyHandler {
+//! impl WindowListener for MyListener {
 //!     fn on_focus_change(&self, window: WindowInfo) {
 //!         // You already have full context in window.app
 //!         println!("App: {} ({})", window.app.name, window.app.bundle_id);
@@ -86,7 +86,7 @@
 
 pub mod config;
 pub mod error;
-pub mod handler;
+pub mod listener;
 pub mod monitor;
 pub mod types;
 
@@ -95,9 +95,13 @@ pub mod platform;
 
 pub use config::MonitorConfig;
 pub use error::Error;
-pub use handler::EventHandler;
-pub use monitor::Monitor;
+pub use listener::WindowListener;
+pub use monitor::WindowMonitor;
 pub use types::{AppInfo, BrowserInfo, WindowBounds, WindowInfo};
+
+/// Alias for `WindowMonitor` - kept for backward compatibility
+#[deprecated(note = "Use WindowMonitor instead")]
+pub type Monitor = WindowMonitor;
 
 /// Get information about the currently active application
 ///

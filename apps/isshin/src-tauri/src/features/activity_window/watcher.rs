@@ -2,7 +2,8 @@ use super::repository::ActivityRepository;
 use super::types::ActivityEntry;
 use crate::environment::logger::Logger;
 use crate::environment::states::db::DatabaseState;
-use mado::{EventHandler, Monitor, WindowInfo};
+use crate::environment::states::settings::SettingsState;
+use mado::{MonitorConfig, WindowInfo, WindowListener, WindowMonitor};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
@@ -21,10 +22,8 @@ impl ActivityHandler {
     }
 }
 
-impl EventHandler for ActivityHandler {
+impl WindowListener for ActivityHandler {
     fn on_focus_change(&self, window: WindowInfo) {
-        // No logging here - too verbose
-
         let app = self.app.clone();
         let current_entry = Arc::clone(&self.current_entry);
 
@@ -36,14 +35,17 @@ impl EventHandler for ActivityHandler {
 
                 if entry.duration_seconds() > 0 {
                     if let Some(state) = app.try_state::<DatabaseState>() {
-                        if let Err(e) = ActivityRepository::insert(&state.0.pool, &entry).await {
-                            eprintln!("[Activity Monitor] Failed to save: {}", e);
-                        } else {
-                            println!(
-                                "[Activity Monitor] Saved: {} ({}s)",
-                                entry.application,
-                                entry.duration_seconds()
-                            );
+                        match ActivityRepository::insert(&state.pool, &entry).await {
+                            Ok(_) => {
+                                println!(
+                                    "[Activity Window Watcher] Saved: {} ({}s)",
+                                    entry.application,
+                                    entry.duration_seconds()
+                                );
+                            }
+                            Err(e) => {
+                                eprintln!("[Activity Window Watcher] Failed to save: {}", e);
+                            }
                         }
                     }
                 }
@@ -57,11 +59,17 @@ impl EventHandler for ActivityHandler {
 }
 
 pub fn start_monitoring(app: AppHandle) {
-    // Check accessibility permissions on macOS
+    // Get settings from global state
+    let settings = app
+        .try_state::<SettingsState>()
+        .map(|state| state.lock().unwrap().activity_window.clone())
+        .unwrap_or_default();
+
+    // Check accessibility permissions on macOS (only needed if tracking window changes)
     #[cfg(target_os = "macos")]
     {
-        if !mado::is_accessibility_trusted() {
-            let msg = "[Activity Monitor] ERROR: Accessibility permissions not granted! Please enable in System Settings and restart the app.";
+        if settings.track_window && !mado::is_accessibility_trusted() {
+            let msg = "[Activity Window Watcher] ERROR: Accessibility permissions not granted! Please enable in System Settings and restart the app.";
             eprintln!("{}", msg);
             Logger::log(&app, msg);
 
@@ -79,24 +87,32 @@ pub fn start_monitoring(app: AppHandle) {
 
             return;
         }
-        Logger::log(&app, "[Activity Monitor] Accessibility permissions: OK");
+        if settings.track_window {
+            Logger::log(
+                &app,
+                "[Activity Window Watcher] Accessibility permissions: OK",
+            );
+        }
     }
 
     let handler = ActivityHandler::new(app.clone());
 
-    // Create monitor with default config (tracks window changes, no browser URL extraction)
-    let monitor = Monitor::new(handler);
+    // Create monitor with config from settings
+    let config = MonitorConfig {
+        allow_browser: settings.track_browser,
+        track_window_changes: settings.track_window,
+    };
+    let monitor = WindowMonitor::with_config(handler, config);
 
     let app_for_thread = app.clone();
 
-    // Use std::thread instead of Tokio because NSApplication::run() blocks indefinitely.
-    // Tokio tasks must yield to the runtime, but this event loop runs forever until terminated.
-    // A dedicated OS thread is the correct approach for long-running blocking operations.
+    // Use std::thread because the monitor's event loop blocks indefinitely.
+    // Tokio tasks must yield, but this runs forever until terminated.
     std::thread::spawn(move || {
-        Logger::log(&app_for_thread, "[Activity Monitor] Monitor started");
+        Logger::log(&app_for_thread, "[Activity Window Watcher] Started");
 
         if let Err(e) = monitor.run() {
-            let msg = format!("[Activity Monitor] ERROR: {}", e);
+            let msg = format!("[Activity Window Watcher] ERROR: {}", e);
             eprintln!("{}", msg);
             Logger::log(&app_for_thread, &msg);
         }

@@ -71,38 +71,6 @@ impl From<WindowInfo> for ActivityEntry {
 }
 
 impl ActivityEntry {
-    /// Get a unique identifier for this activity (bundle_id or application name)
-    pub fn identifier(&self) -> String {
-        self.bundle_id
-            .as_ref()
-            .map(|bid| bid.clone())
-            .unwrap_or_else(|| self.application.clone())
-    }
-
-    /// Extract domain from browser URL if present (simple parsing)
-    pub fn domain(&self) -> Option<String> {
-        self.browser_url.as_ref().and_then(|u| {
-            // Simple domain extraction: find the part after :// and before the next /
-            if let Some(start) = u.find("://") {
-                let after_protocol = &u[start + 3..];
-                let domain = after_protocol
-                    .split('/')
-                    .next()
-                    .and_then(|d| d.split(':').next())
-                    .map(|d| d.to_string());
-                domain
-            } else {
-                // No protocol, try to find first / or :
-                let domain = u
-                    .split('/')
-                    .next()
-                    .and_then(|d| d.split(':').next())
-                    .map(|d| d.to_string());
-                domain
-            }
-        })
-    }
-
     /// Update end time to current time
     pub fn update_end_time(&mut self) {
         let now = SystemTime::now()

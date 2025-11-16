@@ -1,3 +1,5 @@
 use crate::common::db::Database;
 
-pub struct DatabaseState(pub Database);
+/// Type alias for database state.
+/// `Database` contains a `Pool<Sqlite>` which is already thread-safe, so no `Mutex` needed.
+pub type DatabaseState = Database;

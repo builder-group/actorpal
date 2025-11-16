@@ -8,7 +8,7 @@ use tauri::State;
 pub async fn get_activity_entries(
     state: State<'_, DatabaseState>,
 ) -> Result<Vec<ActivityEntry>, String> {
-    ActivityRepository::get_all(&state.0.pool)
+    ActivityRepository::get_all(&state.pool)
         .await
         .map_err(|e| e.to_string())
 }
@@ -16,7 +16,7 @@ pub async fn get_activity_entries(
 #[tauri::command]
 #[specta::specta]
 pub async fn clear_activity_entries(state: State<'_, DatabaseState>) -> Result<(), String> {
-    ActivityRepository::delete_all(&state.0.pool)
+    ActivityRepository::delete_all(&state.pool)
         .await
         .map_err(|e| e.to_string())
 }

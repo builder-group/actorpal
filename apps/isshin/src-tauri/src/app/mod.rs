@@ -4,9 +4,9 @@ pub mod window;
 use crate::app::window::Window;
 use crate::common::db::Database;
 use crate::environment::states::app::AppState;
-use crate::environment::states::db::DatabaseState;
-use crate::features::activity;
-use crate::features::activity::commands as activity_commands;
+use crate::environment::states::settings::SettingsState;
+use crate::features::activity_window;
+use crate::features::activity_window::commands as activity_commands;
 use crate::features::settings;
 use crate::features::settings::commands as settings_commands;
 use specta_typescript::Typescript;
@@ -18,6 +18,12 @@ pub fn run() {
         // Settings commands
         settings_commands::show_settings_window,
         settings_commands::get_database_path,
+        settings_commands::get_settings,
+        settings_commands::set_settings,
+        settings_commands::get_activity_window_settings,
+        settings_commands::set_activity_window_settings,
+        settings_commands::update_track_window,
+        settings_commands::update_track_browser,
         // Activity commands
         activity_commands::get_activity_entries,
         activity_commands::clear_activity_entries,
@@ -47,8 +53,9 @@ pub fn run() {
             });
 
             // Manage state
-            app.manage(DatabaseState(database));
+            app.manage(database);
             app.manage(AppState::new());
+            app.manage(SettingsState::default());
 
             #[cfg(target_os = "macos")]
             {
@@ -63,7 +70,7 @@ pub fn run() {
             Window::Settings.setup(app.handle());
 
             // Setup features
-            activity::setup(app.handle().clone());
+            activity_window::setup(app.handle().clone());
             settings::setup(app.handle().clone());
 
             return Ok(());

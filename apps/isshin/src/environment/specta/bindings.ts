@@ -92,12 +92,25 @@ async clearActivityEntries() : Promise<Result<null, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async getCurrentActiveWindow() : Promise<Result<ActiveWindowInfo, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_current_active_window") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
 /** user-defined events **/
 
 
+export const events = __makeEvents__<{
+activeWindowChangedEvent: ActiveWindowChangedEvent
+}>({
+activeWindowChangedEvent: "active-window-changed-event"
+})
 
 /** user-defined constants **/
 
@@ -105,6 +118,8 @@ async clearActivityEntries() : Promise<Result<null, string>> {
 
 /** user-defined types **/
 
+export type ActiveWindowChangedEvent = { data: ActiveWindowInfo }
+export type ActiveWindowInfo = { application: string; bundleId: string | null; pid: number | null; processPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
 /**
  * Core activity entry tracking window/app focus sessions
  */

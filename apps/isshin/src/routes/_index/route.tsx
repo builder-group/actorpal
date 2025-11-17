@@ -4,11 +4,12 @@ import { useRevalidator } from 'react-router';
 import { Err, Ok } from 'tuple-result';
 import { specta } from '@/environment';
 import { formatDuration, resultLoader, toTuple, withResultLoader } from '@/lib';
+import { CurrentActiveWindow } from './CurrentActiveWindow';
 import { SankeyDiagram } from './SankeyDiagram';
 
 const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 	Success: ({ data }) => {
-		const { entries } = data;
+		const { entries, currentWindow } = data;
 		const revalidator = useRevalidator();
 
 		const appStats = React.useMemo(() => {
@@ -90,6 +91,8 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 							<p className="text-3xl font-bold">{formatDuration(totalTime)}</p>
 						</div>
 
+						<CurrentActiveWindow initialWindow={currentWindow} />
+
 						<SankeyDiagram entries={entries} />
 
 						<div className="rounded-lg border border-gray-200 bg-white">
@@ -147,16 +150,27 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 export default Page;
 
 export const clientLoader = resultLoader<TSuccessLoaderData, TErrorLoaderData>(async () => {
-	const [isActivityEntriesOk, isActivityEntriesError, activityEntries] = toTuple(
-		await specta.commands.getActivityEntries()
-	);
+	const [
+		[isActivityEntriesOk, isActivityEntriesError, activityEntries],
+		[isCurrentWindowOk, , currentWindow]
+	] = await Promise.all([
+		toTuple(await specta.commands.getActivityEntries()),
+		toTuple(await specta.commands.getCurrentActiveWindow())
+	]);
+
 	if (!isActivityEntriesOk) {
 		return Err(`Failed to load activity entries: ${isActivityEntriesError}`);
 	}
 
-	return Ok({ entries: activityEntries });
+	return Ok({
+		entries: activityEntries,
+		currentWindow: isCurrentWindowOk ? currentWindow : null
+	});
 });
 
-type TSuccessLoaderData = { entries: specta.ActivityEntry[] };
+type TSuccessLoaderData = {
+	entries: specta.ActivityEntry[];
+	currentWindow: specta.ActiveWindowInfo | null;
+};
 
 type TErrorLoaderData = string;

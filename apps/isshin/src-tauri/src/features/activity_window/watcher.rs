@@ -1,11 +1,12 @@
 use super::repository::ActivityRepository;
-use super::types::ActivityEntry;
+use super::types::{ActiveWindowChangedEvent, ActiveWindowInfo, ActivityEntry};
 use crate::environment::logger::Logger;
 use crate::environment::states::db::DatabaseState;
 use crate::environment::states::settings::SettingsState;
 use mado::{MonitorConfig, WindowInfo, WindowListener, WindowMonitor};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
+use tauri_specta::Event;
 use tokio::sync::Mutex;
 
 struct ActivityHandler {
@@ -26,6 +27,12 @@ impl WindowListener for ActivityHandler {
     fn on_focus_change(&self, window: WindowInfo) {
         let app = self.app.clone();
         let current_entry = Arc::clone(&self.current_entry);
+
+        ActiveWindowChangedEvent {
+            data: ActiveWindowInfo::from(window.clone()),
+        }
+        .emit(&app)
+        .unwrap_or_else(|e| eprintln!("[Activity Window Watcher] Failed to emit event: {}", e));
 
         tauri::async_runtime::spawn(async move {
             // Save previous entry if it exists

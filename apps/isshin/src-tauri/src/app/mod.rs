@@ -6,30 +6,33 @@ use crate::{
     common::db::Database,
     environment::states::{app::AppState, settings::SettingsState},
     features::{
-        activity_window::{self, commands as activity_commands},
+        activity_window::{self, commands as activity_commands, types::ActiveWindowChangedEvent},
         settings::{self, commands as settings_commands},
     },
 };
 use specta_typescript::Typescript;
 use tauri::Manager;
-use tauri_specta::{collect_commands, Builder};
+use tauri_specta::{collect_commands, collect_events, Builder};
 
 pub fn run() {
-    let builder = Builder::<tauri::Wry>::new().commands(collect_commands![
-        // Settings commands
-        settings_commands::show_settings_window,
-        settings_commands::get_database_path,
-        settings_commands::open_database_directory,
-        settings_commands::get_settings,
-        settings_commands::set_settings,
-        settings_commands::get_activity_window_settings,
-        settings_commands::set_activity_window_settings,
-        settings_commands::update_track_window,
-        settings_commands::update_track_browser,
-        // Activity commands
-        activity_commands::get_activity_entries,
-        activity_commands::clear_activity_entries,
-    ]);
+    let builder = Builder::<tauri::Wry>::new()
+        .commands(collect_commands![
+            // Settings commands
+            settings_commands::show_settings_window,
+            settings_commands::get_database_path,
+            settings_commands::open_database_directory,
+            settings_commands::get_settings,
+            settings_commands::set_settings,
+            settings_commands::get_activity_window_settings,
+            settings_commands::set_activity_window_settings,
+            settings_commands::update_track_window,
+            settings_commands::update_track_browser,
+            // Activity commands
+            activity_commands::get_activity_entries,
+            activity_commands::clear_activity_entries,
+            activity_commands::get_current_active_window,
+        ])
+        .events(collect_events![ActiveWindowChangedEvent]);
 
     #[cfg(debug_assertions)]
     builder

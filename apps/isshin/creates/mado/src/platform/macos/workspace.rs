@@ -15,6 +15,7 @@ use std::cell::RefCell;
 struct WorkspaceDelegateIvars {
     handler: WindowHandler,
     accessibility_monitor: RefCell<Option<accessibility::AccessibilityMonitor>>,
+    accessibility_monitor_retry_count: RefCell<u32>,
 }
 
 define_class!(
@@ -33,21 +34,8 @@ define_class!(
                 return;
             }
 
-            let pid = match get_current_pid() {
-                Some(pid) => pid,
-                None => return,
-            };
-
-            match accessibility::AccessibilityMonitor::new(self.ivars().handler.clone(), pid) {
-                Ok(monitor) => {
-                    *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
-                }
-                Err(e) => {
-                    eprintln!(
-                        "[WorkspaceMonitor] Failed to create accessibility monitor for PID {}: {}",
-                        pid, e
-                    );
-                }
+            if let Some(pid) = get_current_pid() {
+                Self::create_accessibility_monitor(self, self.ivars().handler.clone(), pid);
             }
         }
     }
@@ -67,19 +55,9 @@ define_class!(
                 let _ = old_monitor.stop();
             }
 
-            // Create accessibility monitor for new app
+              // Create accessibility monitor for new app
             if handler.config().track_window_changes {
-                match accessibility::AccessibilityMonitor::new(handler.clone(), app_info.pid) {
-                    Ok(monitor) => {
-                        *self.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
-                    }
-                    Err(e) => {
-                        eprintln!(
-                            "[WorkspaceMonitor] Failed to create accessibility monitor for app {} (PID {}): {}",
-                            app_info.name, app_info.pid, e
-                        );
-                    }
-                }
+                Self::create_accessibility_monitor(self, handler.clone(), app_info.pid);
             }
 
             // Accessibility API only fires for window/title changes within an app,
@@ -99,6 +77,14 @@ define_class!(
                 handler.handle(window_info);
             }
         }
+
+        /// Retry callback to create accessibility monitor for a new app.
+        #[unsafe(method(retryAccessibilityMonitor))]
+        fn retry_accessibility_monitor(&self) {
+            if let Some(pid) = get_current_pid() {
+                Self::try_create_accessibility_monitor(self, self.ivars().handler.clone(), pid);
+            }
+        }
     }
 );
 
@@ -107,8 +93,77 @@ impl WorkspaceDelegate {
         let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
             handler,
             accessibility_monitor: RefCell::new(None),
+            accessibility_monitor_retry_count: RefCell::new(0),
         });
         unsafe { msg_send![super(this), init] }
+    }
+
+    /// Create accessibility monitor for a new app.
+    fn create_accessibility_monitor(delegate: &Self, handler: WindowHandler, pid: i32) {
+        unsafe {
+            // Cancel any pending retries from previous app
+            msg_send![delegate, cancelPreviousPerformRequestsWithTarget: delegate, selector: objc2::sel!(retryAccessibilityMonitor), object: None::<&NSObject>]
+        }
+        *delegate
+            .ivars()
+            .accessibility_monitor_retry_count
+            .borrow_mut() = 0;
+        Self::try_create_accessibility_monitor(delegate, handler, pid);
+    }
+
+    /// Try to create accessibility monitor, with retry.
+    ///
+    /// Retries up to 3 times with exponential backoff (200ms, 400ms, 800ms).
+    fn try_create_accessibility_monitor(delegate: &Self, handler: WindowHandler, pid: i32) {
+        match accessibility::AccessibilityMonitor::new(handler.clone(), pid) {
+            Ok(monitor) => {
+                *delegate.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                *delegate
+                    .ivars()
+                    .accessibility_monitor_retry_count
+                    .borrow_mut() = 0;
+            }
+            Err(Error::Platform(msg)) => {
+                match msg.as_str() {
+                    // kAXErrorCannotComplete - app not ready yet, retry
+                    s if s.contains("-25204") => {
+                        let retry_count =
+                            *delegate.ivars().accessibility_monitor_retry_count.borrow();
+                        if retry_count < 3 {
+                            *delegate
+                                .ivars()
+                                .accessibility_monitor_retry_count
+                                .borrow_mut() = retry_count + 1;
+                            let delay = 0.2 * (2.0_f64).powf(retry_count as f64);
+                            unsafe {
+                                msg_send![delegate, performSelector: objc2::sel!(retryAccessibilityMonitor), withObject: None::<&NSObject>, afterDelay: delay]
+                            }
+                            return;
+                        }
+                    }
+                    _ => {}
+                }
+
+                eprintln!(
+                    "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
+                    pid, msg
+                );
+                *delegate
+                    .ivars()
+                    .accessibility_monitor_retry_count
+                    .borrow_mut() = 0;
+            }
+            Err(e) => {
+                eprintln!(
+                    "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
+                    pid, e
+                );
+                *delegate
+                    .ivars()
+                    .accessibility_monitor_retry_count
+                    .borrow_mut() = 0;
+            }
+        }
     }
 }
 

@@ -15,7 +15,8 @@ use std::cell::RefCell;
 struct WorkspaceDelegateIvars {
     handler: WindowHandler,
     accessibility_monitor: RefCell<Option<accessibility::AccessibilityMonitor>>,
-    accessibility_monitor_retry_count: RefCell<u32>,
+    am_retry_count: RefCell<u32>,
+    am_retry_pid: RefCell<Option<i32>>,
 }
 
 define_class!(
@@ -81,8 +82,15 @@ define_class!(
         /// Retry callback to create accessibility monitor for a new app.
         #[unsafe(method(retryAccessibilityMonitor))]
         fn retry_accessibility_monitor(&self) {
-            if let Some(pid) = get_current_pid() {
-                Self::try_create_accessibility_monitor(self, self.ivars().handler.clone(), pid);
+            let retry_pid = *self.ivars().am_retry_pid.borrow();
+            let current_pid = get_current_pid();
+
+            // Only retry if the PID we're retrying for is still the current app.
+            // This prevents retries from previous apps interfering with new apps.
+            if let (Some(stored_pid), Some(current)) = (retry_pid, current_pid) {
+                if stored_pid == current {
+                    Self::try_create_accessibility_monitor(self, self.ivars().handler.clone(), current);
+                }
             }
         }
     }
@@ -93,21 +101,16 @@ impl WorkspaceDelegate {
         let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
             handler,
             accessibility_monitor: RefCell::new(None),
-            accessibility_monitor_retry_count: RefCell::new(0),
+            am_retry_count: RefCell::new(0),
+            am_retry_pid: RefCell::new(None),
         });
         unsafe { msg_send![super(this), init] }
     }
 
     /// Create accessibility monitor for a new app.
     fn create_accessibility_monitor(delegate: &Self, handler: WindowHandler, pid: i32) {
-        unsafe {
-            // Cancel any pending retries from previous app
-            msg_send![delegate, cancelPreviousPerformRequestsWithTarget: delegate, selector: objc2::sel!(retryAccessibilityMonitor), object: None::<&NSObject>]
-        }
-        *delegate
-            .ivars()
-            .accessibility_monitor_retry_count
-            .borrow_mut() = 0;
+        *delegate.ivars().am_retry_count.borrow_mut() = 0;
+        *delegate.ivars().am_retry_pid.borrow_mut() = None;
         Self::try_create_accessibility_monitor(delegate, handler, pid);
     }
 
@@ -118,22 +121,17 @@ impl WorkspaceDelegate {
         match accessibility::AccessibilityMonitor::new(handler.clone(), pid) {
             Ok(monitor) => {
                 *delegate.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
-                *delegate
-                    .ivars()
-                    .accessibility_monitor_retry_count
-                    .borrow_mut() = 0;
+                *delegate.ivars().am_retry_count.borrow_mut() = 0;
+                *delegate.ivars().am_retry_pid.borrow_mut() = None;
             }
             Err(Error::Platform(msg)) => {
                 match msg.as_str() {
                     // kAXErrorCannotComplete - app not ready yet, retry
                     s if s.contains("-25204") => {
-                        let retry_count =
-                            *delegate.ivars().accessibility_monitor_retry_count.borrow();
+                        let retry_count = *delegate.ivars().am_retry_count.borrow();
                         if retry_count < 3 {
-                            *delegate
-                                .ivars()
-                                .accessibility_monitor_retry_count
-                                .borrow_mut() = retry_count + 1;
+                            *delegate.ivars().am_retry_count.borrow_mut() = retry_count + 1;
+                            *delegate.ivars().am_retry_pid.borrow_mut() = Some(pid);
                             let delay = 0.2 * (2.0_f64).powf(retry_count as f64);
                             unsafe {
                                 msg_send![delegate, performSelector: objc2::sel!(retryAccessibilityMonitor), withObject: None::<&NSObject>, afterDelay: delay]
@@ -148,20 +146,12 @@ impl WorkspaceDelegate {
                     "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
                     pid, msg
                 );
-                *delegate
-                    .ivars()
-                    .accessibility_monitor_retry_count
-                    .borrow_mut() = 0;
             }
             Err(e) => {
                 eprintln!(
                     "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
                     pid, e
                 );
-                *delegate
-                    .ivars()
-                    .accessibility_monitor_retry_count
-                    .borrow_mut() = 0;
             }
         }
     }

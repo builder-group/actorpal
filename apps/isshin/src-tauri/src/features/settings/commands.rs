@@ -1,8 +1,11 @@
-use crate::app::window::Window;
-use crate::environment::configs::db::DbConfig;
-use crate::environment::states::settings::SettingsState;
-use crate::features::settings::types::{ActivityWindowSettings, AppSettings};
-use tauri::{AppHandle, Manager, State};
+use crate::{
+    app::window::Window,
+    common::path::get_app_data_dir,
+    environment::{configs::db::DbConfig, states::settings::SettingsState},
+    features::settings::types::{ActivityWindowSettings, AppSettings},
+};
+use std::process::Command;
+use tauri::{AppHandle, State};
 
 #[tauri::command]
 #[specta::specta]
@@ -11,33 +14,21 @@ pub async fn show_settings_window(app: AppHandle) -> Result<(), String> {
         .show(&app)
         .await
         .map_err(|e| e.to_string())?;
-    Ok(())
+    return Ok(());
 }
 
 #[tauri::command]
 #[specta::specta]
 pub fn get_database_path(app: AppHandle) -> Result<String, String> {
-    let data_dir_path = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("Failed to get app data directory: {}", e))?;
-
-    std::fs::create_dir_all(&data_dir_path).map_err(|e| {
-        format!(
-            "Failed to create app data directory at {}: {}",
-            data_dir_path.display(),
-            e
-        )
-    })?;
-
+    let data_dir_path = get_app_data_dir(&app);
     let db_path = data_dir_path.join(DbConfig::db_name());
-    Ok(db_path.to_string_lossy().to_string())
+    return Ok(db_path.to_string_lossy().to_string());
 }
 
 #[tauri::command]
 #[specta::specta]
 pub async fn get_settings(state: State<'_, SettingsState>) -> Result<AppSettings, String> {
-    Ok(state.lock().unwrap().clone())
+    return Ok(state.lock().unwrap().clone());
 }
 
 #[tauri::command]
@@ -47,7 +38,7 @@ pub async fn set_settings(
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
     *state.lock().unwrap() = settings;
-    Ok(())
+    return Ok(());
 }
 
 #[tauri::command]
@@ -65,7 +56,7 @@ pub async fn set_activity_window_settings(
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
     state.lock().unwrap().activity_window = settings;
-    Ok(())
+    return Ok(());
 }
 
 #[tauri::command]
@@ -75,7 +66,7 @@ pub async fn update_track_window(
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
     state.lock().unwrap().activity_window.track_window = value;
-    Ok(())
+    return Ok(());
 }
 
 #[tauri::command]
@@ -85,5 +76,29 @@ pub async fn update_track_browser(
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
     state.lock().unwrap().activity_window.track_browser = value;
-    Ok(())
+    return Ok(());
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn open_database_directory(app: AppHandle) -> Result<(), String> {
+    let data_dir_path = get_app_data_dir(&app);
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&data_dir_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        Command::new("xdg-open")
+            .arg(&data_dir_path)
+            .spawn()
+            .map_err(|e| format!("Failed to open directory: {}", e))?;
+    }
+
+    return Ok(());
 }

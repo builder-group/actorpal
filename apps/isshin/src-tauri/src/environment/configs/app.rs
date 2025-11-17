@@ -15,10 +15,23 @@ impl AppConfig {
         Self::app_name()
     }
 
+    pub fn app_data_subdir() -> Option<&'static str> {
+        if cfg!(debug_assertions) {
+            return Some("dev");
+        }
+        return None;
+    }
+
     pub fn tray_icon_bytes() -> &'static [u8] {
-        include_bytes!(concat!(
+        if cfg!(debug_assertions) {
+            return include_bytes!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/icons/tray-default-icon-dev.png"
+            ));
+        }
+        return include_bytes!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/icons/tray-default-icon.png"
-        ))
+        ));
     }
 }

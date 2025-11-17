@@ -59,7 +59,6 @@ impl WindowListener for ActivityHandler {
 }
 
 pub fn start_monitoring(app: AppHandle) {
-    // Get settings from global state
     let settings = app
         .try_state::<SettingsState>()
         .map(|state| state.lock().unwrap().activity_window.clone())

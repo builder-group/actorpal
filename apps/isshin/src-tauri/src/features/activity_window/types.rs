@@ -51,7 +51,7 @@ impl From<WindowInfo> for ActivityEntry {
         let browser_url = window.browser.as_ref().and_then(|b| b.url.clone());
         let browser_is_private = window.browser.as_ref().and_then(|b| b.is_private);
 
-        Self {
+        return Self {
             application: window.app.name,
             bundle_id,
             pid: Some(window.app.pid),
@@ -66,7 +66,7 @@ impl From<WindowInfo> for ActivityEntry {
             browser_is_private,
             start_time: now,
             end_time: now,
-        }
+        };
     }
 }
 
@@ -83,6 +83,6 @@ impl ActivityEntry {
 
     /// Calculate duration in seconds from start and end time
     pub fn duration_seconds(&self) -> u64 {
-        self.end_time.saturating_sub(self.start_time)
+        return self.end_time.saturating_sub(self.start_time);
     }
 }

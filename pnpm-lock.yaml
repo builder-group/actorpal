@@ -192,6 +192,9 @@ importers:
       react-router:
         specifier: ^7.9.5
         version: 7.9.5(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      tuple-result:
+        specifier: ^0.0.10
+        version: 0.0.10
     devDependencies:
       '@react-router/dev':
         specifier: ^7.9.5

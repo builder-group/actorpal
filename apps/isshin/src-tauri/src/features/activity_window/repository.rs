@@ -82,7 +82,7 @@ impl ActivityRepository {
         .execute(pool)
         .await?;
 
-        Ok(())
+        return Ok(());
     }
 
     /// Get all activity entries, ordered by start_time descending (newest first)
@@ -113,7 +113,7 @@ impl ActivityRepository {
         .fetch_all(pool)
         .await?;
 
-        Ok(rows.into_iter().map(ActivityEntry::from).collect())
+        return Ok(rows.into_iter().map(ActivityEntry::from).collect());
     }
 
     /// Delete all activity entries
@@ -122,6 +122,6 @@ impl ActivityRepository {
             .execute(pool)
             .await?;
 
-        Ok(())
+        return Ok(());
     }
 }

@@ -1,12 +1,9 @@
-use std::io::Cursor;
-use tauri::{
-    menu::{Menu, MenuBuilder, MenuItem},
-    tray::{TrayIcon, TrayIconBuilder},
-    AppHandle,
-};
-
 use crate::app::window::Window;
 use crate::environment::configs::app::AppConfig;
+use std::io::Cursor;
+use tauri::{
+    menu::Menu, menu::MenuBuilder, menu::MenuItem, tray::TrayIcon, tray::TrayIconBuilder, AppHandle,
+};
 
 struct TrayItemConfig {
     id: &'static str,
@@ -84,6 +81,18 @@ impl Tray {
             .show_menu_on_left_click(false)
             .tooltip(AppConfig::tray_tooltip())
             .on_menu_event(|app, event| Self::handle_menu_event(app, event.id().as_ref()))
+            .on_tray_icon_event(|tray, event| match event {
+                tauri::tray::TrayIconEvent::Click {
+                    button: tauri::tray::MouseButton::Left,
+                    ..
+                } => {
+                    let app_handle = tray.app_handle().clone();
+                    tauri::async_runtime::spawn(async move {
+                        let _ = Window::Main.show(&app_handle).await;
+                    });
+                }
+                _ => {}
+            })
             .build(app);
     }
 

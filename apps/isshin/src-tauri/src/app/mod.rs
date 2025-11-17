@@ -1,14 +1,15 @@
 pub mod tray;
 pub mod window;
 
-use crate::app::window::Window;
-use crate::common::db::Database;
-use crate::environment::states::app::AppState;
-use crate::environment::states::settings::SettingsState;
-use crate::features::activity_window;
-use crate::features::activity_window::commands as activity_commands;
-use crate::features::settings;
-use crate::features::settings::commands as settings_commands;
+use crate::{
+    app::window::Window,
+    common::db::Database,
+    environment::states::{app::AppState, settings::SettingsState},
+    features::{
+        activity_window::{self, commands as activity_commands},
+        settings::{self, commands as settings_commands},
+    },
+};
 use specta_typescript::Typescript;
 use tauri::Manager;
 use tauri_specta::{collect_commands, Builder};
@@ -18,6 +19,7 @@ pub fn run() {
         // Settings commands
         settings_commands::show_settings_window,
         settings_commands::get_database_path,
+        settings_commands::open_database_directory,
         settings_commands::get_settings,
         settings_commands::set_settings,
         settings_commands::get_activity_window_settings,

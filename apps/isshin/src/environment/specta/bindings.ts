@@ -21,6 +21,62 @@ async getDatabasePath() : Promise<Result<string, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async openDatabaseDirectory() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("open_database_directory") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getSettings() : Promise<Result<AppSettings, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_settings") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setSettings(settings: AppSettings) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_settings", { settings }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getActivityWindowSettings() : Promise<Result<ActivityWindowSettings, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_activity_window_settings") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async setActivityWindowSettings(settings: ActivityWindowSettings) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("set_activity_window_settings", { settings }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateTrackWindow(value: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_track_window", { value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async updateTrackBrowser(value: boolean) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("update_track_browser", { value }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async getActivityEntries() : Promise<Result<ActivityEntry[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_activity_entries") };
@@ -53,6 +109,26 @@ async clearActivityEntries() : Promise<Result<null, string>> {
  * Core activity entry tracking window/app focus sessions
  */
 export type ActivityEntry = { application: string; bundleId: string | null; pid: number | null; processPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number }
+/**
+ * Settings for the activity window feature.
+ */
+export type ActivityWindowSettings = { 
+/**
+ * Whether to track window changes (tab switches, window switches within apps)
+ */
+trackWindow: boolean; 
+/**
+ * Whether to track browser URLs (requires Automation permission on macOS)
+ */
+trackBrowser: boolean }
+/**
+ * Global application settings.
+ */
+export type AppSettings = { 
+/**
+ * Activity window tracking settings
+ */
+activityWindow: ActivityWindowSettings }
 
 /** tauri-specta globals **/
 

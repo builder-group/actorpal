@@ -7,18 +7,18 @@ use mado::{MonitorConfig, WindowInfo, WindowListener, WindowMonitor};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
-use tokio::sync::Mutex;
+use tokio::sync::Mutex as TokioMutex;
 
 struct ActivityHandler {
     app: AppHandle,
-    current_entry: Arc<Mutex<Option<ActivityEntry>>>,
+    active_entry: Arc<TokioMutex<Option<ActivityEntry>>>,
 }
 
 impl ActivityHandler {
     fn new(app: AppHandle) -> Self {
         Self {
             app,
-            current_entry: Arc::new(Mutex::new(None)),
+            active_entry: Arc::new(TokioMutex::new(None)),
         }
     }
 }
@@ -26,7 +26,20 @@ impl ActivityHandler {
 impl WindowListener for ActivityHandler {
     fn on_focus_change(&self, window: WindowInfo) {
         let app = self.app.clone();
-        let current_entry = Arc::clone(&self.current_entry);
+        let active_entry = Arc::clone(&self.active_entry);
+
+        #[cfg(debug_assertions)]
+        {
+            let app_changed = {
+                let entry_guard = tauri::async_runtime::block_on(active_entry.lock());
+                entry_guard
+                    .as_ref()
+                    .and_then(|e| e.bundle_id.as_ref())
+                    .map(|bundle_id| bundle_id != &window.app.bundle_id)
+                    .unwrap_or(true)
+            };
+            log_window_info(&window, app_changed);
+        }
 
         ActiveWindowChangedEvent {
             data: ActiveWindowInfo::from(window.clone()),
@@ -36,7 +49,7 @@ impl WindowListener for ActivityHandler {
 
         tauri::async_runtime::spawn(async move {
             // Save previous entry if it exists
-            let mut entry_guard = current_entry.lock().await;
+            let mut entry_guard = active_entry.lock().await;
             if let Some(mut entry) = entry_guard.take() {
                 entry.update_end_time();
 
@@ -123,4 +136,62 @@ pub fn start_monitoring(app: AppHandle) {
             Logger::log(&app_for_thread, &msg);
         }
     });
+}
+
+fn log_window_info(window: &WindowInfo, app_changed: bool) {
+    if app_changed {
+        println!("\n[Activity Window Watcher] 🔄 App Switch");
+    } else {
+        println!("\n[Activity Window Watcher] 🪟 Window Change");
+    }
+
+    println!("[Activity Window Watcher]    Window:");
+    println!(
+        "[Activity Window Watcher]       Title:      '{}'",
+        window.title
+    );
+    println!(
+        "[Activity Window Watcher]       Window ID:  {}",
+        window.window_id
+    );
+    println!(
+        "[Activity Window Watcher]       Bounds:     ({:.0}, {:.0})",
+        window.bounds.x, window.bounds.y
+    );
+    println!(
+        "[Activity Window Watcher]       Size:       {:.0}x{:.0}",
+        window.bounds.width, window.bounds.height
+    );
+
+    println!("[Activity Window Watcher]    App:");
+    println!(
+        "[Activity Window Watcher]       Name:       {}",
+        window.app.name
+    );
+    println!(
+        "[Activity Window Watcher]       PID:        {}",
+        window.app.pid
+    );
+    println!(
+        "[Activity Window Watcher]       Bundle ID:  {}",
+        window.app.bundle_id
+    );
+    println!(
+        "[Activity Window Watcher]       Path:       {}",
+        window.app.process_path
+    );
+
+    if let Some(browser) = &window.browser {
+        println!("[Activity Window Watcher]    Browser:");
+        if let Some(url) = &browser.url {
+            println!("[Activity Window Watcher]       URL:        {}", url);
+        } else {
+            println!("[Activity Window Watcher]       URL:        (not available - may need Automation permission)");
+        }
+        if let Some(is_private) = browser.is_private {
+            if is_private {
+                println!("[Activity Window Watcher]       Mode:       Private/Incognito");
+            }
+        }
+    }
 }

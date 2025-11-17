@@ -37,7 +37,7 @@ impl Window {
             },
             Window::Settings => WindowConfig {
                 label: "settings",
-                title: "Isshin Settings",
+                title: "Isshin - Settings",
                 url: "/settings",
                 min_size: Some((600.0, 450.0)),
                 resizable: true,

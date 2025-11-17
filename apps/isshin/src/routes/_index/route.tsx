@@ -4,6 +4,7 @@ import { useRevalidator } from 'react-router';
 import { Err, Ok } from 'tuple-result';
 import { specta } from '@/environment';
 import { formatDuration, resultLoader, toTuple, withResultLoader } from '@/lib';
+import { SankeyDiagram } from './SankeyDiagram';
 
 const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 	Success: ({ data }) => {
@@ -84,12 +85,14 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 					</header>
 
 					<div className="space-y-6">
-						<div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-							<h2 className="mb-4 text-lg font-semibold text-gray-900">Total Time</h2>
-							<p className="text-3xl font-bold text-gray-900">{formatDuration(totalTime)}</p>
+						<div className="rounded-lg border border-gray-200 bg-white p-6">
+							<h2 className="mb-4 text-lg font-semibold">Total Time</h2>
+							<p className="text-3xl font-bold">{formatDuration(totalTime)}</p>
 						</div>
 
-						<div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+						<SankeyDiagram entries={entries} />
+
+						<div className="rounded-lg border border-gray-200 bg-white">
 							<div className="border-b border-gray-200 px-6 py-4">
 								<h2 className="text-xl font-semibold text-gray-900">Application Breakdown</h2>
 							</div>

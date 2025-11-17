@@ -142,12 +142,16 @@ impl WorkspaceDelegate {
                     _ => {}
                 }
 
+                *delegate.ivars().am_retry_count.borrow_mut() = 0;
+                *delegate.ivars().am_retry_pid.borrow_mut() = None;
                 eprintln!(
                     "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
                     pid, msg
                 );
             }
             Err(e) => {
+                *delegate.ivars().am_retry_count.borrow_mut() = 0;
+                *delegate.ivars().am_retry_pid.borrow_mut() = None;
                 eprintln!(
                     "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
                     pid, e

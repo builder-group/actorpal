@@ -71,12 +71,7 @@ define_class!(
                 Some(window) => window,
                 None => return,
             };
-
-            // Skip if window not ready (e.g. after unminimizing)
-            // Accessibility observer will report when ready
-            if window_info.window_id != 0 {
-                handler.handle(window_info);
-            }
+            handler.handle(window_info);
         }
 
         /// Retry callback to create accessibility monitor for a new app.

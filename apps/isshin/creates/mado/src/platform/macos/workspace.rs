@@ -148,32 +148,33 @@ impl WorkspaceDelegate {
                     return;
                 }
 
-                // If window exists but window_id is 0 - continue polling (window not ready yet)
-                if window.window_id == 0 {
+                // If found focused window for our PID - send event, create monitor, stop polling
+                if window.window_id != 0 {
+                    delegate
+                        .ivars()
+                        .event_handler
+                        .handle(WindowEvent::WindowChanged { window });
+
+                    match accessibility::AccessibilityMonitor::new(
+                        delegate.ivars().event_handler.clone(),
+                        pid,
+                    ) {
+                        Ok(monitor) => {
+                            *delegate.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                        }
+                        Err(e) => {
+                            eprintln!(
+                                "[PollWindowInfo] Failed to create accessibility monitor (PID {}): {}",
+                                pid, e
+                            );
+                        }
+                    }
+
+                    Self::stop_polling(delegate);
                     return;
+                } else {
+                    // If window exists but window_id is 0 - continue polling (window not ready yet)
                 }
-
-                delegate
-                    .ivars()
-                    .event_handler
-                    .handle(WindowEvent::WindowChanged { window });
-
-                match accessibility::AccessibilityMonitor::new(
-                    delegate.ivars().event_handler.clone(),
-                    pid,
-                ) {
-                    Ok(monitor) => {
-                        *delegate.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
-                    }
-                    Err(e) => {
-                        eprintln!(
-                            "[PollWindowInfo] Failed to create accessibility monitor (PID {}): {}",
-                            pid, e
-                        );
-                    }
-                }
-
-                Self::stop_polling(delegate);
             }
             None => {
                 // No focused window - continue polling

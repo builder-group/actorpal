@@ -1,10 +1,11 @@
 pub mod accessibility;
+pub mod app_info;
 mod browser;
 mod window_event_handler;
 pub mod window_info;
 mod workspace;
 
-use crate::{config::MonitorConfig, error::Error, listener::WindowListener, types::WindowEvent};
+use crate::{config::MonitorConfig, error::Error, listener::WindowListener};
 use std::sync::{Arc, RwLock};
 use window_event_handler::WindowEventHandler;
 use workspace::WorkspaceMonitor;
@@ -51,17 +52,6 @@ pub(super) fn run(
 
     let event_handler = WindowEventHandler::new(listener, config);
     let mut monitor = WorkspaceMonitor::new(event_handler)?;
-
-    // Send initial window state before event loop starts
-    if let Some(window) = window_info::get_current_window() {
-        monitor.event_handler().handle(WindowEvent::AppActivated {
-            app: window.app.clone(),
-        });
-        monitor
-            .event_handler()
-            .handle(WindowEvent::WindowChanged { window });
-    }
-
     monitor.run()?;
 
     return Ok(());

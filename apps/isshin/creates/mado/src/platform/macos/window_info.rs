@@ -1,4 +1,4 @@
-use super::{accessibility, workspace};
+use super::{accessibility, app_info};
 use crate::types::{AppInfo, WindowBounds, WindowInfo};
 use core_foundation::{
     array::CFArray,
@@ -23,10 +23,9 @@ extern "C" {
 /// - Accessibility API for window title
 /// - CoreGraphics for stable window ID and bounds
 pub fn get_current_window() -> Option<WindowInfo> {
-    let pid = workspace::get_current_pid()?;
-    let app = get_current_app()?;
+    let app = app_info::get_current_app()?;
     let title = accessibility::get_current_window_title().unwrap_or_default();
-    let (window_id, bounds) = find_window_info(pid, &title).unwrap_or((0, Default::default()));
+    let (window_id, bounds) = find_window_info(app.pid, &title).unwrap_or((0, Default::default()));
 
     return Some(WindowInfo {
         title,
@@ -46,7 +45,7 @@ pub fn build_window_info(
     title: Option<String>,
     app: Option<AppInfo>,
 ) -> Option<WindowInfo> {
-    let app = app.or_else(get_current_app)?;
+    let app = app.or_else(app_info::get_current_app)?;
     let title =
         title.unwrap_or_else(|| accessibility::get_current_window_title().unwrap_or_default());
     let (window_id, bounds) = find_window_info(pid, &title).unwrap_or((0, Default::default()));
@@ -57,21 +56,6 @@ pub fn build_window_info(
         bounds,
         app,
         browser: None,
-    });
-}
-
-/// Get information about the current active application.
-pub fn get_current_app() -> Option<AppInfo> {
-    let pid = workspace::get_current_pid()?;
-    let name = workspace::get_app_name(pid)?;
-    let bundle_id = workspace::get_bundle_id(pid).unwrap_or_default();
-    let process_path = workspace::get_process_path(pid).unwrap_or_default();
-
-    return Some(AppInfo {
-        pid,
-        name,
-        bundle_id,
-        process_path,
     });
 }
 
@@ -90,15 +74,11 @@ fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
                 Some(d) => d,
                 None => continue,
             };
-            if !matches_window_criteria(&d, pid) {
-                continue;
-            }
 
-            let window_title = match dict_get_string(&d, "kCGWindowName") {
-                Some(t) => t,
-                None => continue,
-            };
-            if window_title != title {
+            if dict_get_i32(&d, "kCGWindowOwnerPID") != Some(pid)
+                || dict_get_string(&d, "kCGWindowName") != Some(title.to_string())
+                || !matches_window_criteria(&d, pid)
+            {
                 continue;
             }
 
@@ -107,7 +87,6 @@ fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
                 None => continue,
             };
             let bounds = dict_get_bounds(&d).unwrap_or_default();
-
             return Some((id as u32, bounds));
         }
     }
@@ -118,6 +97,7 @@ fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
             Some(d) => d,
             None => continue,
         };
+
         if !matches_window_criteria(&d, pid) {
             continue;
         }
@@ -127,7 +107,6 @@ fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
             None => continue,
         };
         let bounds = dict_get_bounds(&d).unwrap_or_default();
-
         return Some((id as u32, bounds));
     }
 
@@ -137,16 +116,11 @@ fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
 /// Check if window matches selection criteria.
 ///
 /// A window matches if it:
-/// - Is a normal window (layer 0, excludes overlays/desktop)
 /// - Belongs to the specified process (PID matches)
 /// - Is visible on-screen
 /// - Has non-zero alpha (not fully transparent)
+/// - Prefers layer 0 (normal windows), but accepts other layers if onscreen
 fn matches_window_criteria(d: &CFDictionary, pid: i32) -> bool {
-    // Is a normal window (layer 0, excludes overlays/desktop)
-    if dict_get_i32(d, "kCGWindowLayer") != Some(0) {
-        return false;
-    }
-
     // Belongs to the specified process (PID matches)
     if dict_get_i32(d, "kCGWindowOwnerPID") != Some(pid) {
         return false;
@@ -154,6 +128,13 @@ fn matches_window_criteria(d: &CFDictionary, pid: i32) -> bool {
 
     // Is visible on-screen
     if dict_get_bool(d, "kCGWindowIsOnscreen") != Some(true) {
+        let window_id = dict_get_i32(d, "kCGWindowNumber");
+        let window_layer = dict_get_i32(d, "kCGWindowLayer");
+        let window_title = dict_get_string(d, "kCGWindowName").unwrap_or_default();
+        eprintln!(
+            "[WindowInfo] Window rejected (PID {}, ID {:?}, layer {:?}, title: \"{}\"): not on-screen",
+            pid, window_id, window_layer, window_title
+        );
         return false;
     }
 
@@ -162,7 +143,25 @@ fn matches_window_criteria(d: &CFDictionary, pid: i32) -> bool {
         .map(|a| a > 0.0)
         .unwrap_or(false)
     {
+        let window_id = dict_get_i32(d, "kCGWindowNumber");
+        let window_layer = dict_get_i32(d, "kCGWindowLayer");
+        let window_title = dict_get_string(d, "kCGWindowName").unwrap_or_default();
+        eprintln!(
+            "[WindowInfo] Window rejected (PID {}, ID {:?}, layer {:?}, title: \"{}\"): alpha is {:?}, expected > 0",
+            pid, window_id, window_layer, window_title, dict_get_f64(d, "kCGWindowAlpha")
+        );
         return false;
+    }
+
+    // Prefer layer 0 (normal windows), but log if using other layers
+    let window_layer = dict_get_i32(d, "kCGWindowLayer");
+    if window_layer != Some(0) {
+        let window_id = dict_get_i32(d, "kCGWindowNumber");
+        let window_title = dict_get_string(d, "kCGWindowName").unwrap_or_default();
+        eprintln!(
+            "[WindowInfo] Window accepted with non-zero layer (PID {}, ID {:?}, layer {:?}, title: \"{}\")",
+            pid, window_id, window_layer, window_title
+        );
     }
 
     return true;

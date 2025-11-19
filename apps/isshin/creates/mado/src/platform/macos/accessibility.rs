@@ -1,4 +1,4 @@
-use super::{window_event_handler::WindowEventHandler, window_info, workspace};
+use super::{app_info, window_event_handler::WindowEventHandler, window_info};
 use crate::{error::Error, types::WindowEvent};
 use accessibility_sys::{
     kAXFocusedApplicationAttribute, kAXFocusedWindowAttribute, kAXFocusedWindowChangedNotification,
@@ -89,7 +89,7 @@ impl AccessibilityMonitor {
         let event_handler = &*(user_info as *const WindowEventHandler);
 
         let title = get_string_attribute(element, kAXTitleAttribute);
-        let pid = match workspace::get_current_pid() {
+        let pid = match app_info::get_current_pid() {
             Some(pid) => pid,
             None => return,
         };
@@ -109,8 +109,9 @@ impl AccessibilityMonitor {
         }
 
         // Re-register title observer only on focus changes.
-        // Title observer is registered on a specific window element, so when focus changes
-        // to a different window, we must re-register it on the new focused window.
+        // Title observer is registered on a specific window element,
+        // so when focus changes to a different window,
+        // we must re-register it on the new focused window.
         let notification_str = CFString::wrap_under_get_rule(notification);
         let focus_notification = CFString::from_static_string(kAXFocusedWindowChangedNotification);
         if notification_str.to_string() == focus_notification.to_string() {

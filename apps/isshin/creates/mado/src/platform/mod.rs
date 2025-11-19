@@ -58,7 +58,7 @@ pub fn stop() -> Result<(), Error> {
 pub fn get_active_app() -> Result<AppInfo, Error> {
     #[cfg(target_os = "macos")]
     {
-        macos::window_info::get_current_app().ok_or(Error::NoActiveApp)
+        macos::app_info::get_current_app().ok_or(Error::NoActiveApp)
     }
 
     #[cfg(target_os = "linux")]

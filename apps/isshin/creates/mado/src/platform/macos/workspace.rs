@@ -1,7 +1,7 @@
-use super::{accessibility, window_event_handler::WindowEventHandler};
+use super::{accessibility, app_info, window_event_handler::WindowEventHandler};
 use crate::{
     error::Error,
-    platform::macos::window_info::build_window_info,
+    platform::macos::window_info,
     types::{AppInfo, WindowEvent},
 };
 use objc2::{
@@ -9,8 +9,8 @@ use objc2::{
     MainThreadOnly,
 };
 use objc2_app_kit::{
-    NSApplication, NSApplicationDelegate, NSRunningApplication, NSWorkspace,
-    NSWorkspaceApplicationKey, NSWorkspaceDidActivateApplicationNotification,
+    NSApplication, NSApplicationDelegate, NSWorkspace,
+    NSWorkspaceDidActivateApplicationNotification,
 };
 use objc2_foundation::{NSNotification, NSObject, NSObjectProtocol};
 use std::cell::RefCell;
@@ -19,8 +19,8 @@ use std::cell::RefCell;
 struct WorkspaceDelegateIvars {
     event_handler: WindowEventHandler,
     accessibility_monitor: RefCell<Option<accessibility::AccessibilityMonitor>>,
-    am_retry_count: RefCell<u32>,
-    am_retry_pid: RefCell<Option<i32>>,
+    pid: RefCell<Option<i32>>,
+    retry_count: RefCell<u32>,
 }
 
 define_class!(
@@ -35,12 +35,21 @@ define_class!(
         /// Called once when NSApplication finishes launching (initial setup).
         #[unsafe(method(applicationDidFinishLaunching:))]
         fn did_finish_launching(&self, _notification: &NSNotification) {
-            if !self.ivars().event_handler.config().track_window_changes {
-                return;
-            }
+            let app_info = match app_info::get_current_app() {
+                Some(info) => info,
+                None => return,
+            };
+            let event_handler = &self.ivars().event_handler;
 
-            if let Some(pid) = get_current_pid() {
-                Self::create_accessibility_monitor(self, self.ivars().event_handler.clone(), pid);
+            event_handler.handle(WindowEvent::AppActivated {
+                app: app_info.clone(),
+            });
+
+            // Start polling for window info
+            if event_handler.config().track_window_changes {
+                *self.ivars().pid.borrow_mut() = Some(app_info.pid);
+                *self.ivars().retry_count.borrow_mut() = 0;
+                Self::poll_window_info(self, app_info.pid, app_info);
             }
         }
     }
@@ -49,50 +58,49 @@ define_class!(
         /// Called when user switches to a different application.
         #[unsafe(method(didActivateApplication:))]
         fn did_activate_application(&self, notification: &NSNotification) {
-            let app_info = match extract_app_from_notification(notification) {
+            let app_info = match app_info::get_app_info_from_notification(notification) {
                 Some(info) => info,
                 None => return,
             };
             let event_handler = &self.ivars().event_handler;
 
-            // Stop accessibility monitor for previous app
+            // Cleanup previous app (stop monitor and polling)
             if let Some(mut old_monitor) = self.ivars().accessibility_monitor.borrow_mut().take() {
                 let _ = old_monitor.stop();
             }
-
-              // Create accessibility monitor for new app
-            if event_handler.config().track_window_changes {
-                Self::create_accessibility_monitor(self, event_handler.clone(), app_info.pid);
-            }
+            Self::stop_polling(self);
 
             // Always send AppActivated when app switches (explicit app change notification)
             event_handler.handle(WindowEvent::AppActivated {
                 app: app_info.clone(),
             });
 
-            // If window data is available, also send WindowChanged immediately.
-            // Otherwise, AccessibilityMonitor will send WindowChanged when window becomes ready.
-            let window_info = build_window_info(app_info.pid, None, Some(app_info));
-            if let Some(window) = window_info {
-                if window.window_id != 0 {
-                    event_handler.handle(WindowEvent::WindowChanged { window });
-                }
+            // Start polling for window info
+            if event_handler.config().track_window_changes {
+                *self.ivars().pid.borrow_mut() = Some(app_info.pid);
+                *self.ivars().retry_count.borrow_mut() = 0;
+                Self::poll_window_info(self, app_info.pid, app_info.clone());
             }
         }
 
-        /// Retry callback to create accessibility monitor for a new app.
-        #[unsafe(method(retryAccessibilityMonitor))]
-        fn retry_accessibility_monitor(&self) {
-            let retry_pid = *self.ivars().am_retry_pid.borrow();
-            let current_pid = get_current_pid();
+        /// Callback to continue polling for window info.
+        #[unsafe(method(pollWindowInfo))]
+        fn poll_window_info_callback(&self) {
+            let stored_pid = *self.ivars().pid.borrow();
+            let current_pid = app_info::get_current_pid();
 
             // Only retry if the PID we're retrying for is still the current app.
             // This prevents retries from previous apps interfering with new apps.
-            if let (Some(stored_pid), Some(current)) = (retry_pid, current_pid) {
-                if stored_pid == current {
-                    Self::try_create_accessibility_monitor(self, self.ivars().event_handler.clone(), current);
+            if let (Some(pid), Some(current)) = (stored_pid, current_pid) {
+                if pid == current {
+                    if let Some(app_info) = app_info::get_app_info_from_pid(current) {
+                        Self::poll_window_info(self, current, app_info);
+                        return;
+                    }
                 }
             }
+
+            Self::stop_polling(self);
         }
     }
 );
@@ -102,67 +110,87 @@ impl WorkspaceDelegate {
         let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
             event_handler,
             accessibility_monitor: RefCell::new(None),
-            am_retry_count: RefCell::new(0),
-            am_retry_pid: RefCell::new(None),
+            pid: RefCell::new(None),
+            retry_count: RefCell::new(0),
         });
         unsafe { msg_send![super(this), init] }
     }
 
-    /// Create accessibility monitor for a new app.
-    fn create_accessibility_monitor(delegate: &Self, event_handler: WindowEventHandler, pid: i32) {
-        *delegate.ivars().am_retry_count.borrow_mut() = 0;
-        *delegate.ivars().am_retry_pid.borrow_mut() = None;
-        Self::try_create_accessibility_monitor(delegate, event_handler, pid);
-    }
-
-    /// Try to create accessibility monitor, with retry.
+    /// Poll for window info until available, then create accessibility monitor.
     ///
-    /// Retries up to 3 times with exponential backoff (200ms, 400ms, 800ms).
-    fn try_create_accessibility_monitor(
-        delegate: &Self,
-        event_handler: WindowEventHandler,
-        pid: i32,
-    ) {
-        match accessibility::AccessibilityMonitor::new(event_handler.clone(), pid) {
-            Ok(monitor) => {
-                *delegate.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
-                *delegate.ivars().am_retry_count.borrow_mut() = 0;
-                *delegate.ivars().am_retry_pid.borrow_mut() = None;
-            }
-            Err(Error::Platform(msg)) => {
-                match msg.as_str() {
-                    // kAXErrorCannotComplete - app not ready yet, retry
-                    s if s.contains("-25204") => {
-                        let retry_count = *delegate.ivars().am_retry_count.borrow();
-                        if retry_count < 3 {
-                            *delegate.ivars().am_retry_count.borrow_mut() = retry_count + 1;
-                            *delegate.ivars().am_retry_pid.borrow_mut() = Some(pid);
-                            let delay = 0.2 * (2.0_f64).powf(retry_count as f64);
-                            unsafe {
-                                msg_send![delegate, performSelector: objc2::sel!(retryAccessibilityMonitor), withObject: None::<&NSObject>, afterDelay: delay]
-                            }
-                            return;
-                        }
-                    }
-                    _ => {}
+    /// Uses exponential backoff capped at 1.6s (200ms → 400ms → 800ms → 1.6s).
+    /// Stops automatically if app switches or after 5 minutes.
+    fn poll_window_info(delegate: &Self, pid: i32, app_info: AppInfo) {
+        let retry_count = *delegate.ivars().retry_count.borrow();
+        *delegate.ivars().retry_count.borrow_mut() = retry_count + 1;
+
+        // Stop polling if timeout after ~5 minutes
+        if retry_count >= 188 {
+            eprintln!(
+                "[PollWindowInfo] Timeout after {} retries (5 minutes) - PID {} ({})",
+                retry_count, pid, app_info.name
+            );
+            Self::stop_polling(delegate);
+            return;
+        }
+
+        // Get current focused window and check if it belongs to our PID
+        let current_window = window_info::get_current_window();
+        match current_window {
+            Some(window) => {
+                // If focused app changed - stop polling for this PID
+                if window.app.pid != pid {
+                    eprintln!(
+                        "[PollWindowInfo] Focused app changed (waiting for PID {}, got PID {}) - stopping polling",
+                        pid, window.app.pid
+                    );
+                    Self::stop_polling(delegate);
+                    return;
                 }
 
-                *delegate.ivars().am_retry_count.borrow_mut() = 0;
-                *delegate.ivars().am_retry_pid.borrow_mut() = None;
-                eprintln!(
-                    "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
-                    pid, msg
-                );
+                // If window exists but window_id is 0 - continue polling (window not ready yet)
+                if window.window_id == 0 {
+                    return;
+                }
+
+                delegate
+                    .ivars()
+                    .event_handler
+                    .handle(WindowEvent::WindowChanged { window });
+
+                match accessibility::AccessibilityMonitor::new(
+                    delegate.ivars().event_handler.clone(),
+                    pid,
+                ) {
+                    Ok(monitor) => {
+                        *delegate.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "[PollWindowInfo] Failed to create accessibility monitor (PID {}): {}",
+                            pid, e
+                        );
+                    }
+                }
+
+                Self::stop_polling(delegate);
             }
-            Err(e) => {
-                *delegate.ivars().am_retry_count.borrow_mut() = 0;
-                *delegate.ivars().am_retry_pid.borrow_mut() = None;
-                eprintln!(
-                    "[WorkspaceMonitor] Failed to create accessibility monitor (PID {}): {}",
-                    pid, e
-                );
+            None => {
+                // No focused window - continue polling
             }
         }
+
+        // Continue polling with exponential backoff capped at 1.6s
+        let delay = f64::min(0.2 * (2.0_f64).powf(retry_count as f64), 1.6);
+        unsafe {
+            msg_send![delegate, performSelector: objc2::sel!(pollWindowInfo), withObject: None::<&NSObject>, afterDelay: delay]
+        }
+    }
+
+    /// Stop polling for window info.
+    fn stop_polling(delegate: &Self) {
+        *delegate.ivars().pid.borrow_mut() = None;
+        *delegate.ivars().retry_count.borrow_mut() = 0;
     }
 }
 
@@ -215,10 +243,6 @@ impl WorkspaceMonitor {
             app,
             is_running: false,
         });
-    }
-
-    pub fn event_handler(&self) -> &WindowEventHandler {
-        return &self.delegate.ivars().event_handler;
     }
 
     /// Start monitoring and run the NSApplication event loop.
@@ -274,74 +298,4 @@ impl WorkspaceMonitor {
         let app = NSApplication::sharedApplication(mtm);
         app.terminate(None);
     }
-}
-
-/// Extract AppInfo from NSWorkspace activation notification.
-fn extract_app_from_notification(notification: &NSNotification) -> Option<AppInfo> {
-    let user_info = notification.userInfo()?;
-    let app_key = unsafe { NSWorkspaceApplicationKey };
-    let app_any = user_info.objectForKey(app_key)?;
-    let app: Retained<NSRunningApplication> = app_any.downcast().ok()?;
-
-    let pid = app.processIdentifier();
-    let name = app
-        .localizedName()
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| "Unknown".to_string());
-    let bundle_id = app
-        .bundleIdentifier()
-        .map(|s| s.to_string())
-        .unwrap_or_default();
-    let process_path = get_process_path(pid).unwrap_or_default();
-
-    return Some(AppInfo {
-        pid,
-        name,
-        bundle_id,
-        process_path,
-    });
-}
-
-/// Get PID of the currently frontmost application.
-pub fn get_current_pid() -> Option<i32> {
-    let workspace = NSWorkspace::sharedWorkspace();
-    let app = workspace.frontmostApplication()?;
-    return Some(app.processIdentifier());
-}
-
-/// Get localized name of application by PID.
-pub fn get_app_name(pid: i32) -> Option<String> {
-    let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
-    return app.localizedName().map(|s| s.to_string());
-}
-
-/// Get bundle identifier of application by PID.
-pub fn get_bundle_id(pid: i32) -> Option<String> {
-    let app = NSRunningApplication::runningApplicationWithProcessIdentifier(pid)?;
-    return app.bundleIdentifier().map(|s| s.to_string());
-}
-
-/// Get process executable path by PID (uses proc_pidpath system call).
-///
-/// Returns canonicalized path if possible, otherwise returns the raw path.
-pub fn get_process_path(pid: i32) -> Option<String> {
-    #[link(name = "proc")]
-    extern "C" {
-        fn proc_pidpath(pid: i32, buffer: *mut libc::c_char, buffersize: u32) -> i32;
-    }
-
-    let mut buf = vec![0 as libc::c_char; 4096];
-    let ret = unsafe { proc_pidpath(pid, buf.as_mut_ptr(), 4096) };
-
-    if ret <= 0 {
-        return None;
-    }
-
-    let path_str = unsafe { std::ffi::CStr::from_ptr(buf.as_ptr()) }
-        .to_str()
-        .ok()?;
-    return std::fs::canonicalize(path_str)
-        .ok()
-        .and_then(|p| p.to_str().map(|s| s.to_string()))
-        .or_else(|| Some(path_str.to_string()));
 }

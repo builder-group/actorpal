@@ -98,6 +98,20 @@ impl AccessibilityMonitor {
             None => return,
         };
 
+        // Skip invalid windows.
+        //
+        // When this occurs:
+        // - Minimize/unminimize: Accessibility API fires callback but CoreGraphics window info isn't ready yet.
+        //   -> If user unminimizes without switching focus, we won't fire a new event.
+        //      This is acceptable because we track focus changes, not window visibility.
+        if window_info.window_id == 0 {
+            eprintln!(
+                "[AccessibilityMonitor] Skipping invalid window (PID {}, title: \"{}\")",
+                pid, window_info.title
+            );
+            return;
+        }
+
         // Call user handler, catching panics (unwinding through C code is undefined behavior)
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             event_handler.handle(WindowEvent::WindowChanged {

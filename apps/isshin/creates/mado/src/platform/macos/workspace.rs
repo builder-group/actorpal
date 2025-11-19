@@ -119,7 +119,7 @@ impl WorkspaceDelegate {
     /// Poll for window info until available, then create accessibility monitor.
     ///
     /// Uses exponential backoff capped at 1.6s (200ms → 400ms → 800ms → 1.6s).
-    /// Stops automatically if app switches or after 5 minutes.
+    /// Stops automatically if app switches or after ~5 minutes.
     fn poll_window_info(delegate: &Self, pid: i32, app_info: AppInfo) {
         let retry_count = *delegate.ivars().retry_count.borrow();
         *delegate.ivars().retry_count.borrow_mut() = retry_count + 1;
@@ -127,7 +127,7 @@ impl WorkspaceDelegate {
         // Stop polling if timeout after ~5 minutes
         if retry_count >= 188 {
             eprintln!(
-                "[PollWindowInfo] Timeout after {} retries (5 minutes) - PID {} ({})",
+                "[PollWindowInfo] Timeout after {} poll attempts (~5 minutes) - PID {} ({})",
                 retry_count, pid, app_info.name
             );
             Self::stop_polling(delegate);

@@ -20,8 +20,8 @@ Core coding standards and style guidelines for our TypeScript codebase. These gu
 - Always keep related code close together
 - Always use clear, descriptive directory names
 - Always follow consistent patterns across the project
-- Always use singular for categories/domains (e.g., `auth/`, `user/`, `product/`)
-- Always use plural for collections/lists (e.g., `components/`, `hooks/`, `utils/`)
+- Always use singular for categories/domains (e.g. `auth/`, `user/`, `product/`)
+- Always use plural for collections/lists (e.g. `components/`, `hooks/`, `utils/`)
 
 ✅ Good:
 ```typescript

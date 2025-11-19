@@ -1,5 +1,9 @@
-use super::{accessibility, window_handler::WindowHandler};
-use crate::{error::Error, platform::macos::window_info::build_window_info, types::AppInfo};
+use super::{accessibility, window_event_handler::WindowEventHandler};
+use crate::{
+    error::Error,
+    platform::macos::window_info::build_window_info,
+    types::{AppInfo, WindowEvent},
+};
 use objc2::{
     define_class, msg_send, rc::Retained, runtime::ProtocolObject, DefinedClass, MainThreadMarker,
     MainThreadOnly,
@@ -13,7 +17,7 @@ use std::cell::RefCell;
 
 /// Instance variables for the workspace delegate
 struct WorkspaceDelegateIvars {
-    handler: WindowHandler,
+    event_handler: WindowEventHandler,
     accessibility_monitor: RefCell<Option<accessibility::AccessibilityMonitor>>,
     am_retry_count: RefCell<u32>,
     am_retry_pid: RefCell<Option<i32>>,
@@ -31,12 +35,12 @@ define_class!(
         /// Called once when NSApplication finishes launching (initial setup).
         #[unsafe(method(applicationDidFinishLaunching:))]
         fn did_finish_launching(&self, _notification: &NSNotification) {
-            if !self.ivars().handler.config().track_window_changes {
+            if !self.ivars().event_handler.config().track_window_changes {
                 return;
             }
 
             if let Some(pid) = get_current_pid() {
-                Self::create_accessibility_monitor(self, self.ivars().handler.clone(), pid);
+                Self::create_accessibility_monitor(self, self.ivars().event_handler.clone(), pid);
             }
         }
     }
@@ -49,7 +53,7 @@ define_class!(
                 Some(info) => info,
                 None => return,
             };
-            let handler = &self.ivars().handler;
+            let event_handler = &self.ivars().event_handler;
 
             // Stop accessibility monitor for previous app
             if let Some(mut old_monitor) = self.ivars().accessibility_monitor.borrow_mut().take() {
@@ -57,21 +61,23 @@ define_class!(
             }
 
               // Create accessibility monitor for new app
-            if handler.config().track_window_changes {
-                Self::create_accessibility_monitor(self, handler.clone(), app_info.pid);
+            if event_handler.config().track_window_changes {
+                Self::create_accessibility_monitor(self, event_handler.clone(), app_info.pid);
             }
 
-            // Accessibility API only fires for window/title changes within an app,
-            // not for app switches, so we must send the event here
-            let window_info = match build_window_info(
-                app_info.pid,
-                None,
-                Some(app_info),
-            ) {
-                Some(window) => window,
-                None => return,
-            };
-            handler.handle(window_info);
+            // Always send AppActivated when app switches (explicit app change notification)
+            event_handler.handle(WindowEvent::AppActivated {
+                app: app_info.clone(),
+            });
+
+            // If window data is available, also send WindowChanged immediately.
+            // Otherwise, AccessibilityMonitor will send WindowChanged when window becomes ready.
+            let window_info = build_window_info(app_info.pid, None, Some(app_info));
+            if let Some(window) = window_info {
+                if window.window_id != 0 {
+                    event_handler.handle(WindowEvent::WindowChanged { window });
+                }
+            }
         }
 
         /// Retry callback to create accessibility monitor for a new app.
@@ -84,7 +90,7 @@ define_class!(
             // This prevents retries from previous apps interfering with new apps.
             if let (Some(stored_pid), Some(current)) = (retry_pid, current_pid) {
                 if stored_pid == current {
-                    Self::try_create_accessibility_monitor(self, self.ivars().handler.clone(), current);
+                    Self::try_create_accessibility_monitor(self, self.ivars().event_handler.clone(), current);
                 }
             }
         }
@@ -92,9 +98,9 @@ define_class!(
 );
 
 impl WorkspaceDelegate {
-    fn new(handler: WindowHandler, mtm: MainThreadMarker) -> Retained<Self> {
+    fn new(event_handler: WindowEventHandler, mtm: MainThreadMarker) -> Retained<Self> {
         let this = Self::alloc(mtm).set_ivars(WorkspaceDelegateIvars {
-            handler,
+            event_handler,
             accessibility_monitor: RefCell::new(None),
             am_retry_count: RefCell::new(0),
             am_retry_pid: RefCell::new(None),
@@ -103,17 +109,21 @@ impl WorkspaceDelegate {
     }
 
     /// Create accessibility monitor for a new app.
-    fn create_accessibility_monitor(delegate: &Self, handler: WindowHandler, pid: i32) {
+    fn create_accessibility_monitor(delegate: &Self, event_handler: WindowEventHandler, pid: i32) {
         *delegate.ivars().am_retry_count.borrow_mut() = 0;
         *delegate.ivars().am_retry_pid.borrow_mut() = None;
-        Self::try_create_accessibility_monitor(delegate, handler, pid);
+        Self::try_create_accessibility_monitor(delegate, event_handler, pid);
     }
 
     /// Try to create accessibility monitor, with retry.
     ///
     /// Retries up to 3 times with exponential backoff (200ms, 400ms, 800ms).
-    fn try_create_accessibility_monitor(delegate: &Self, handler: WindowHandler, pid: i32) {
-        match accessibility::AccessibilityMonitor::new(handler.clone(), pid) {
+    fn try_create_accessibility_monitor(
+        delegate: &Self,
+        event_handler: WindowEventHandler,
+        pid: i32,
+    ) {
+        match accessibility::AccessibilityMonitor::new(event_handler.clone(), pid) {
             Ok(monitor) => {
                 *delegate.ivars().accessibility_monitor.borrow_mut() = Some(monitor);
                 *delegate.ivars().am_retry_count.borrow_mut() = 0;
@@ -175,7 +185,7 @@ impl WorkspaceMonitor {
     ///
     /// This must be called from either:
     /// - The main thread, or
-    /// - A dedicated thread that runs AppKit code (e.g., a spawned thread that will run `NSApplication`)
+    /// - A dedicated thread that runs AppKit code (e.g. a spawned thread that will run `NSApplication`)
     ///
     /// This function uses `MainThreadMarker::new_unchecked()` internally, which is safe as long as
     /// the calling thread is dedicated to AppKit operations and will not be used for other purposes.
@@ -193,11 +203,11 @@ impl WorkspaceMonitor {
     ///     Ok::<(), Error>(())
     /// });
     /// ```
-    pub fn new(handler: WindowHandler) -> Result<Self, Error> {
+    pub fn new(event_handler: WindowEventHandler) -> Result<Self, Error> {
         // SAFETY: Safe when called from main thread or dedicated AppKit thread (as documented)
         let mtm = unsafe { MainThreadMarker::new_unchecked() };
 
-        let delegate = WorkspaceDelegate::new(handler, mtm);
+        let delegate = WorkspaceDelegate::new(event_handler, mtm);
         let app = NSApplication::sharedApplication(mtm);
 
         return Ok(Self {
@@ -207,8 +217,8 @@ impl WorkspaceMonitor {
         });
     }
 
-    pub fn handler(&self) -> &WindowHandler {
-        return &self.delegate.ivars().handler;
+    pub fn event_handler(&self) -> &WindowEventHandler {
+        return &self.delegate.ivars().event_handler;
     }
 
     /// Start monitoring and run the NSApplication event loop.

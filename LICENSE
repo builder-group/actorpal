@@ -1,7 +1,7 @@
 Copyright (c) 2025 @bennobuilder
 
 1. SCOPE OF LICENSING
-   * All content (including but not limited to files, code, documentation, images, and data) follows the LICENSE file in its respective directory (e.g., "ee/LICENSE" applies to all content in "ee/", "clouds/LICENSE" applies to "clouds/").
+   * All content (including but not limited to files, code, documentation, images, and data) follows the LICENSE file in its respective directory (e.g. "ee/LICENSE" applies to all content in "ee/", "clouds/LICENSE" applies to "clouds/").
    * Content with explicit license headers is governed by that specific header, which overrides any directory-level license terms.
 
 2. PRECEDENCE OF LICENSES

@@ -1,12 +1,12 @@
 pub mod accessibility;
 mod browser;
-mod window_handler;
+mod window_event_handler;
 pub mod window_info;
 mod workspace;
 
-use crate::{config::MonitorConfig, error::Error, listener::WindowListener};
+use crate::{config::MonitorConfig, error::Error, listener::WindowListener, types::WindowEvent};
 use std::sync::{Arc, RwLock};
-use window_handler::WindowHandler;
+use window_event_handler::WindowEventHandler;
 use workspace::WorkspaceMonitor;
 
 /// Run the monitor on macOS.
@@ -35,7 +35,7 @@ use workspace::WorkspaceMonitor;
 /// (either the main thread or a dedicated AppKit thread). See `WorkspaceMonitor::new()`
 /// for detailed threading requirements.
 ///
-/// For non-blocking usage (e.g., in Tauri setup), spawn a thread:
+/// For non-blocking usage (e.g. in Tauri setup), spawn a thread:
 /// ```rust,no_run
 /// std::thread::spawn(move || {
 ///     run(listener, config).expect("Monitor failed");
@@ -49,12 +49,17 @@ pub(super) fn run(
         return Err(Error::MissingPermissions);
     }
 
-    let handler = WindowHandler::new(listener, config);
-    let mut monitor = WorkspaceMonitor::new(handler)?;
+    let event_handler = WindowEventHandler::new(listener, config);
+    let mut monitor = WorkspaceMonitor::new(event_handler)?;
 
     // Send initial window state before event loop starts
     if let Some(window) = window_info::get_current_window() {
-        monitor.handler().handle(window);
+        monitor.event_handler().handle(WindowEvent::AppActivated {
+            app: window.app.clone(),
+        });
+        monitor
+            .event_handler()
+            .handle(WindowEvent::WindowChanged { window });
     }
 
     monitor.run()?;

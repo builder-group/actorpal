@@ -9,12 +9,19 @@ use crate::listener::WindowListener;
 /// ## Example
 ///
 /// ```rust,no_run
-/// use mado::{WindowMonitor, WindowListener, WindowInfo};
+/// use mado::{WindowMonitor, WindowListener, WindowEvent};
 ///
 /// struct MyListener;
 /// impl WindowListener for MyListener {
-///     fn on_focus_change(&self, window: WindowInfo) {
-///         println!("Window: {} in app: {}", window.title, window.app.name);
+///     fn on_focus_change(&self, event: WindowEvent) {
+///         match event {
+///             WindowEvent::AppActivated { app } => {
+///                 println!("App activated: {}", app.name);
+///             }
+///             WindowEvent::WindowChanged { window } => {
+///                 println!("Window: {} in app: {}", window.title, window.app.name);
+///             }
+///         }
 ///     }
 /// }
 ///

@@ -3,7 +3,7 @@ use thiserror::Error;
 /// Error types for mado.
 #[derive(Error, Debug)]
 pub enum Error {
-    /// Platform-specific error (e.g., X11 connection failed, API call failed)
+    /// Platform-specific error (e.g. X11 connection failed, API call failed)
     #[error("Platform error: {0}")]
     Platform(String),
 

@@ -53,3 +53,61 @@ pub struct WindowBounds {
     /// Window height
     pub height: f64,
 }
+
+/// Event type for window and app focus changes.
+///
+/// Distinguishes between app activation (always fires on app switch) and window changes
+/// (fires when window focus/title changes or when window becomes available).
+#[derive(Debug, Clone)]
+pub enum WindowEvent {
+    /// Application was activated/switched to.
+    ///
+    /// This event **always** fires when the user switches to a different app.
+    /// It provides immediate notification of the app change, even if the app has no window yet.
+    ///
+    /// Common scenarios:
+    /// - App activated via Spotlight/Dock but hasn't opened a window yet
+    /// - Tray apps that don't have windows
+    /// - App switching where window information isn't immediately available
+    ///
+    /// A `WindowChanged` event will follow when a window becomes available (if the app has windows).
+    AppActivated {
+        /// Application information
+        app: AppInfo,
+    },
+    /// Window focus or title changed.
+    ///
+    /// This event fires when:
+    /// - Window focus changes within the same app
+    /// - Window title changes (e.g. tab switches in browsers)
+    /// - Complete window information becomes available after app activation
+    ///
+    /// Note: App switches are always signaled via `AppActivated` events first.
+    WindowChanged {
+        /// Complete window information including app details
+        window: WindowInfo,
+    },
+}
+
+impl WindowEvent {
+    /// Check if the window data in this event is complete and valid.
+    ///
+    /// Returns `true` if this is a `WindowChanged` event with valid window data
+    /// (non-zero window_id and non-zero size).
+    pub fn has_complete_window_data(&self) -> bool {
+        match self {
+            WindowEvent::AppActivated { .. } => false,
+            WindowEvent::WindowChanged { window } => {
+                window.window_id != 0 && window.bounds.width > 0.0 && window.bounds.height > 0.0
+            }
+        }
+    }
+
+    /// Get the app information from this event.
+    pub fn app(&self) -> &AppInfo {
+        match self {
+            WindowEvent::AppActivated { app } => app,
+            WindowEvent::WindowChanged { window } => &window.app,
+        }
+    }
+}

@@ -1,5 +1,5 @@
-use super::{window_handler::WindowHandler, window_info, workspace};
-use crate::error::Error;
+use super::{window_event_handler::WindowEventHandler, window_info, workspace};
+use crate::{error::Error, types::WindowEvent};
 use accessibility_sys::{
     kAXFocusedApplicationAttribute, kAXFocusedWindowAttribute, kAXFocusedWindowChangedNotification,
     kAXTitleAttribute, kAXTitleChangedNotification, AXObserverAddNotification, AXObserverCreate,
@@ -32,13 +32,16 @@ pub struct AccessibilityMonitor {
 }
 
 impl AccessibilityMonitor {
-    pub fn new(handler: WindowHandler, pid: i32) -> Result<Self, Error> {
+    pub fn new(event_handler: WindowEventHandler, pid: i32) -> Result<Self, Error> {
         return Ok(Self {
-            observer: Self::create_observer(&handler, pid)?,
+            observer: Self::create_observer(&event_handler, pid)?,
         });
     }
 
-    fn create_observer(handler: &WindowHandler, pid: i32) -> Result<ObserverHandle, Error> {
+    fn create_observer(
+        event_handler: &WindowEventHandler,
+        pid: i32,
+    ) -> Result<ObserverHandle, Error> {
         let observer = unsafe {
             let mut observer = ptr::null_mut();
             let result = AXObserverCreate(pid, Self::window_change_callback, &mut observer);
@@ -53,8 +56,8 @@ impl AccessibilityMonitor {
         let app_element = unsafe { AXUIElementCreateApplication(pid) };
 
         // Register observers
-        Self::register_focus_observer(observer, app_element, handler, pid)?;
-        Self::register_title_observer(observer, app_element, handler)?;
+        Self::register_focus_observer(observer, app_element, event_handler, pid)?;
+        Self::register_title_observer(observer, app_element, event_handler)?;
 
         // Add observer's run loop source to current run loop
         let run_loop_source = unsafe { AXObserverGetRunLoopSource(observer) };
@@ -82,8 +85,8 @@ impl AccessibilityMonitor {
             return;
         }
 
-        // Recover WindowHandler from user data pointer
-        let handler = &*(user_info as *const WindowHandler);
+        // Recover WindowEventHandler from user data pointer
+        let event_handler = &*(user_info as *const WindowEventHandler);
 
         let title = get_string_attribute(element, kAXTitleAttribute);
         let pid = match workspace::get_current_pid() {
@@ -97,7 +100,9 @@ impl AccessibilityMonitor {
 
         // Call user handler, catching panics (unwinding through C code is undefined behavior)
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            handler.handle(window_info);
+            event_handler.handle(WindowEvent::WindowChanged {
+                window: window_info,
+            });
         }));
         if result.is_err() {
             eprintln!("[AccessibilityMonitor] Panic in user handler - event was dropped");
@@ -110,7 +115,7 @@ impl AccessibilityMonitor {
         let focus_notification = CFString::from_static_string(kAXFocusedWindowChangedNotification);
         if notification_str.to_string() == focus_notification.to_string() {
             let app_element = unsafe { AXUIElementCreateApplication(pid) };
-            let _ = Self::register_title_observer(observer, app_element, handler);
+            let _ = Self::register_title_observer(observer, app_element, event_handler);
         }
     }
 
@@ -118,11 +123,11 @@ impl AccessibilityMonitor {
     fn register_focus_observer(
         observer: AXObserverRef,
         app_element: AXUIElementRef,
-        handler: &WindowHandler,
+        event_handler: &WindowEventHandler,
         pid: i32,
     ) -> Result<(), Error> {
         let notification = CFString::from_static_string(kAXFocusedWindowChangedNotification);
-        let context_ptr = Box::into_raw(Box::new(handler.clone()));
+        let context_ptr = Box::into_raw(Box::new(event_handler.clone()));
 
         let result = unsafe {
             AXObserverAddNotification(
@@ -151,7 +156,7 @@ impl AccessibilityMonitor {
     fn register_title_observer(
         observer: AXObserverRef,
         app_element: AXUIElementRef,
-        handler: &WindowHandler,
+        event_handler: &WindowEventHandler,
     ) -> Result<(), Error> {
         let window = match get_element_attribute(app_element, kAXFocusedWindowAttribute) {
             Some(window) => window,
@@ -159,7 +164,7 @@ impl AccessibilityMonitor {
         };
 
         let notification = CFString::from_static_string(kAXTitleChangedNotification);
-        let context_ptr = Box::into_raw(Box::new(handler.clone()));
+        let context_ptr = Box::into_raw(Box::new(event_handler.clone()));
 
         let result = unsafe {
             AXObserverAddNotification(

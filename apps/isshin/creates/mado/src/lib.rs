@@ -1,81 +1,44 @@
 //! # mado (窓)
 //!
-//! A simple, clean window monitoring library.
+//! A simple, clean window monitoring library for Rust.
 //!
 //! **mado** (窓) means "window" in Japanese - simple and direct.
 //!
-//! ## Features
-//!
-//! - 🪟 **Query current state** - Get active app/window on demand
-//! - 📡 **Monitor changes** - Listen to app switches and window changes
-//! - 📑 **Tab switch detection** - Detects browser tab switches
-//! - 🎯 **Simple API** - Query functions + event listeners
-//! - 🧩 **Clean architecture** - KISS principle throughout
-//! - 🚀 **Minimal overhead** - Efficient event-driven monitoring
-//!
-//! ## Usage
+//! ## Quick Start
 //!
 //! ### Query current state
 //!
-//! Get the current active app or window on demand:
-//!
 //! ```rust,no_run
-//! use mado;
-//!
-//! // Get current active app
 //! let app = mado::get_active_app()?;
 //! println!("Current app: {}", app.name);
 //!
-//! // Get current active window (includes app info)
 //! let window = mado::get_active_window()?;
-//! println!("Window: {} in {}", window.title, window.app.name);
+//! println!("Window: '{}' in {}", window.title, window.app.name);
 //! # Ok::<(), mado::Error>(())
 //! ```
 //!
-//! ### Listen to changes
-//!
-//! Monitor app switches and window changes in real-time:
+//! ### Monitor changes
 //!
 //! ```rust,no_run
-//! use mado::{WindowListener, WindowMonitor, WindowInfo};
+//! use mado::{WindowListener, WindowMonitor, WindowEvent};
 //!
 //! struct MyListener;
 //!
 //! impl WindowListener for MyListener {
-//!     fn on_focus_change(&self, window: WindowInfo) {
-//!         println!("Switched to: {}", window.app.name);
-//!         println!("  Window: {}", window.title);
-//!     }
-//! }
-//!
-//! fn main() -> Result<(), mado::Error> {
-//!     let monitor = WindowMonitor::new(MyListener);
-//!     monitor.run() // Blocks until stopped
-//! }
-//! ```
-//!
-//! ### Use both together
-//!
-//! Combine querying and listening:
-//!
-//! ```rust,no_run
-//! use mado::{WindowListener, WindowMonitor, WindowInfo};
-//!
-//! struct MyListener;
-//!
-//! impl WindowListener for MyListener {
-//!     fn on_focus_change(&self, window: WindowInfo) {
-//!         // You already have full context in window.app
-//!         println!("App: {} ({})", window.app.name, window.app.bundle_id);
-//!         println!("Window: {}", window.title);
-//!         
-//!         // You can query for additional info if needed
-//!         if let Ok(current) = mado::get_active_window() {
-//!             println!("Confirmed: {}", current.title);
+//!     fn on_focus_change(&self, event: WindowEvent) {
+//!         match event {
+//!             WindowEvent::AppActivated { app } => {
+//!                 println!("App activated: {}", app.name);
+//!             }
+//!             WindowEvent::WindowChanged { window } => {
+//!                 println!("Window: '{}'", window.title);
+//!             }
 //!         }
 //!     }
 //! }
-//! # Ok::<(), mado::Error>(())
+//!
+//! let monitor = WindowMonitor::new(MyListener);
+//! monitor.run()?;
 //! ```
 //!
 //! ## Platform Support
@@ -83,6 +46,15 @@
 //! - ✅ **macOS**: Full support (NSWorkspace + Accessibility API)
 //! - ✅ **Linux**: Full support (X11)
 //! - 🚧 **Windows**: Planned
+//!
+//! ## Requirements
+//!
+//! **macOS:**
+//! - Accessibility permissions required if `track_window_changes: true` (default)
+//! - Automation permissions (optional, for browser URL extraction)
+//!
+//! **Linux:**
+//! - X11 display server and development libraries
 
 pub mod config;
 pub mod error;
@@ -97,7 +69,7 @@ pub use config::MonitorConfig;
 pub use error::Error;
 pub use listener::WindowListener;
 pub use monitor::WindowMonitor;
-pub use types::{AppInfo, BrowserInfo, WindowBounds, WindowInfo};
+pub use types::{AppInfo, BrowserInfo, WindowBounds, WindowEvent, WindowInfo};
 
 /// Alias for `WindowMonitor` - kept for backward compatibility
 #[deprecated(note = "Use WindowMonitor instead")]

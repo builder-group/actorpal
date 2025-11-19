@@ -1,5 +1,8 @@
 use super::x11_helpers;
-use crate::{config::MonitorConfig, error::Error, listener::WindowListener, types::WindowInfo};
+use crate::{
+    config::MonitorConfig, error::Error, listener::WindowListener, types::WindowEvent,
+    types::WindowInfo,
+};
 use libc::{c_void, close, fd_set, pipe, read, select, write, EINTR, FD_SET, FD_ZERO};
 use std::{
     os::unix::io::RawFd,
@@ -97,7 +100,9 @@ impl X11Monitor {
             )
         } {
             if let Ok(guard) = self.listener.read() {
-                guard.on_focus_change(window_info.clone());
+                guard.on_focus_change(WindowEvent::WindowChanged {
+                    window: window_info.clone(),
+                });
             }
             last_window_info = Some(window_info);
             active_window =
@@ -178,7 +183,9 @@ impl X11Monitor {
 
                                         if self.config.track_window_changes || app_changed {
                                             if let Ok(guard) = self.listener.read() {
-                                                guard.on_focus_change(window_info.clone());
+                                                guard.on_focus_change(WindowEvent::WindowChanged {
+                                                    window: window_info.clone(),
+                                                });
                                             }
                                         }
 
@@ -211,7 +218,9 @@ impl X11Monitor {
 
                                         if title_changed {
                                             if let Ok(guard) = self.listener.read() {
-                                                guard.on_focus_change(window_info.clone());
+                                                guard.on_focus_change(WindowEvent::WindowChanged {
+                                                    window: window_info.clone(),
+                                                });
                                             }
                                             last_window_info = Some(window_info);
                                         }
@@ -248,7 +257,9 @@ impl X11Monitor {
 
                                     if self.config.track_window_changes || app_changed {
                                         if let Ok(guard) = self.listener.read() {
-                                            guard.on_focus_change(window_info.clone());
+                                            guard.on_focus_change(WindowEvent::WindowChanged {
+                                                window: window_info.clone(),
+                                            });
                                         }
                                     }
 

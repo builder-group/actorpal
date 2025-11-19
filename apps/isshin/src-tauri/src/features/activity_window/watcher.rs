@@ -3,7 +3,7 @@ use super::types::{ActiveWindowChangedEvent, ActiveWindowInfo, ActivityEntry};
 use crate::environment::logger::Logger;
 use crate::environment::states::db::DatabaseState;
 use crate::environment::states::settings::SettingsState;
-use mado::{MonitorConfig, WindowInfo, WindowListener, WindowMonitor};
+use mado::{MonitorConfig, WindowEvent, WindowInfo, WindowListener, WindowMonitor};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
@@ -24,57 +24,73 @@ impl ActivityHandler {
 }
 
 impl WindowListener for ActivityHandler {
-    fn on_focus_change(&self, window: WindowInfo) {
-        let app = self.app.clone();
-        let active_entry = Arc::clone(&self.active_entry);
+    fn on_focus_change(&self, event: WindowEvent) {
+        match event {
+            WindowEvent::AppActivated { app } => {
+                #[cfg(debug_assertions)]
+                {
+                    println!("\n[Activity Window Watcher] 🔄 App Activated: {}", app.name);
+                }
+                // App activated but no window yet - wait for WindowChanged event
+            }
+            WindowEvent::WindowChanged { window } => {
+                let app = self.app.clone();
+                let active_entry = Arc::clone(&self.active_entry);
 
-        #[cfg(debug_assertions)]
-        {
-            let app_changed = {
-                let entry_guard = tauri::async_runtime::block_on(active_entry.lock());
-                entry_guard
-                    .as_ref()
-                    .and_then(|e| e.bundle_id.as_ref())
-                    .map(|bundle_id| bundle_id != &window.app.bundle_id)
-                    .unwrap_or(true)
-            };
-            log_window_info(&window, app_changed);
-        }
+                #[cfg(debug_assertions)]
+                {
+                    let app_changed = {
+                        let entry_guard = tauri::async_runtime::block_on(active_entry.lock());
+                        entry_guard
+                            .as_ref()
+                            .and_then(|e| e.bundle_id.as_ref())
+                            .map(|bundle_id| bundle_id != &window.app.bundle_id)
+                            .unwrap_or(true)
+                    };
+                    log_window_info(&window, app_changed);
+                }
 
-        ActiveWindowChangedEvent {
-            data: ActiveWindowInfo::from(window.clone()),
-        }
-        .emit(&app)
-        .unwrap_or_else(|e| eprintln!("[Activity Window Watcher] Failed to emit event: {}", e));
+                ActiveWindowChangedEvent {
+                    data: ActiveWindowInfo::from(window.clone()),
+                }
+                .emit(&app)
+                .unwrap_or_else(|e| {
+                    eprintln!("[Activity Window Watcher] Failed to emit event: {}", e)
+                });
 
-        tauri::async_runtime::spawn(async move {
-            // Save previous entry if it exists
-            let mut entry_guard = active_entry.lock().await;
-            if let Some(mut entry) = entry_guard.take() {
-                entry.update_end_time();
+                tauri::async_runtime::spawn(async move {
+                    // Save previous entry if it exists
+                    let mut entry_guard = active_entry.lock().await;
+                    if let Some(mut entry) = entry_guard.take() {
+                        entry.update_end_time();
 
-                if entry.duration_seconds() > 0 {
-                    if let Some(state) = app.try_state::<DatabaseState>() {
-                        match ActivityRepository::insert(&state.pool, &entry).await {
-                            Ok(_) => {
-                                println!(
-                                    "[Activity Window Watcher] Saved: {} ({}s)",
-                                    entry.application,
-                                    entry.duration_seconds()
-                                );
-                            }
-                            Err(e) => {
-                                eprintln!("[Activity Window Watcher] Failed to save: {}", e);
+                        if entry.duration_seconds() > 0 {
+                            if let Some(state) = app.try_state::<DatabaseState>() {
+                                match ActivityRepository::insert(&state.pool, &entry).await {
+                                    Ok(_) => {
+                                        println!(
+                                            "[Activity Window Watcher] Saved: {} ({}s)",
+                                            entry.application,
+                                            entry.duration_seconds()
+                                        );
+                                    }
+                                    Err(e) => {
+                                        eprintln!(
+                                            "[Activity Window Watcher] Failed to save: {}",
+                                            e
+                                        );
+                                    }
+                                }
                             }
                         }
                     }
-                }
-            }
 
-            // Start new entry for this window
-            let new_entry = ActivityEntry::from(window);
-            *entry_guard = Some(new_entry);
-        });
+                    // Start new entry for this window
+                    let new_entry = ActivityEntry::from(window);
+                    *entry_guard = Some(new_entry);
+                });
+            }
+        }
     }
 }
 

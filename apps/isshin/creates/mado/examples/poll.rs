@@ -22,10 +22,7 @@ fn main() -> Result<(), mado::Error> {
         match mado::get_active_app() {
             Ok(app) => {
                 println!("📱 Current App");
-                println!(
-                    "   Name:       {}",
-                    app.name.unwrap_or(String::from("[not set]"))
-                );
+                println!("   Name:       {:?}", app.name);
                 println!("   PID:        {}", app.pid);
                 println!("   Bundle ID:  {:?}", app.bundle_id);
                 println!("   Path:       {:?}", app.process_path);

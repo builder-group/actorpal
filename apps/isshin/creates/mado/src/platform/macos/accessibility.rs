@@ -1,6 +1,7 @@
-use super::{app_info, window_event_handler::WindowEventHandler, window_info};
+use super::{app_info, window_event_handler::WindowEventHandler};
 use crate::{
-    error::Error, platform::macos::window_info::find_window_info, types::WindowEvent, WindowInfo,
+    error::Error, platform::macos::window_info::find_window_id_and_bounds, types::WindowEvent,
+    WindowInfo,
 };
 use accessibility_sys::{
     kAXFocusedApplicationAttribute, kAXFocusedWindowAttribute, kAXFocusedWindowChangedNotification,
@@ -97,7 +98,8 @@ impl AccessibilityMonitor {
         };
         let title =
             get_string_attribute(element, kAXTitleAttribute).or_else(get_current_window_title);
-        let (window_id, bounds) = find_window_info(app_info.pid, title.as_deref().unwrap_or(""));
+        let (window_id, bounds) =
+            find_window_id_and_bounds(app_info.pid, title.as_deref().unwrap_or(""));
         let window_info = WindowInfo {
             title,
             window_id,

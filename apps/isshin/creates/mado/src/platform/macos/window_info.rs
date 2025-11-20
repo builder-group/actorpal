@@ -1,5 +1,5 @@
 use super::{accessibility, app_info};
-use crate::types::{AppInfo, WindowBounds, WindowInfo};
+use crate::types::{WindowBounds, WindowInfo};
 use core_foundation::{
     array::CFArray,
     base::{CFGetTypeID, TCFType},
@@ -25,7 +25,7 @@ extern "C" {
 pub fn get_current_window() -> Option<WindowInfo> {
     let app = app_info::get_current_app()?;
     let title = accessibility::get_current_window_title();
-    let (window_id, bounds) = find_window_info(app.pid, title.as_deref().unwrap_or(""));
+    let (window_id, bounds) = find_window_id_and_bounds(app.pid, title.as_deref().unwrap_or(""));
 
     return Some(WindowInfo {
         title,
@@ -41,7 +41,7 @@ pub fn get_current_window() -> Option<WindowInfo> {
 /// Uses two strategies:
 /// 1. Exact title match (most accurate because a process might have multiple windows with different titles)
 /// 2. First window matching PID (fallback when title doesn't match or is empty)
-pub fn find_window_info(pid: i32, title: &str) -> (Option<u32>, Option<WindowBounds>) {
+pub fn find_window_id_and_bounds(pid: i32, title: &str) -> (Option<u32>, Option<WindowBounds>) {
     let windows = match get_window_list() {
         Some(windows) => windows,
         None => return (None, None),

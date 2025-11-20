@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS apps (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bundle_id TEXT NOT NULL UNIQUE, -- Stable identifier (e.g., "com.google.Chrome")
-    name TEXT NOT NULL, -- Display name (may change, but we keep latest)
+    bundle_id TEXT, -- Stable identifier (e.g., "com.google.Chrome")
+    name TEXT, -- Display name (may change, but we keep latest)
     process_path TEXT, -- Executable path (may change)
     first_seen_at INTEGER NOT NULL, -- Unix timestamp
     last_seen_at INTEGER NOT NULL, -- Unix timestamp (for cleanup/analytics)
@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS app_activity (
     app_id INTEGER NOT NULL, -- Foreign key to apps
     start_time INTEGER NOT NULL, -- Unix timestamp (seconds)
     end_time INTEGER NOT NULL, -- Unix timestamp (seconds)
-    duration_seconds INTEGER GENERATED ALWAYS AS (end_time - start_time) VIRTUAL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (app_id) REFERENCES apps (id) ON DELETE CASCADE
 );
@@ -33,7 +32,6 @@ CREATE TABLE IF NOT EXISTS window_activity (
     browser_is_private INTEGER, -- NULL, 0 (false), or 1 (true)
     start_time INTEGER NOT NULL, -- Unix timestamp (seconds)
     end_time INTEGER NOT NULL, -- Unix timestamp (seconds)
-    duration_seconds INTEGER GENERATED ALWAYS AS (end_time - start_time) VIRTUAL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (app_id) REFERENCES apps (id) ON DELETE CASCADE
 );
@@ -80,7 +78,7 @@ FROM
     LEFT JOIN (
         SELECT
             app_id,
-            SUM(duration_seconds) as total_seconds,
+            SUM(end_time - start_time) as total_seconds,
             COUNT(*) as session_count
         FROM app_activity
         GROUP BY
@@ -89,7 +87,7 @@ FROM
     LEFT JOIN (
         SELECT
             app_id,
-            SUM(duration_seconds) as total_seconds,
+            SUM(end_time - start_time) as total_seconds,
             COUNT(*) as session_count
         FROM window_activity
         GROUP BY

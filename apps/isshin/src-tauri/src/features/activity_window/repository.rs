@@ -10,34 +10,28 @@ use sqlx::{Error, SqlitePool};
 pub struct AppRepository;
 
 impl AppRepository {
-    /// Get app_id by bundle_id, or None if not found.
-    pub async fn get_id_by_bundle_id(
-        pool: &SqlitePool,
-        bundle_id: &str,
-    ) -> Result<Option<i64>, Error> {
-        let id = sqlx::query_scalar("SELECT id FROM apps WHERE bundle_id = ?")
-            .bind(bundle_id)
-            .fetch_optional(pool)
-            .await?;
-
-        return Ok(id);
-    }
-
-    /// Upsert app (insert or update if exists by bundle_id).
+    /// Upsert app (insert or update if exists by bundle_id or process_path).
     pub async fn upsert(pool: &SqlitePool, app: &UpsertAppInput) -> Result<i64, Error> {
         let now = current_timestamp();
 
-        // Try to find existing app by bundle_id
-        let existing: Option<i64> = sqlx::query_scalar("SELECT id FROM apps WHERE bundle_id = ?")
-            .bind(&app.bundle_id)
-            .fetch_optional(pool)
-            .await?;
+        // Try to find existing app by bundle_id or process_path
+        let existing = sqlx::query_scalar::<_, i64>(
+            "SELECT id FROM apps 
+             WHERE (bundle_id = ? AND bundle_id IS NOT NULL) 
+                OR (process_path = ? AND bundle_id IS NULL AND process_path IS NOT NULL)
+             LIMIT 1",
+        )
+        .bind(app.bundle_id.as_deref())
+        .bind(app.process_path.as_deref())
+        .fetch_optional(pool)
+        .await?;
 
         // Update existing app
         if let Some(id) = existing {
             sqlx::query(
-                "UPDATE apps SET name = ?, process_path = ?, last_seen_at = ? WHERE id = ?",
+                "UPDATE apps SET bundle_id = ?, name = ?, process_path = ?, last_seen_at = ? WHERE id = ?",
             )
+            .bind(&app.bundle_id)
             .bind(&app.name)
             .bind(&app.process_path)
             .bind(now)
@@ -69,16 +63,16 @@ impl AppRepository {
 
 #[derive(Debug, Clone)]
 pub struct UpsertAppInput {
-    pub bundle_id: String,
-    pub name: String,
+    pub bundle_id: Option<String>,
+    pub name: Option<String>,
     pub process_path: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
 struct AppRow {
     id: i64,
-    bundle_id: String,
-    name: String,
+    bundle_id: Option<String>,
+    name: Option<String>,
     process_path: Option<String>,
     first_seen_at: i64,
     last_seen_at: i64,
@@ -108,7 +102,7 @@ impl AppActivityRepository {
     /// Returns None if duration is zero or negative (entry skipped).
     pub async fn insert(
         pool: &SqlitePool,
-        activity: &UpsertAppActivityInput,
+        activity: &InsertAppActivityInput,
     ) -> Result<Option<i64>, Error> {
         // Skip entries with zero or negative duration
         if activity.end_time <= activity.start_time {
@@ -136,7 +130,7 @@ impl AppActivityRepository {
         end_time: i64,
     ) -> Result<Vec<AppActivity>, Error> {
         let rows = sqlx::query_as::<_, AppActivityRow>(
-            "SELECT id, app_id, start_time, end_time, duration_seconds 
+            "SELECT id, app_id, start_time, end_time 
              FROM app_activity 
              WHERE start_time >= ? AND end_time <= ? 
              ORDER BY start_time DESC",
@@ -159,7 +153,7 @@ impl AppActivityRepository {
 }
 
 #[derive(Debug, Clone)]
-pub struct UpsertAppActivityInput {
+pub struct InsertAppActivityInput {
     pub app_id: i64,
     pub start_time: i64,
     pub end_time: i64,
@@ -171,7 +165,6 @@ struct AppActivityRow {
     app_id: i64,
     start_time: i64,
     end_time: i64,
-    duration_seconds: i64,
 }
 
 impl From<AppActivityRow> for AppActivity {
@@ -181,7 +174,6 @@ impl From<AppActivityRow> for AppActivity {
             app_id: row.app_id,
             start_time: row.start_time,
             end_time: row.end_time,
-            duration_seconds: row.duration_seconds,
         }
     }
 }
@@ -197,7 +189,7 @@ impl WindowActivityRepository {
     /// Returns None if duration is zero or negative (entry skipped).
     pub async fn insert(
         pool: &SqlitePool,
-        activity: &UpsertWindowActivityInput,
+        activity: &InsertWindowActivityInput,
     ) -> Result<Option<i64>, Error> {
         // Skip entries with zero or negative duration
         if activity.end_time <= activity.start_time {
@@ -245,7 +237,7 @@ impl WindowActivityRepository {
                 id, app_id, window_title, window_id,
                 window_x, window_y, window_width, window_height,
                 browser_url, browser_is_private,
-                start_time, end_time, duration_seconds
+                start_time, end_time
             FROM window_activity
             WHERE start_time >= ? AND end_time <= ?
             ORDER BY start_time DESC
@@ -269,7 +261,7 @@ impl WindowActivityRepository {
 }
 
 #[derive(Debug, Clone)]
-pub struct UpsertWindowActivityInput {
+pub struct InsertWindowActivityInput {
     pub app_id: i64,
     pub window_title: Option<String>,
     pub window_id: Option<u32>,
@@ -281,24 +273,6 @@ pub struct UpsertWindowActivityInput {
     pub browser_is_private: Option<bool>,
     pub start_time: i64,
     pub end_time: i64,
-}
-
-impl From<WindowInfo> for UpsertWindowActivityInput {
-    fn from(window: WindowInfo) -> Self {
-        Self {
-            app_id: 0,
-            window_title: Some(window.title),
-            window_id: Some(window.window_id),
-            window_x: Some(window.bounds.x),
-            window_y: Some(window.bounds.y),
-            window_width: Some(window.bounds.width),
-            window_height: Some(window.bounds.height),
-            browser_url: window.browser.as_ref().and_then(|b| b.url.clone()),
-            browser_is_private: window.browser.as_ref().and_then(|b| b.is_private),
-            start_time: current_timestamp(),
-            end_time: current_timestamp(),
-        }
-    }
 }
 
 #[derive(sqlx::FromRow)]
@@ -315,7 +289,6 @@ struct WindowActivityRow {
     browser_is_private: Option<i64>,
     start_time: i64,
     end_time: i64,
-    duration_seconds: i64,
 }
 
 impl From<WindowActivityRow> for WindowActivity {
@@ -333,7 +306,6 @@ impl From<WindowActivityRow> for WindowActivity {
             browser_is_private: row.browser_is_private.map(|p| p == 1),
             start_time: row.start_time,
             end_time: row.end_time,
-            duration_seconds: row.duration_seconds,
         }
     }
 }

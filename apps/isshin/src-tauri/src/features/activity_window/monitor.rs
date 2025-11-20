@@ -1,6 +1,6 @@
 use super::repository::{
-    AppActivityRepository, AppRepository, UpsertAppActivityInput, UpsertAppInput,
-    UpsertWindowActivityInput, WindowActivityRepository,
+    AppActivityRepository, AppRepository, InsertAppActivityInput, InsertWindowActivityInput,
+    UpsertAppInput, WindowActivityRepository,
 };
 use super::types::{ActiveAppChangedEvent, ActiveWindowChangedEvent, AppInfoDto, WindowInfoDto};
 use crate::common::time::current_timestamp;
@@ -102,29 +102,20 @@ impl WindowListener for WindowMonitorHandler {
                 tauri::async_runtime::spawn(async move {
                     let mut app_session_guard = app_session.lock().await;
                     let now = current_timestamp();
-                    let bundle_id = app_info.bundle_id.clone();
 
                     // Save previous app session if app changed
                     if let Some(prev_session) = app_session_guard.take() {
-                        if prev_session.bundle_id != bundle_id {
+                        if prev_session.bundle_id != Some(app_info.bundle_id.clone()) {
                             if let Some(state) = app.try_state::<DatabaseState>() {
-                                // Insert previous app activity
-                                if let Ok(Some(prev_app_id)) = AppRepository::get_id_by_bundle_id(
+                                let _ = AppActivityRepository::insert(
                                     &state.pool,
-                                    &prev_session.bundle_id,
+                                    &InsertAppActivityInput {
+                                        app_id: prev_session.app_id,
+                                        start_time: prev_session.start_time,
+                                        end_time: now,
+                                    },
                                 )
-                                .await
-                                {
-                                    let _ = AppActivityRepository::insert(
-                                        &state.pool,
-                                        &UpsertAppActivityInput {
-                                            app_id: prev_app_id,
-                                            start_time: prev_session.start_time,
-                                            end_time: now,
-                                        },
-                                    )
-                                    .await;
-                                }
+                                .await;
                             }
                         } else {
                             // Same app reactivated, restore session
@@ -133,23 +124,24 @@ impl WindowListener for WindowMonitorHandler {
                         }
                     }
 
-                    // Start new app session
-                    *app_session_guard = Some(AppSession {
-                        bundle_id: bundle_id.clone(),
-                        start_time: now,
-                    });
-
-                    // Upsert new app info
+                    // Upsert new app info and start new app session
                     if let Some(state) = app.try_state::<DatabaseState>() {
-                        let _ = AppRepository::upsert(
+                        if let Ok(app_id) = AppRepository::upsert(
                             &state.pool,
                             &UpsertAppInput {
-                                bundle_id,
-                                name: app_info.name.clone(),
+                                bundle_id: Some(app_info.bundle_id.clone()),
+                                name: Some(app_info.name.clone()),
                                 process_path: Some(app_info.process_path.clone()),
                             },
                         )
-                        .await;
+                        .await
+                        {
+                            *app_session_guard = Some(AppSession {
+                                app_id,
+                                bundle_id: Some(app_info.bundle_id),
+                                start_time: now,
+                            });
+                        }
                     }
                 });
             }
@@ -177,40 +169,30 @@ impl WindowListener for WindowMonitorHandler {
                 tauri::async_runtime::spawn(async move {
                     let mut window_session_guard = window_session.lock().await;
                     let now = current_timestamp();
-                    let bundle_id = window_info.app.bundle_id.clone();
-                    let window_title = Some(window_info.title.clone());
 
                     // Save previous window session if window changed
                     if let Some(prev_session) = window_session_guard.take() {
-                        if prev_session.bundle_id != bundle_id
-                            || prev_session.window_title != window_title
+                        if prev_session.bundle_id != Some(window_info.app.bundle_id.clone())
+                            || prev_session.window_title != Some(window_info.title.clone())
                         {
                             if let Some(state) = app.try_state::<DatabaseState>() {
-                                // Insert previous window activity
-                                if let Ok(Some(prev_app_id)) = AppRepository::get_id_by_bundle_id(
+                                let _ = WindowActivityRepository::insert(
                                     &state.pool,
-                                    &prev_session.bundle_id,
+                                    &InsertWindowActivityInput {
+                                        app_id: prev_session.app_id,
+                                        window_title: prev_session.window_title.clone(),
+                                        window_id: prev_session.window_id,
+                                        window_x: prev_session.window_x,
+                                        window_y: prev_session.window_y,
+                                        window_width: prev_session.window_width,
+                                        window_height: prev_session.window_height,
+                                        browser_url: prev_session.browser_url.clone(),
+                                        browser_is_private: prev_session.browser_is_private,
+                                        start_time: prev_session.start_time,
+                                        end_time: now,
+                                    },
                                 )
-                                .await
-                                {
-                                    let _ = WindowActivityRepository::insert(
-                                        &state.pool,
-                                        &UpsertWindowActivityInput {
-                                            app_id: prev_app_id,
-                                            window_title: prev_session.window_title.clone(),
-                                            window_id: prev_session.window_id,
-                                            window_x: prev_session.window_x,
-                                            window_y: prev_session.window_y,
-                                            window_width: prev_session.window_width,
-                                            window_height: prev_session.window_height,
-                                            browser_url: prev_session.browser_url.clone(),
-                                            browser_is_private: prev_session.browser_is_private,
-                                            start_time: prev_session.start_time,
-                                            end_time: now,
-                                        },
-                                    )
-                                    .await;
-                                }
+                                .await;
                             }
                         } else {
                             // Same window, restore session
@@ -219,33 +201,38 @@ impl WindowListener for WindowMonitorHandler {
                         }
                     }
 
-                    // Start new window session
-                    *window_session_guard = Some(WindowSession {
-                        bundle_id: bundle_id.clone(),
-                        app_name: window_info.app.name.clone(),
-                        process_path: Some(window_info.app.process_path.clone()),
-                        window_title: Some(window_info.title),
-                        window_id: Some(window_info.window_id),
-                        window_x: Some(window_info.bounds.x),
-                        window_y: Some(window_info.bounds.y),
-                        window_width: Some(window_info.bounds.width),
-                        window_height: Some(window_info.bounds.height),
-                        browser_url: window_info.browser.as_ref().and_then(|b| b.url.clone()),
-                        browser_is_private: window_info.browser.as_ref().and_then(|b| b.is_private),
-                        start_time: now,
-                    });
-
-                    // Upsert new app info
+                    // Upsert new app info and start new window session
                     if let Some(state) = app.try_state::<DatabaseState>() {
-                        let _ = AppRepository::upsert(
+                        if let Ok(app_id) = AppRepository::upsert(
                             &state.pool,
                             &UpsertAppInput {
-                                bundle_id,
-                                name: window_info.app.name.clone(),
+                                bundle_id: Some(window_info.app.bundle_id.clone()),
+                                name: Some(window_info.app.name.clone()),
                                 process_path: Some(window_info.app.process_path.clone()),
                             },
                         )
-                        .await;
+                        .await
+                        {
+                            *window_session_guard = Some(WindowSession {
+                                app_id,
+                                bundle_id: Some(window_info.app.bundle_id),
+                                window_title: Some(window_info.title),
+                                window_id: Some(window_info.window_id),
+                                window_x: Some(window_info.bounds.x),
+                                window_y: Some(window_info.bounds.y),
+                                window_width: Some(window_info.bounds.width),
+                                window_height: Some(window_info.bounds.height),
+                                browser_url: window_info
+                                    .browser
+                                    .as_ref()
+                                    .and_then(|b| b.url.clone()),
+                                browser_is_private: window_info
+                                    .browser
+                                    .as_ref()
+                                    .and_then(|b| b.is_private),
+                                start_time: now,
+                            });
+                        }
                     }
                 });
             }
@@ -254,14 +241,14 @@ impl WindowListener for WindowMonitorHandler {
 }
 
 struct AppSession {
-    bundle_id: String,
+    app_id: i64,
+    bundle_id: Option<String>,
     start_time: i64,
 }
 
 struct WindowSession {
-    bundle_id: String,
-    app_name: String,
-    process_path: Option<String>,
+    app_id: i64,
+    bundle_id: Option<String>,
     window_title: Option<String>,
     window_id: Option<u32>,
     window_x: Option<f64>,

@@ -6,8 +6,8 @@ use tauri_specta::Event;
 #[derive(Debug, Clone)]
 pub struct App {
     pub id: i64,
-    pub bundle_id: String,
-    pub name: String,
+    pub bundle_id: Option<String>,
+    pub name: Option<String>,
     pub process_path: Option<String>,
     pub first_seen_at: i64,
     pub last_seen_at: i64,
@@ -20,7 +20,6 @@ pub struct AppActivity {
     pub app_id: i64,
     pub start_time: i64,
     pub end_time: i64,
-    pub duration_seconds: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
@@ -70,7 +69,6 @@ pub struct WindowActivity {
     pub browser_is_private: Option<bool>,
     pub start_time: i64,
     pub end_time: i64,
-    pub duration_seconds: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]

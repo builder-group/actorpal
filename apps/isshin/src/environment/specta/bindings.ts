@@ -131,8 +131,10 @@ async getCurrentActiveWindow() : Promise<Result<WindowInfoDto, string>> {
 
 
 export const events = __makeEvents__<{
+activeAppChangedEvent: ActiveAppChangedEvent,
 activeWindowChangedEvent: ActiveWindowChangedEvent
 }>({
+activeAppChangedEvent: "active-app-changed-event",
 activeWindowChangedEvent: "active-window-changed-event"
 })
 
@@ -142,6 +144,7 @@ activeWindowChangedEvent: "active-window-changed-event"
 
 /** user-defined types **/
 
+export type ActiveAppChangedEvent = { data: AppInfoDto }
 export type ActiveWindowChangedEvent = { data: WindowInfoDto }
 /**
  * Settings for the activity window feature.

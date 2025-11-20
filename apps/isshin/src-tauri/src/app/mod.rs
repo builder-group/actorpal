@@ -7,7 +7,10 @@ use crate::{
     environment::states::{app::AppState, settings::SettingsState},
     features::{
         activity,
-        activity_window::{commands as activity_commands, types::ActiveWindowChangedEvent},
+        activity_window::{
+            commands as activity_commands,
+            types::{ActiveAppChangedEvent, ActiveWindowChangedEvent},
+        },
         settings::{self, commands as settings_commands},
     },
 };
@@ -36,7 +39,10 @@ pub fn run() {
             activity_commands::get_current_active_app,
             activity_commands::get_current_active_window,
         ])
-        .events(collect_events![ActiveWindowChangedEvent]);
+        .events(collect_events![
+            ActiveAppChangedEvent,
+            ActiveWindowChangedEvent
+        ]);
 
     #[cfg(debug_assertions)]
     builder

@@ -1,42 +1,35 @@
 import { RefreshCwIcon, TrashIcon } from 'lucide-react';
 import React from 'react';
 import { useRevalidator } from 'react-router';
-import { Err, Ok } from 'tuple-result';
+import { Ok } from 'tuple-result';
 import { specta } from '@/environment';
 import { formatDuration, resultLoader, toTuple, withResultLoader } from '@/lib';
+import { ActivityTimeline } from './ActivityTimeline';
 import { CurrentActiveWindow } from './CurrentActiveWindow';
-import { SankeyDiagram } from './SankeyDiagram';
 
 const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 	Success: ({ data }) => {
-		const { entries, currentWindow } = data;
+		const { windowActivities, appActivities, currentWindow, currentApp } = data;
 		const revalidator = useRevalidator();
 
-		const appStats = React.useMemo(() => {
-			const stats = new Map<string, number>();
-			for (const entry of entries) {
-				const duration = entry.endTime - entry.startTime;
-				stats.set(entry.application, (stats.get(entry.application) || 0) + duration);
-			}
-			return Array.from(stats.entries())
-				.map(([app, total]) => ({ app, total }))
-				.sort((a, b) => b.total - a.total);
-		}, [entries]);
-
-		const totalTime = React.useMemo(
-			() => appStats.reduce((sum, stat) => sum + stat.total, 0),
-			[appStats]
-		);
+		const totalTime = React.useMemo(() => {
+			const windowTime = windowActivities.reduce(
+				(sum, activity) => sum + activity.durationSeconds,
+				0
+			);
+			const appTime = appActivities.reduce((sum, activity) => sum + activity.durationSeconds, 0);
+			return windowTime + appTime;
+		}, [windowActivities, appActivities]);
 
 		const handleClear = React.useCallback(async () => {
-			const result = await specta.commands.clearActivityEntries();
-			const [ok] = toTuple(result);
-			if (ok) {
+			const [windowOk] = toTuple(await specta.commands.clearWindowActivities());
+			const [appOk] = toTuple(await specta.commands.clearAppActivities());
+			if (windowOk && appOk) {
 				revalidator.revalidate();
 			}
 		}, [revalidator]);
 
-		if (!entries.length) {
+		if (!windowActivities.length && !appActivities.length) {
 			return (
 				<div className="min-h-screen bg-gray-50 p-8">
 					<div className="mx-auto max-w-4xl">
@@ -91,39 +84,31 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 							<p className="text-3xl font-bold">{formatDuration(totalTime)}</p>
 						</div>
 
-						<CurrentActiveWindow initialWindow={currentWindow} />
+						<CurrentActiveWindow initialWindow={currentWindow} initialApp={currentApp} />
 
-						<SankeyDiagram entries={entries} />
+						<ActivityTimeline
+							windowActivities={windowActivities}
+							appActivities={appActivities}
+							width={1000}
+						/>
 
 						<div className="rounded-lg border border-gray-200 bg-white">
 							<div className="border-b border-gray-200 px-6 py-4">
-								<h2 className="text-xl font-semibold text-gray-900">Application Breakdown</h2>
+								<h2 className="text-xl font-semibold text-gray-900">Activity Summary</h2>
 							</div>
-							<div className="divide-y divide-gray-200">
-								{appStats.map((stat) => {
-									const percentage = totalTime > 0 ? (stat.total / totalTime) * 100 : 0;
-									return (
-										<div key={stat.app} className="px-6 py-4">
-											<div className="flex items-center justify-between">
-												<div className="flex-1">
-													<p className="text-sm font-medium text-gray-900">{stat.app}</p>
-													<p className="mt-1 text-xs text-gray-500">{formatDuration(stat.total)}</p>
-												</div>
-												<div className="ml-4 text-right">
-													<p className="text-sm font-semibold text-gray-900">
-														{percentage.toFixed(1)}%
-													</p>
-												</div>
-											</div>
-											<div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
-												<div
-													className="h-full rounded-full bg-blue-600 transition-all"
-													style={{ width: `${percentage}%` }}
-												/>
-											</div>
-										</div>
-									);
-								})}
+							<div className="divide-y divide-gray-200 px-6 py-4">
+								<div className="grid grid-cols-2 gap-4">
+									<div>
+										<p className="text-sm font-medium text-gray-500">Window Activities</p>
+										<p className="mt-1 text-2xl font-bold text-gray-900">
+											{windowActivities.length}
+										</p>
+									</div>
+									<div>
+										<p className="text-sm font-medium text-gray-500">App Activities</p>
+										<p className="mt-1 text-2xl font-bold text-gray-900">{appActivities.length}</p>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -151,26 +136,30 @@ export default Page;
 
 export const clientLoader = resultLoader<TSuccessLoaderData, TErrorLoaderData>(async () => {
 	const [
-		[isActivityEntriesOk, isActivityEntriesError, activityEntries],
-		[isCurrentWindowOk, , currentWindow]
+		[isWindowActivitiesOk, , windowActivities],
+		[isAppActivitiesOk, , appActivities],
+		[isCurrentWindowOk, , currentWindow],
+		[isCurrentAppOk, , currentApp]
 	] = await Promise.all([
-		toTuple(await specta.commands.getActivityEntries()),
-		toTuple(await specta.commands.getCurrentActiveWindow())
+		toTuple(await specta.commands.getWindowActivities()),
+		toTuple(await specta.commands.getAppActivities()),
+		toTuple(await specta.commands.getCurrentActiveWindow()),
+		toTuple(await specta.commands.getCurrentActiveApp())
 	]);
 
-	if (!isActivityEntriesOk) {
-		return Err(`Failed to load activity entries: ${isActivityEntriesError}`);
-	}
-
 	return Ok({
-		entries: activityEntries,
-		currentWindow: isCurrentWindowOk ? currentWindow : null
+		windowActivities: isWindowActivitiesOk ? windowActivities : [],
+		appActivities: isAppActivitiesOk ? appActivities : [],
+		currentWindow: isCurrentWindowOk ? currentWindow : null,
+		currentApp: isCurrentAppOk ? currentApp : null
 	});
 });
 
 type TSuccessLoaderData = {
-	entries: specta.ActivityEntry[];
-	currentWindow: specta.ActiveWindowInfo | null;
+	windowActivities: specta.WindowActivity[];
+	appActivities: specta.AppActivity[];
+	currentWindow: specta.WindowInfoDto | null;
+	currentApp: specta.AppInfoDto | null;
 };
 
 type TErrorLoaderData = string;

@@ -1,8 +1,8 @@
 CREATE TABLE IF NOT EXISTS apps (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    bundle_id TEXT, -- Stable identifier (e.g., "com.google.Chrome")
-    name TEXT, -- Display name (may change, but we keep latest)
-    process_path TEXT, -- Executable path (may change)
+    bundle_id TEXT, -- Stable identifier (e.g. "com.google.Chrome")
+    name TEXT, -- Display name
+    process_path TEXT, -- Executable path
     first_seen_at INTEGER NOT NULL, -- Unix timestamp
     last_seen_at INTEGER NOT NULL, -- Unix timestamp (for cleanup/analytics)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP

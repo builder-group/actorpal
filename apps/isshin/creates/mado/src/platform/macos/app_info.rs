@@ -14,41 +14,28 @@ pub fn get_current_app() -> Option<AppInfo> {
 
 /// Extract AppInfo for a given PID.
 pub fn get_app_info_from_pid(pid: i32) -> Option<AppInfo> {
-    let name = get_app_name(pid)?;
-    let bundle_id = get_bundle_id(pid).unwrap_or_default();
-    let process_path = get_process_path(pid).unwrap_or_default();
-
     return Some(AppInfo {
         pid,
-        name,
-        bundle_id,
-        process_path,
+        name: get_app_name(pid),
+        bundle_id: get_bundle_id(pid),
+        process_path: get_process_path(pid),
     });
 }
 
 /// Extract AppInfo from NSWorkspace activation notification.
 pub fn get_app_info_from_notification(notification: &NSNotification) -> Option<AppInfo> {
     let user_info = notification.userInfo()?;
-    let app_key = unsafe { NSWorkspaceApplicationKey };
-    let app_any = user_info.objectForKey(app_key)?;
-    let app: Retained<NSRunningApplication> = app_any.downcast().ok()?;
+    let app: Retained<NSRunningApplication> = user_info
+        .objectForKey(unsafe { NSWorkspaceApplicationKey })?
+        .downcast()
+        .ok()?;
 
     let pid = app.processIdentifier();
-    let name = app
-        .localizedName()
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| "Unknown".to_string());
-    let bundle_id = app
-        .bundleIdentifier()
-        .map(|s| s.to_string())
-        .unwrap_or_default();
-    let process_path = get_process_path(pid).unwrap_or_default();
-
     return Some(AppInfo {
         pid,
-        name,
-        bundle_id,
-        process_path,
+        name: app.localizedName().map(|s| s.to_string()),
+        bundle_id: app.bundleIdentifier().map(|s| s.to_string()),
+        process_path: get_process_path(pid),
     });
 }
 

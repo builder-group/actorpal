@@ -127,7 +127,7 @@ impl WorkspaceDelegate {
         // Stop polling if timeout after ~5 minutes
         if retry_count >= 188 {
             eprintln!(
-                "[PollWindowInfo] Timeout after {} poll attempts (~5 minutes) - PID {} ({})",
+                "[PollWindowInfo] Timeout after {} poll attempts (~5 minutes) - PID {} ({:?})",
                 retry_count, pid, app_info.name
             );
             Self::stop_polling(delegate);

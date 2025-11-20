@@ -25,7 +25,7 @@ pub struct AppActivity {
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppInfoDto {
-    pub application: String,
+    pub name: String,
     pub bundle_id: Option<String>,
     pub pid: Option<i32>,
     pub process_path: Option<String>,
@@ -33,23 +33,11 @@ pub struct AppInfoDto {
 
 impl From<AppInfo> for AppInfoDto {
     fn from(app: AppInfo) -> Self {
-        let bundle_id = if app.bundle_id.is_empty() {
-            None
-        } else {
-            Some(app.bundle_id)
-        };
-
-        let process_path = if app.process_path.is_empty() {
-            None
-        } else {
-            Some(app.process_path)
-        };
-
         Self {
-            application: app.name,
-            bundle_id,
+            name: app.name.unwrap_or("Unknown".to_string()),
+            bundle_id: app.bundle_id,
             pid: Some(app.pid),
-            process_path,
+            process_path: app.process_path,
         }
     }
 }
@@ -75,10 +63,10 @@ pub struct WindowActivity {
 #[serde(rename_all = "camelCase")]
 pub struct WindowInfoDto {
     // App information
-    pub application: String,
-    pub bundle_id: Option<String>,
-    pub pid: Option<i32>,
-    pub process_path: Option<String>,
+    pub app_name: String,
+    pub app_bundle_id: Option<String>,
+    pub app_pid: Option<i32>,
+    pub app_process_path: Option<String>,
 
     // Window information
     pub window_title: Option<String>,
@@ -95,34 +83,19 @@ pub struct WindowInfoDto {
 
 impl From<WindowInfo> for WindowInfoDto {
     fn from(window: WindowInfo) -> Self {
-        let bundle_id = if window.app.bundle_id.is_empty() {
-            None
-        } else {
-            Some(window.app.bundle_id)
-        };
-
-        let process_path = if window.app.process_path.is_empty() {
-            None
-        } else {
-            Some(window.app.process_path)
-        };
-
-        let browser_url = window.browser.as_ref().and_then(|b| b.url.clone());
-        let browser_is_private = window.browser.as_ref().and_then(|b| b.is_private);
-
         Self {
-            application: window.app.name,
-            bundle_id,
-            pid: Some(window.app.pid),
-            process_path,
+            app_name: window.app.name.unwrap_or("Unknown".to_string()),
+            app_bundle_id: window.app.bundle_id,
+            app_pid: Some(window.app.pid),
+            app_process_path: window.app.process_path,
             window_title: Some(window.title),
             window_id: Some(window.window_id),
             window_x: Some(window.bounds.x),
             window_y: Some(window.bounds.y),
             window_width: Some(window.bounds.width),
             window_height: Some(window.bounds.height),
-            browser_url,
-            browser_is_private,
+            browser_url: window.browser.as_ref().and_then(|b| b.url.clone()),
+            browser_is_private: window.browser.as_ref().and_then(|b| b.is_private),
         }
     }
 }

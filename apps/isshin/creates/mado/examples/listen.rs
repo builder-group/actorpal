@@ -16,10 +16,10 @@ impl WindowListener for FocusListener {
             WindowEvent::AppActivated { app } => {
                 println!("\n🔄 App Activated");
                 println!("   App:");
-                println!("      Name:       {}", app.name);
+                println!("      Name:       {:?}", app.name);
                 println!("      PID:        {}", app.pid);
-                println!("      Bundle ID:  {}", app.bundle_id);
-                println!("      Path:       {}", app.process_path);
+                println!("      Bundle ID:  {:?}", app.bundle_id);
+                println!("      Path:       {:?}", app.process_path);
                 println!("   Note: Window information may follow in WindowChanged event");
             }
             WindowEvent::WindowChanged { window } => {
@@ -40,10 +40,10 @@ impl WindowListener for FocusListener {
                 );
 
                 println!("   App:");
-                println!("      Name:       {}", window.app.name);
+                println!("      Name:       {:?}", window.app.name);
                 println!("      PID:        {}", window.app.pid);
-                println!("      Bundle ID:  {}", window.app.bundle_id);
-                println!("      Path:       {}", window.app.process_path);
+                println!("      Bundle ID:  {:?}", window.app.bundle_id);
+                println!("      Path:       {:?}", window.app.process_path);
 
                 if let Some(browser) = &window.browser {
                     println!("   Browser:");

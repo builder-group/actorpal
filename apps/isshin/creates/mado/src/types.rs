@@ -4,11 +4,11 @@ pub struct AppInfo {
     /// Process ID
     pub pid: i32,
     /// Application name (localized)
-    pub name: String,
+    pub name: Option<String>,
     /// Bundle identifier (macOS) or application class (Linux)
-    pub bundle_id: String,
+    pub bundle_id: Option<String>,
     /// Path to the executable
-    pub process_path: String,
+    pub process_path: Option<String>,
 }
 
 /// Browser-specific information (macOS only).

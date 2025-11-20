@@ -89,7 +89,7 @@ impl WindowListener for WindowMonitorHandler {
 
                 #[cfg(debug_assertions)]
                 {
-                    println!("\n[Window Monitor] 🔄 App Activated: {}", app_info.name);
+                    println!("\n[Window Monitor] 🔄 App Activated: {:?}", app_info.name);
                 }
 
                 // Emit frontend event
@@ -105,7 +105,7 @@ impl WindowListener for WindowMonitorHandler {
 
                     // Save previous app session if app changed
                     if let Some(prev_session) = app_session_guard.take() {
-                        if prev_session.bundle_id != Some(app_info.bundle_id.clone()) {
+                        if prev_session.bundle_id != app_info.bundle_id {
                             if let Some(state) = app.try_state::<DatabaseState>() {
                                 let _ = AppActivityRepository::insert(
                                     &state.pool,
@@ -129,16 +129,16 @@ impl WindowListener for WindowMonitorHandler {
                         if let Ok(app_id) = AppRepository::upsert(
                             &state.pool,
                             &UpsertAppInput {
-                                bundle_id: Some(app_info.bundle_id.clone()),
-                                name: Some(app_info.name.clone()),
-                                process_path: Some(app_info.process_path.clone()),
+                                bundle_id: app_info.bundle_id.clone(),
+                                name: app_info.name,
+                                process_path: app_info.process_path,
                             },
                         )
                         .await
                         {
                             *app_session_guard = Some(AppSession {
                                 app_id,
-                                bundle_id: Some(app_info.bundle_id),
+                                bundle_id: app_info.bundle_id,
                                 start_time: now,
                             });
                         }
@@ -172,7 +172,7 @@ impl WindowListener for WindowMonitorHandler {
 
                     // Save previous window session if window changed
                     if let Some(prev_session) = window_session_guard.take() {
-                        if prev_session.bundle_id != Some(window_info.app.bundle_id.clone())
+                        if prev_session.bundle_id != window_info.app.bundle_id
                             || prev_session.window_title != Some(window_info.title.clone())
                         {
                             if let Some(state) = app.try_state::<DatabaseState>() {
@@ -180,13 +180,13 @@ impl WindowListener for WindowMonitorHandler {
                                     &state.pool,
                                     &InsertWindowActivityInput {
                                         app_id: prev_session.app_id,
-                                        window_title: prev_session.window_title.clone(),
+                                        window_title: prev_session.window_title,
                                         window_id: prev_session.window_id,
                                         window_x: prev_session.window_x,
                                         window_y: prev_session.window_y,
                                         window_width: prev_session.window_width,
                                         window_height: prev_session.window_height,
-                                        browser_url: prev_session.browser_url.clone(),
+                                        browser_url: prev_session.browser_url,
                                         browser_is_private: prev_session.browser_is_private,
                                         start_time: prev_session.start_time,
                                         end_time: now,
@@ -206,16 +206,16 @@ impl WindowListener for WindowMonitorHandler {
                         if let Ok(app_id) = AppRepository::upsert(
                             &state.pool,
                             &UpsertAppInput {
-                                bundle_id: Some(window_info.app.bundle_id.clone()),
-                                name: Some(window_info.app.name.clone()),
-                                process_path: Some(window_info.app.process_path.clone()),
+                                bundle_id: window_info.app.bundle_id.clone(),
+                                name: window_info.app.name,
+                                process_path: window_info.app.process_path,
                             },
                         )
                         .await
                         {
                             *window_session_guard = Some(WindowSession {
                                 app_id,
-                                bundle_id: Some(window_info.app.bundle_id),
+                                bundle_id: window_info.app.bundle_id,
                                 window_title: Some(window_info.title),
                                 window_id: Some(window_info.window_id),
                                 window_x: Some(window_info.bounds.x),

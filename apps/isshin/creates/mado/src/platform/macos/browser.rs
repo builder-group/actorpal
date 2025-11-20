@@ -6,12 +6,16 @@ use std::process::Command;
 /// Uses AppleScript to extract browser URLs and private mode.
 /// Requires Automation permission: System Settings > Privacy & Security > Automation
 pub fn extend_window_info(window: &mut WindowInfo) {
-    if !is_browser(&window.app.bundle_id) {
+    let bundle_id = match &window.app.bundle_id {
+        Some(bundle_id) => bundle_id,
+        None => return,
+    };
+    if !is_browser(&bundle_id) {
         return;
     }
 
-    let url = get_browser_url(&window.app.bundle_id);
-    let is_private = detect_private_mode(&window.app.bundle_id, &window.title);
+    let url = get_browser_url(&bundle_id);
+    let is_private = detect_private_mode(&bundle_id, &window.title);
     if url.is_some() || is_private.is_some() {
         window.browser = Some(BrowserInfo { url, is_private });
     }

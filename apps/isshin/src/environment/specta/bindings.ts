@@ -158,8 +158,8 @@ trackWindow: boolean;
  * Whether to track browser URLs (requires Automation permission on macOS)
  */
 trackBrowser: boolean }
-export type AppActivity = { id: number; appId: number; startTime: number; endTime: number; durationSeconds: number }
-export type AppInfoDto = { application: string; bundleId: string | null; pid: number | null; processPath: string | null }
+export type AppActivity = { id: number; appId: number; startTime: number; endTime: number }
+export type AppInfoDto = { name: string; bundleId: string | null; pid: number | null; processPath: string | null }
 /**
  * Global application settings.
  */
@@ -168,8 +168,8 @@ export type AppSettings = {
  * Activity window tracking settings
  */
 activityWindow: ActivityWindowSettings }
-export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number; durationSeconds: number }
-export type WindowInfoDto = { application: string; bundleId: string | null; pid: number | null; processPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
+export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number }
+export type WindowInfoDto = { appName: string; appBundleId: string | null; appPid: number | null; appProcessPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
 
 /** tauri-specta globals **/
 

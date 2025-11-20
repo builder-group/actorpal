@@ -22,10 +22,10 @@ fn main() -> Result<(), mado::Error> {
         match mado::get_active_app() {
             Ok(app) => {
                 println!("📱 Current App");
-                println!("   Name:       {}", app.name);
+                println!("   Name:       {:?}", app.name);
                 println!("   PID:        {}", app.pid);
-                println!("   Bundle ID:  {}", app.bundle_id);
-                println!("   Path:       {}", app.process_path);
+                println!("   Bundle ID:  {:?}", app.bundle_id);
+                println!("   Path:       {:?}", app.process_path);
             }
             Err(e) => eprintln!("❌ Error getting app: {}", e),
         }
@@ -45,10 +45,10 @@ fn main() -> Result<(), mado::Error> {
                 );
 
                 println!("\n   App Info:");
-                println!("      Name:       {}", window.app.name);
+                println!("      Name:       {:?}", window.app.name);
                 println!("      PID:        {}", window.app.pid);
-                println!("      Bundle ID:  {}", window.app.bundle_id);
-                println!("      Path:       {}", window.app.process_path);
+                println!("      Bundle ID:  {:?}", window.app.bundle_id);
+                println!("      Path:       {:?}", window.app.process_path);
 
                 if let Some(browser) = &window.browser {
                     println!("\n   Browser:");

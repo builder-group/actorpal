@@ -149,7 +149,7 @@ impl WorkspaceDelegate {
                 }
 
                 // If found focused window for our PID - send event, create monitor, stop polling
-                if window.window_id != 0 {
+                if window.window_id.is_some() {
                     delegate
                         .ivars()
                         .event_handler
@@ -173,7 +173,7 @@ impl WorkspaceDelegate {
                     Self::stop_polling(delegate);
                     return;
                 } else {
-                    // If window exists but window_id is 0 - continue polling (window not ready yet)
+                    // If window exists but window_id is None - continue polling (window not ready yet)
                 }
             }
             None => {

@@ -24,31 +24,8 @@ extern "C" {
 /// - CoreGraphics for stable window ID and bounds
 pub fn get_current_window() -> Option<WindowInfo> {
     let app = app_info::get_current_app()?;
-    let title = accessibility::get_current_window_title().unwrap_or_default();
-    let (window_id, bounds) = find_window_info(app.pid, &title).unwrap_or((0, Default::default()));
-
-    return Some(WindowInfo {
-        title,
-        window_id,
-        bounds,
-        app,
-        browser: None,
-    });
-}
-
-/// Build WindowInfo from partial data (optimized for callbacks).
-///
-/// More efficient than `get_current_window()` - reuses provided data and only queries what's missing.
-/// Browser info must be added separately via `browser::extend_window_info()`.
-pub fn build_window_info(
-    pid: i32,
-    title: Option<String>,
-    app: Option<AppInfo>,
-) -> Option<WindowInfo> {
-    let app = app.or_else(app_info::get_current_app)?;
-    let title =
-        title.unwrap_or_else(|| accessibility::get_current_window_title().unwrap_or_default());
-    let (window_id, bounds) = find_window_info(pid, &title).unwrap_or((0, Default::default()));
+    let title = accessibility::get_current_window_title();
+    let (window_id, bounds) = find_window_info(app.pid, title.as_deref().unwrap_or(""));
 
     return Some(WindowInfo {
         title,
@@ -64,8 +41,11 @@ pub fn build_window_info(
 /// Uses two strategies:
 /// 1. Exact title match (most accurate because a process might have multiple windows with different titles)
 /// 2. First window matching PID (fallback when title doesn't match or is empty)
-fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
-    let windows = get_window_list()?;
+pub fn find_window_info(pid: i32, title: &str) -> (Option<u32>, Option<WindowBounds>) {
+    let windows = match get_window_list() {
+        Some(windows) => windows,
+        None => return (None, None),
+    };
 
     // Try to get window info via title match first (a process might have multiple windows with different titles)
     if !title.is_empty() {
@@ -82,12 +62,9 @@ fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
                 continue;
             }
 
-            let id = match dict_get_i32(&d, "kCGWindowNumber") {
-                Some(id) => id,
-                None => continue,
-            };
-            let bounds = dict_get_bounds(&d).unwrap_or_default();
-            return Some((id as u32, bounds));
+            let id = dict_get_i32(&d, "kCGWindowNumber");
+            let bounds = dict_get_bounds(&d);
+            return (id.map(|id| id as u32), bounds);
         }
     }
 
@@ -102,15 +79,12 @@ fn find_window_info(pid: i32, title: &str) -> Option<(u32, WindowBounds)> {
             continue;
         }
 
-        let id = match dict_get_i32(&d, "kCGWindowNumber") {
-            Some(id) => id,
-            None => continue,
-        };
-        let bounds = dict_get_bounds(&d).unwrap_or_default();
-        return Some((id as u32, bounds));
+        let id = dict_get_i32(&d, "kCGWindowNumber");
+        let bounds = dict_get_bounds(&d);
+        return (id.map(|id| id as u32), bounds);
     }
 
-    return None;
+    return (None, None);
 }
 
 /// Check if window matches selection criteria.

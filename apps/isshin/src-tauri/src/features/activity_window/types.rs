@@ -25,7 +25,7 @@ pub struct AppActivity {
 #[derive(Serialize, Deserialize, Debug, Clone, Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppInfoDto {
-    pub name: String,
+    pub name: Option<String>,
     pub bundle_id: Option<String>,
     pub pid: Option<i32>,
     pub process_path: Option<String>,
@@ -34,7 +34,7 @@ pub struct AppInfoDto {
 impl From<AppInfo> for AppInfoDto {
     fn from(app: AppInfo) -> Self {
         Self {
-            name: app.name.unwrap_or("Unknown".to_string()),
+            name: app.name,
             bundle_id: app.bundle_id,
             pid: Some(app.pid),
             process_path: app.process_path,
@@ -63,7 +63,7 @@ pub struct WindowActivity {
 #[serde(rename_all = "camelCase")]
 pub struct WindowInfoDto {
     // App information
-    pub app_name: String,
+    pub app_name: Option<String>,
     pub app_bundle_id: Option<String>,
     pub app_pid: Option<i32>,
     pub app_process_path: Option<String>,
@@ -84,16 +84,16 @@ pub struct WindowInfoDto {
 impl From<WindowInfo> for WindowInfoDto {
     fn from(window: WindowInfo) -> Self {
         Self {
-            app_name: window.app.name.unwrap_or("Unknown".to_string()),
+            app_name: window.app.name,
             app_bundle_id: window.app.bundle_id,
             app_pid: Some(window.app.pid),
             app_process_path: window.app.process_path,
-            window_title: Some(window.title),
-            window_id: Some(window.window_id),
-            window_x: Some(window.bounds.x),
-            window_y: Some(window.bounds.y),
-            window_width: Some(window.bounds.width),
-            window_height: Some(window.bounds.height),
+            window_title: window.title,
+            window_id: window.window_id,
+            window_x: window.bounds.map(|b| b.x),
+            window_y: window.bounds.map(|b| b.y),
+            window_width: window.bounds.map(|b| b.width),
+            window_height: window.bounds.map(|b| b.height),
             browser_url: window.browser.as_ref().and_then(|b| b.url.clone()),
             browser_is_private: window.browser.as_ref().and_then(|b| b.is_private),
         }

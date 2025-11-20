@@ -154,7 +154,7 @@ impl WindowListener for WindowMonitorHandler {
                 #[cfg(debug_assertions)]
                 {
                     println!(
-                        "\n[Window Monitor] 🪟 Window Changed: {}",
+                        "\n[Window Monitor] 🪟 Window Changed: {:?}",
                         window_info.title
                     );
                 }
@@ -173,7 +173,7 @@ impl WindowListener for WindowMonitorHandler {
                     // Save previous window session if window changed
                     if let Some(prev_session) = window_session_guard.take() {
                         if prev_session.bundle_id != window_info.app.bundle_id
-                            || prev_session.window_title != Some(window_info.title.clone())
+                            || prev_session.window_title != window_info.title
                         {
                             if let Some(state) = app.try_state::<DatabaseState>() {
                                 let _ = WindowActivityRepository::insert(
@@ -216,12 +216,12 @@ impl WindowListener for WindowMonitorHandler {
                             *window_session_guard = Some(WindowSession {
                                 app_id,
                                 bundle_id: window_info.app.bundle_id,
-                                window_title: Some(window_info.title),
-                                window_id: Some(window_info.window_id),
-                                window_x: Some(window_info.bounds.x),
-                                window_y: Some(window_info.bounds.y),
-                                window_width: Some(window_info.bounds.width),
-                                window_height: Some(window_info.bounds.height),
+                                window_title: window_info.title,
+                                window_id: window_info.window_id,
+                                window_x: window_info.bounds.map(|b| b.x),
+                                window_y: window_info.bounds.map(|b| b.y),
+                                window_width: window_info.bounds.map(|b| b.width),
+                                window_height: window_info.bounds.map(|b| b.height),
                                 browser_url: window_info
                                     .browser
                                     .as_ref()

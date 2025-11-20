@@ -22,7 +22,10 @@ fn main() -> Result<(), mado::Error> {
         match mado::get_active_app() {
             Ok(app) => {
                 println!("📱 Current App");
-                println!("   Name:       {:?}", app.name);
+                println!(
+                    "   Name:       {}",
+                    app.name.unwrap_or(String::from("[not set]"))
+                );
                 println!("   PID:        {}", app.pid);
                 println!("   Bundle ID:  {:?}", app.bundle_id);
                 println!("   Path:       {:?}", app.process_path);
@@ -33,15 +36,17 @@ fn main() -> Result<(), mado::Error> {
         match mado::get_active_window() {
             Ok(window) => {
                 println!("\n🪟 Current Window");
-                println!("   Title:      '{}'", window.title);
-                println!("   Window ID:  {}", window.window_id);
+                println!("   Title:      {:?}", window.title);
+                println!("   Window ID:  {:?}", window.window_id);
                 println!(
                     "   Bounds:     ({:.0}, {:.0})",
-                    window.bounds.x, window.bounds.y
+                    window.bounds.unwrap_or_default().x,
+                    window.bounds.unwrap_or_default().y
                 );
                 println!(
                     "   Size:       {:.0}x{:.0}",
-                    window.bounds.width, window.bounds.height
+                    window.bounds.unwrap_or_default().width,
+                    window.bounds.unwrap_or_default().height
                 );
 
                 println!("\n   App Info:");

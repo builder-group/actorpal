@@ -28,15 +28,17 @@ impl WindowListener for FocusListener {
                 println!("\n🪟 Window Change");
 
                 println!("   Window:");
-                println!("      Title:      '{}'", window.title);
-                println!("      Window ID:  {}", window.window_id);
+                println!("      Title:      {:?}", window.title);
+                println!("      Window ID:  {:?}", window.window_id);
                 println!(
                     "      Bounds:     ({:.0}, {:.0})",
-                    window.bounds.x, window.bounds.y
+                    window.bounds.unwrap_or_default().x,
+                    window.bounds.unwrap_or_default().y
                 );
                 println!(
                     "      Size:       {:.0}x{:.0}",
-                    window.bounds.width, window.bounds.height
+                    window.bounds.unwrap_or_default().width,
+                    window.bounds.unwrap_or_default().height
                 );
 
                 println!("   App:");

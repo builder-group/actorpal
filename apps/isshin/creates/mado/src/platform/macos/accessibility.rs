@@ -1,5 +1,7 @@
 use super::{app_info, window_event_handler::WindowEventHandler, window_info};
-use crate::{error::Error, types::WindowEvent};
+use crate::{
+    error::Error, platform::macos::window_info::find_window_info, types::WindowEvent, WindowInfo,
+};
 use accessibility_sys::{
     kAXFocusedApplicationAttribute, kAXFocusedWindowAttribute, kAXFocusedWindowChangedNotification,
     kAXTitleAttribute, kAXTitleChangedNotification, AXObserverAddNotification, AXObserverCreate,
@@ -88,14 +90,20 @@ impl AccessibilityMonitor {
         // Recover WindowEventHandler from user data pointer
         let event_handler = &*(user_info as *const WindowEventHandler);
 
-        let title = get_string_attribute(element, kAXTitleAttribute);
-        let pid = match app_info::get_current_pid() {
-            Some(pid) => pid,
+        // Build WindowInfo
+        let app_info = match app_info::get_current_app() {
+            Some(app) => app,
             None => return,
         };
-        let window_info = match window_info::build_window_info(pid, title, None) {
-            Some(window) => window,
-            None => return,
+        let title =
+            get_string_attribute(element, kAXTitleAttribute).or_else(get_current_window_title);
+        let (window_id, bounds) = find_window_info(app_info.pid, title.as_deref().unwrap_or(""));
+        let window_info = WindowInfo {
+            title,
+            window_id,
+            bounds,
+            app: app_info,
+            browser: None,
         };
 
         // Skip invalid windows.
@@ -104,13 +112,15 @@ impl AccessibilityMonitor {
         // - Minimize/unminimize: Accessibility API fires callback but CoreGraphics window info isn't ready yet.
         //   -> If user unminimizes without switching focus, we won't fire a new event.
         //      This is acceptable because we track focus changes, not window visibility.
-        if window_info.window_id == 0 {
+        if window_info.window_id.is_none() {
             eprintln!(
-                "[AccessibilityMonitor] Skipping invalid window (PID {}, title: \"{}\")",
-                pid, window_info.title
+                "[AccessibilityMonitor] Skipping invalid window (PID {}, title: \"{:?}\")",
+                window_info.app.pid, window_info.title
             );
             return;
         }
+
+        let pid = window_info.app.pid;
 
         // Call user handler, catching panics (unwinding through C code is undefined behavior)
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {

@@ -30,11 +30,11 @@ pub struct BrowserInfo {
 #[derive(Debug, Clone)]
 pub struct WindowInfo {
     /// Window title
-    pub title: String,
+    pub title: Option<String>,
     /// Platform-specific window identifier
-    pub window_id: u32,
+    pub window_id: Option<u32>,
     /// Window position and size
-    pub bounds: WindowBounds,
+    pub bounds: Option<WindowBounds>,
     /// Application information
     pub app: AppInfo,
     /// Browser information (only populated if `allow_browser` is enabled in config)
@@ -90,19 +90,6 @@ pub enum WindowEvent {
 }
 
 impl WindowEvent {
-    /// Check if the window data in this event is complete and valid.
-    ///
-    /// Returns `true` if this is a `WindowChanged` event with valid window data
-    /// (non-zero window_id and non-zero size).
-    pub fn has_complete_window_data(&self) -> bool {
-        match self {
-            WindowEvent::AppActivated { .. } => false,
-            WindowEvent::WindowChanged { window } => {
-                window.window_id != 0 && window.bounds.width > 0.0 && window.bounds.height > 0.0
-            }
-        }
-    }
-
     /// Get the app information from this event.
     pub fn app(&self) -> &AppInfo {
         match self {

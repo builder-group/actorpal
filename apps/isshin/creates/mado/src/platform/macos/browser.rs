@@ -15,7 +15,7 @@ pub fn extend_window_info(window: &mut WindowInfo) {
     }
 
     let url = get_browser_url(&bundle_id);
-    let is_private = detect_private_mode(&bundle_id, &window.title);
+    let is_private = detect_private_mode(&bundle_id, window.title.as_deref().unwrap_or(""));
     if url.is_some() || is_private.is_some() {
         window.browser = Some(BrowserInfo { url, is_private });
     }

@@ -159,7 +159,7 @@ trackWindow: boolean;
  */
 trackBrowser: boolean }
 export type AppActivity = { id: number; appId: number; startTime: number; endTime: number }
-export type AppInfoDto = { name: string; bundleId: string | null; pid: number | null; processPath: string | null }
+export type AppInfoDto = { name: string | null; bundleId: string | null; pid: number | null; processPath: string | null }
 /**
  * Global application settings.
  */
@@ -169,7 +169,7 @@ export type AppSettings = {
  */
 activityWindow: ActivityWindowSettings }
 export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number }
-export type WindowInfoDto = { appName: string; appBundleId: string | null; appPid: number | null; appProcessPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
+export type WindowInfoDto = { appName: string | null; appBundleId: string | null; appPid: number | null; appProcessPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
 
 /** tauri-specta globals **/
 

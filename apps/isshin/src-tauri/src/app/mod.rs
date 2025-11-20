@@ -6,7 +6,8 @@ use crate::{
     common::db::Database,
     environment::states::{app::AppState, settings::SettingsState},
     features::{
-        activity_window::{self, commands as activity_commands, types::ActiveWindowChangedEvent},
+        activity,
+        activity_window::{commands as activity_commands, types::ActiveWindowChangedEvent},
         settings::{self, commands as settings_commands},
     },
 };
@@ -28,8 +29,11 @@ pub fn run() {
             settings_commands::update_track_window,
             settings_commands::update_track_browser,
             // Activity commands
-            activity_commands::get_activity_entries,
-            activity_commands::clear_activity_entries,
+            activity_commands::get_app_activities,
+            activity_commands::get_window_activities,
+            activity_commands::clear_app_activities,
+            activity_commands::clear_window_activities,
+            activity_commands::get_current_active_app,
             activity_commands::get_current_active_window,
         ])
         .events(collect_events![ActiveWindowChangedEvent]);
@@ -75,7 +79,7 @@ pub fn run() {
             Window::Settings.setup(app.handle());
 
             // Setup features
-            activity_window::setup(app.handle().clone());
+            activity::setup(app.handle().clone());
             settings::setup(app.handle().clone());
 
             return Ok(());

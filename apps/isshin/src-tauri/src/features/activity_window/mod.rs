@@ -1,10 +1,10 @@
 pub mod commands;
+mod monitor;
 mod repository;
 pub mod types;
-mod watcher;
 
 use tauri::AppHandle;
 
 pub fn setup(app: AppHandle) {
-    watcher::start_monitoring(app);
+    monitor::start_monitoring(app);
 }

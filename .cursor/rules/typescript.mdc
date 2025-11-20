@@ -1,13 +1,15 @@
 ---
-description: 
-globs: 
+description: TypeScript coding standards and style guidelines
+globs: ["**/*.ts", "**/*.tsx"]
 alwaysApply: true
 ---
-# Style Guide
 
-Core coding standards and style guidelines for our TypeScript codebase. These guidelines ensure consistency, maintainability, and high code quality across the project.
+# TypeScript Style Guide
+
+TypeScript coding standards and style guidelines for our codebase. These guidelines ensure consistency, maintainability, and high code quality across TypeScript projects.
 
 ## Core Principles
+
 - **KISS (Keep It Simple, Stupid)** - Always choose the simplest, most maintainable solution
 - **TypeScript First** - Always use TypeScript with strict typing (`strict: true`) everywhere
 - **Less is More** - Always avoid unnecessary complexity, the best code is no code

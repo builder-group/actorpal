@@ -77,23 +77,47 @@ async updateTrackBrowser(value: boolean) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getActivityEntries() : Promise<Result<ActivityEntry[], string>> {
+async getAppActivities() : Promise<Result<AppActivity[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_activity_entries") };
+    return { status: "ok", data: await TAURI_INVOKE("get_app_activities") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async clearActivityEntries() : Promise<Result<null, string>> {
+async getWindowActivities() : Promise<Result<WindowActivity[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("clear_activity_entries") };
+    return { status: "ok", data: await TAURI_INVOKE("get_window_activities") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async getCurrentActiveWindow() : Promise<Result<ActiveWindowInfo, string>> {
+async clearAppActivities() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_app_activities") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async clearWindowActivities() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_window_activities") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getCurrentActiveApp() : Promise<Result<AppInfoDto, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_current_active_app") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getCurrentActiveWindow() : Promise<Result<WindowInfoDto, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_current_active_window") };
 } catch (e) {
@@ -118,12 +142,7 @@ activeWindowChangedEvent: "active-window-changed-event"
 
 /** user-defined types **/
 
-export type ActiveWindowChangedEvent = { data: ActiveWindowInfo }
-export type ActiveWindowInfo = { application: string; bundleId: string | null; pid: number | null; processPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
-/**
- * Core activity entry tracking window/app focus sessions
- */
-export type ActivityEntry = { application: string; bundleId: string | null; pid: number | null; processPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number }
+export type ActiveWindowChangedEvent = { data: WindowInfoDto }
 /**
  * Settings for the activity window feature.
  */
@@ -136,6 +155,8 @@ trackWindow: boolean;
  * Whether to track browser URLs (requires Automation permission on macOS)
  */
 trackBrowser: boolean }
+export type AppActivity = { id: number; appId: number; startTime: number; endTime: number; durationSeconds: number }
+export type AppInfoDto = { application: string; bundleId: string | null; pid: number | null; processPath: string | null }
 /**
  * Global application settings.
  */
@@ -144,6 +165,8 @@ export type AppSettings = {
  * Activity window tracking settings
  */
 activityWindow: ActivityWindowSettings }
+export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number; durationSeconds: number }
+export type WindowInfoDto = { application: string; bundleId: string | null; pid: number | null; processPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
 
 /** tauri-specta globals **/
 

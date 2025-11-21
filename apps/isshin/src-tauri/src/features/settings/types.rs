@@ -30,7 +30,7 @@ impl Default for ActivityWindowSettings {
     fn default() -> Self {
         Self {
             track_window: true,
-            track_browser: false,
+            track_browser: true,
         }
     }
 }

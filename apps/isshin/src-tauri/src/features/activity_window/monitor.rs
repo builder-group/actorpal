@@ -89,7 +89,7 @@ impl WindowListener for WindowMonitorHandler {
 
                 #[cfg(debug_assertions)]
                 {
-                    println!("\n[Window Monitor] 🔄 App Activated: {:?}", app_info.name);
+                    println!("\n[Window Monitor] 🔄 App Activated:\n{}", app_info);
                 }
 
                 // Emit frontend event
@@ -153,10 +153,7 @@ impl WindowListener for WindowMonitorHandler {
 
                 #[cfg(debug_assertions)]
                 {
-                    println!(
-                        "\n[Window Monitor] 🪟 Window Changed: {:?}",
-                        window_info.title
-                    );
+                    println!("\n[Window Monitor] 🪟 Window Changed:\n{}", window_info);
                 }
 
                 // Emit frontend event

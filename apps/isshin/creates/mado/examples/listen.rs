@@ -14,15 +14,10 @@ impl WindowListener for FocusListener {
     fn on_focus_change(&self, event: WindowEvent) {
         match event {
             WindowEvent::AppActivated { app } => {
-                println!("\n🔄 App Activated");
-                print!("{}", app);
-                println!("   Note: Window information may follow in WindowChanged event");
+                println!("\n🔄 App Activated:\n{}", app);
             }
             WindowEvent::WindowChanged { window } => {
-                // WindowChanged events are for window/title changes within the same app
-                // App changes are always signaled via AppActivated events
-                println!("\n🪟 Window Change");
-                print!("{}", window);
+                println!("\n🪟 Window Change:\n{}", window);
             }
         }
     }

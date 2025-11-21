@@ -4,7 +4,6 @@ import { useRevalidator } from 'react-router';
 import { Ok } from 'tuple-result';
 import { specta } from '@/environment';
 import { formatDuration, resultLoader, toTuple, withResultLoader } from '@/lib';
-import { ActivityTimeline } from './ActivityTimeline';
 import { CurrentActiveWindow } from './CurrentActiveWindow';
 
 const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
@@ -88,12 +87,6 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 						</div>
 
 						<CurrentActiveWindow initialWindow={currentWindow} initialApp={currentApp} />
-
-						<ActivityTimeline
-							windowActivities={windowActivities}
-							appActivities={appActivities}
-							width={1000}
-						/>
 
 						<div className="rounded-lg border border-gray-200 bg-white">
 							<div className="border-b border-gray-200 px-6 py-4">

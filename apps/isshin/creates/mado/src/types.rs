@@ -132,7 +132,7 @@ impl fmt::Display for WindowInfo {
         };
         writeln!(f, "      Bounds:     {}", bounds_str)?;
 
-        writeln!(f, "\n   App:")?;
+        writeln!(f, "   App:")?;
         writeln!(f, "      Name:       {}", fmt_display(&self.app.name))?;
         writeln!(f, "      PID:        {}", self.app.pid)?;
         writeln!(f, "      Bundle ID:  {}", fmt_display(&self.app.bundle_id))?;
@@ -143,19 +143,8 @@ impl fmt::Display for WindowInfo {
         )?;
 
         if let Some(browser) = &self.browser {
-            writeln!(f, "\n   Browser:")?;
-            let url_str = match &browser.url {
-                Some(url) => {
-                    if url.chars().count() > 70 {
-                        let truncated: String = url.chars().take(67).collect();
-                        format!("{}...", truncated)
-                    } else {
-                        url.clone()
-                    }
-                }
-                None => "(not available - Automation permission needed)".to_string(),
-            };
-            writeln!(f, "      URL:        {}", url_str)?;
+            writeln!(f, "   Browser:")?;
+            writeln!(f, "      URL:        {}", fmt_display(&browser.url))?;
             let mode_str = match browser.is_private {
                 Some(true) => "Private/Incognito",
                 Some(false) => "Normal",

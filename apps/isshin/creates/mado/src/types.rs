@@ -1,5 +1,9 @@
+use serde::{Deserialize, Serialize};
+use std::fmt;
+
 /// Information about an application.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct AppInfo {
     /// Process ID
     pub pid: i32,
@@ -14,7 +18,8 @@ pub struct AppInfo {
 /// Browser-specific information (macOS only).
 ///
 /// Requires Automation permission: System Settings > Privacy & Security > Automation
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct BrowserInfo {
     /// Current URL of the active tab.
     pub url: Option<String>,
@@ -27,7 +32,8 @@ pub struct BrowserInfo {
 }
 
 /// Information about a window.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct WindowInfo {
     /// Window title
     pub title: Option<String>,
@@ -42,7 +48,8 @@ pub struct WindowInfo {
 }
 
 /// Window bounds (position and size).
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct WindowBounds {
     /// X coordinate (left edge)
     pub x: f64,
@@ -96,5 +103,84 @@ impl WindowEvent {
             WindowEvent::AppActivated { app } => app,
             WindowEvent::WindowChanged { window } => &window.app,
         }
+    }
+}
+
+impl fmt::Display for AppInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "   App:")?;
+        writeln!(f, "      Name:       {}", fmt_display(&self.name))?;
+        writeln!(f, "      PID:        {}", self.pid)?;
+        writeln!(f, "      Bundle ID:  {}", fmt_display(&self.bundle_id))?;
+        writeln!(f, "      Path:       {}", fmt_display(&self.process_path))?;
+        Ok(())
+    }
+}
+
+impl fmt::Display for WindowInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "   Window:")?;
+        writeln!(f, "      Title:      {}", fmt_display(&self.title))?;
+        writeln!(f, "      Window ID:  {}", fmt_display(&self.window_id))?;
+
+        let bounds_str = match self.bounds.as_ref() {
+            Some(bounds) => format!(
+                "({:.0}, {:.0}) {:.0}×{:.0}",
+                bounds.x, bounds.y, bounds.width, bounds.height
+            ),
+            None => "(not available)".to_string(),
+        };
+        writeln!(f, "      Bounds:     {}", bounds_str)?;
+
+        writeln!(f, "\n   App:")?;
+        writeln!(f, "      Name:       {}", fmt_display(&self.app.name))?;
+        writeln!(f, "      PID:        {}", self.app.pid)?;
+        writeln!(f, "      Bundle ID:  {}", fmt_display(&self.app.bundle_id))?;
+        writeln!(
+            f,
+            "      Path:       {}",
+            fmt_display(&self.app.process_path)
+        )?;
+
+        if let Some(browser) = &self.browser {
+            writeln!(f, "\n   Browser:")?;
+            let url_str = match &browser.url {
+                Some(url) => {
+                    if url.chars().count() > 70 {
+                        let truncated: String = url.chars().take(67).collect();
+                        format!("{}...", truncated)
+                    } else {
+                        url.clone()
+                    }
+                }
+                None => "(not available - Automation permission needed)".to_string(),
+            };
+            writeln!(f, "      URL:        {}", url_str)?;
+            let mode_str = match browser.is_private {
+                Some(true) => "Private/Incognito",
+                Some(false) => "Normal",
+                None => "(not available)",
+            };
+            writeln!(f, "      Mode:       {}", mode_str)?;
+        }
+
+        Ok(())
+    }
+}
+
+/// Format an optional value for display, truncating strings to 70 characters
+fn fmt_display<T: fmt::Display>(opt: &Option<T>) -> String {
+    match opt {
+        Some(value) => {
+            let s = value.to_string();
+            // Truncate strings to prevent wrapping (respecting UTF-8 character boundaries)
+            if s.chars().count() > 70 {
+                let truncated: String = s.chars().take(67).collect();
+                format!("{}...", truncated)
+            } else {
+                s
+            }
+        }
+        None => "(not available)".to_string(),
     }
 }

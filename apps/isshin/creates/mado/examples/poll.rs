@@ -22,10 +22,7 @@ fn main() -> Result<(), mado::Error> {
         match mado::get_active_app() {
             Ok(app) => {
                 println!("📱 Current App");
-                println!("   Name:       {:?}", app.name);
-                println!("   PID:        {}", app.pid);
-                println!("   Bundle ID:  {:?}", app.bundle_id);
-                println!("   Path:       {:?}", app.process_path);
+                print!("{}", app);
             }
             Err(e) => eprintln!("❌ Error getting app: {}", e),
         }
@@ -33,40 +30,7 @@ fn main() -> Result<(), mado::Error> {
         match mado::get_active_window() {
             Ok(window) => {
                 println!("\n🪟 Current Window");
-                println!("   Title:      {:?}", window.title);
-                println!("   Window ID:  {:?}", window.window_id);
-                println!(
-                    "   Bounds:     ({:.0}, {:.0})",
-                    window.bounds.unwrap_or_default().x,
-                    window.bounds.unwrap_or_default().y
-                );
-                println!(
-                    "   Size:       {:.0}x{:.0}",
-                    window.bounds.unwrap_or_default().width,
-                    window.bounds.unwrap_or_default().height
-                );
-
-                println!("\n   App Info:");
-                println!("      Name:       {:?}", window.app.name);
-                println!("      PID:        {}", window.app.pid);
-                println!("      Bundle ID:  {:?}", window.app.bundle_id);
-                println!("      Path:       {:?}", window.app.process_path);
-
-                if let Some(browser) = &window.browser {
-                    println!("\n   Browser:");
-                    if let Some(url) = &browser.url {
-                        println!("      URL:        {}", url);
-                    } else {
-                        println!(
-                            "      URL:        (not available - may need Automation permission)"
-                        );
-                    }
-                    if let Some(is_private) = browser.is_private {
-                        if is_private {
-                            println!("      Mode:       Private/Incognito");
-                        }
-                    }
-                }
+                print!("{}", window);
             }
             Err(e) => eprintln!("❌ Error getting window: {}", e),
         }

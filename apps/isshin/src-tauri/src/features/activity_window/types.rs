@@ -1,7 +1,5 @@
-use mado::{AppInfo, WindowInfo};
+use mado::{AppInfo, BrowserInfo, WindowBounds, WindowInfo};
 use serde::{Deserialize, Serialize};
-use specta::Type;
-use tauri_specta::Event;
 
 #[derive(Debug, Clone)]
 pub struct App {
@@ -13,7 +11,7 @@ pub struct App {
     pub last_seen_at: i64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct AppActivity {
     pub id: i64,
@@ -22,92 +20,27 @@ pub struct AppActivity {
     pub end_time: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct AppInfoDto {
-    pub name: Option<String>,
-    pub bundle_id: Option<String>,
-    pub pid: Option<i32>,
-    pub process_path: Option<String>,
-}
-
-impl From<AppInfo> for AppInfoDto {
-    fn from(app: AppInfo) -> Self {
-        Self {
-            name: app.name,
-            bundle_id: app.bundle_id,
-            pid: Some(app.pid),
-            process_path: app.process_path,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 #[serde(rename_all = "camelCase")]
 pub struct WindowActivity {
     pub id: i64,
     pub app_id: i64,
     pub window_title: Option<String>,
     pub window_id: Option<u32>,
-    pub window_x: Option<f64>,
-    pub window_y: Option<f64>,
-    pub window_width: Option<f64>,
-    pub window_height: Option<f64>,
-    pub browser_url: Option<String>,
-    pub browser_is_private: Option<bool>,
+    pub window_bounds: Option<WindowBounds>,
+    pub browser: Option<BrowserInfo>,
     pub start_time: i64,
     pub end_time: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Type)]
-#[serde(rename_all = "camelCase")]
-pub struct WindowInfoDto {
-    // App information
-    pub app_name: Option<String>,
-    pub app_bundle_id: Option<String>,
-    pub app_pid: Option<i32>,
-    pub app_process_path: Option<String>,
-
-    // Window information
-    pub window_title: Option<String>,
-    pub window_id: Option<u32>,
-    pub window_x: Option<f64>,
-    pub window_y: Option<f64>,
-    pub window_width: Option<f64>,
-    pub window_height: Option<f64>,
-
-    // Browser information (if applicable)
-    pub browser_url: Option<String>,
-    pub browser_is_private: Option<bool>,
-}
-
-impl From<WindowInfo> for WindowInfoDto {
-    fn from(window: WindowInfo) -> Self {
-        Self {
-            app_name: window.app.name,
-            app_bundle_id: window.app.bundle_id,
-            app_pid: Some(window.app.pid),
-            app_process_path: window.app.process_path,
-            window_title: window.title,
-            window_id: window.window_id,
-            window_x: window.bounds.map(|b| b.x),
-            window_y: window.bounds.map(|b| b.y),
-            window_width: window.bounds.map(|b| b.width),
-            window_height: window.bounds.map(|b| b.height),
-            browser_url: window.browser.as_ref().and_then(|b| b.url.clone()),
-            browser_is_private: window.browser.as_ref().and_then(|b| b.is_private),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+#[derive(Serialize, Deserialize, Debug, Clone, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveAppChangedEvent {
-    pub data: AppInfoDto,
+    pub data: AppInfo,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Type, Event)]
+#[derive(Serialize, Deserialize, Debug, Clone, specta::Type, tauri_specta::Event)]
 #[serde(rename_all = "camelCase")]
 pub struct ActiveWindowChangedEvent {
-    pub data: WindowInfoDto,
+    pub data: WindowInfo,
 }

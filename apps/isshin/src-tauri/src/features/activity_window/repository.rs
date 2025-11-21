@@ -1,6 +1,6 @@
 use super::types::{App, AppActivity, WindowActivity};
 use crate::common::time::current_timestamp;
-use mado::WindowInfo;
+use mado::{BrowserInfo, WindowBounds};
 use sqlx::{Error, SqlitePool};
 
 // =============================================================================
@@ -211,12 +211,17 @@ impl WindowActivityRepository {
         .bind(activity.app_id)
         .bind(&activity.window_title)
         .bind(activity.window_id.map(|id| id as i64))
-        .bind(activity.window_x)
-        .bind(activity.window_y)
-        .bind(activity.window_width)
-        .bind(activity.window_height)
-        .bind(&activity.browser_url)
-        .bind(activity.browser_is_private.map(|p| if p { 1 } else { 0 }))
+        .bind(activity.window_bounds.as_ref().map(|b| b.x))
+        .bind(activity.window_bounds.as_ref().map(|b| b.y))
+        .bind(activity.window_bounds.as_ref().map(|b| b.width))
+        .bind(activity.window_bounds.as_ref().map(|b| b.height))
+        .bind(activity.browser.as_ref().and_then(|b| b.url.clone()))
+        .bind(
+            activity
+                .browser
+                .as_ref()
+                .and_then(|b| b.is_private.map(|p| if p { 1 } else { 0 })),
+        )
         .bind(activity.start_time)
         .bind(activity.end_time)
         .fetch_one(pool)
@@ -265,12 +270,8 @@ pub struct InsertWindowActivityInput {
     pub app_id: i64,
     pub window_title: Option<String>,
     pub window_id: Option<u32>,
-    pub window_x: Option<f64>,
-    pub window_y: Option<f64>,
-    pub window_width: Option<f64>,
-    pub window_height: Option<f64>,
-    pub browser_url: Option<String>,
-    pub browser_is_private: Option<bool>,
+    pub window_bounds: Option<WindowBounds>,
+    pub browser: Option<BrowserInfo>,
     pub start_time: i64,
     pub end_time: i64,
 }
@@ -293,19 +294,37 @@ struct WindowActivityRow {
 
 impl From<WindowActivityRow> for WindowActivity {
     fn from(row: WindowActivityRow) -> Self {
-        Self {
+        let window_bounds = match (
+            row.window_x,
+            row.window_y,
+            row.window_width,
+            row.window_height,
+        ) {
+            (Some(x), Some(y), Some(width), Some(height)) => Some(WindowBounds {
+                x,
+                y,
+                width,
+                height,
+            }),
+            _ => None,
+        };
+        let browser = match (row.browser_url, row.browser_is_private) {
+            (url, is_private) if url.is_some() || is_private.is_some() => Some(BrowserInfo {
+                url: url,
+                is_private: is_private.map(|p| p == 1),
+            }),
+            _ => None,
+        };
+
+        return Self {
             id: row.id,
             app_id: row.app_id,
             window_title: row.window_title,
             window_id: row.window_id.map(|id| id as u32),
-            window_x: row.window_x,
-            window_y: row.window_y,
-            window_width: row.window_width,
-            window_height: row.window_height,
-            browser_url: row.browser_url,
-            browser_is_private: row.browser_is_private.map(|p| p == 1),
+            window_bounds,
+            browser,
             start_time: row.start_time,
             end_time: row.end_time,
-        }
+        };
     }
 }

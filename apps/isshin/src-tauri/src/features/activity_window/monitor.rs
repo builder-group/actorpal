@@ -2,13 +2,13 @@ use super::repository::{
     AppActivityRepository, AppRepository, InsertAppActivityInput, InsertWindowActivityInput,
     UpsertAppInput, WindowActivityRepository,
 };
-use super::types::{ActiveAppChangedEvent, ActiveWindowChangedEvent, AppInfoDto, WindowInfoDto};
+use super::types::{ActiveAppChangedEvent, ActiveWindowChangedEvent};
 use crate::common::time::current_timestamp;
 use crate::environment::{
     logger::Logger,
     states::{db::DatabaseState, settings::SettingsState},
 };
-use mado::{MonitorConfig, WindowEvent, WindowListener, WindowMonitor};
+use mado::{BrowserInfo, MonitorConfig, WindowBounds, WindowEvent, WindowListener, WindowMonitor};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
 use tauri_specta::Event;
@@ -94,7 +94,7 @@ impl WindowListener for WindowMonitorHandler {
 
                 // Emit frontend event
                 ActiveAppChangedEvent {
-                    data: AppInfoDto::from(app_info.clone()),
+                    data: app_info.clone(),
                 }
                 .emit(&app)
                 .unwrap_or_else(|e| eprintln!("[Window Monitor] Failed to emit app event: {}", e));
@@ -161,7 +161,7 @@ impl WindowListener for WindowMonitorHandler {
 
                 // Emit frontend event
                 ActiveWindowChangedEvent {
-                    data: WindowInfoDto::from(window_info.clone()),
+                    data: window_info.clone(),
                 }
                 .emit(&app)
                 .unwrap_or_else(|e| eprintln!("[Window Monitor] Failed to emit event: {}", e));
@@ -182,12 +182,8 @@ impl WindowListener for WindowMonitorHandler {
                                         app_id: prev_session.app_id,
                                         window_title: prev_session.window_title,
                                         window_id: prev_session.window_id,
-                                        window_x: prev_session.window_x,
-                                        window_y: prev_session.window_y,
-                                        window_width: prev_session.window_width,
-                                        window_height: prev_session.window_height,
-                                        browser_url: prev_session.browser_url,
-                                        browser_is_private: prev_session.browser_is_private,
+                                        window_bounds: prev_session.window_bounds,
+                                        browser: prev_session.browser,
                                         start_time: prev_session.start_time,
                                         end_time: now,
                                     },
@@ -218,18 +214,8 @@ impl WindowListener for WindowMonitorHandler {
                                 bundle_id: window_info.app.bundle_id,
                                 window_title: window_info.title,
                                 window_id: window_info.window_id,
-                                window_x: window_info.bounds.map(|b| b.x),
-                                window_y: window_info.bounds.map(|b| b.y),
-                                window_width: window_info.bounds.map(|b| b.width),
-                                window_height: window_info.bounds.map(|b| b.height),
-                                browser_url: window_info
-                                    .browser
-                                    .as_ref()
-                                    .and_then(|b| b.url.clone()),
-                                browser_is_private: window_info
-                                    .browser
-                                    .as_ref()
-                                    .and_then(|b| b.is_private),
+                                window_bounds: window_info.bounds,
+                                browser: window_info.browser,
                                 start_time: now,
                             });
                         }
@@ -251,11 +237,7 @@ struct WindowSession {
     bundle_id: Option<String>,
     window_title: Option<String>,
     window_id: Option<u32>,
-    window_x: Option<f64>,
-    window_y: Option<f64>,
-    window_width: Option<f64>,
-    window_height: Option<f64>,
-    browser_url: Option<String>,
-    browser_is_private: Option<bool>,
+    window_bounds: Option<WindowBounds>,
+    browser: Option<BrowserInfo>,
     start_time: i64,
 }

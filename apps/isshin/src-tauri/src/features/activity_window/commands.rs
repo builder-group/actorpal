@@ -1,7 +1,7 @@
 use super::repository::{AppActivityRepository, WindowActivityRepository};
-use super::types::{AppActivity, AppInfoDto, WindowActivity, WindowInfoDto};
+use super::types::{AppActivity, WindowActivity};
 use crate::environment::states::db::DatabaseState;
-use mado;
+use mado::{self, AppInfo, WindowInfo};
 use tauri::State;
 
 #[tauri::command]
@@ -58,16 +58,12 @@ pub async fn clear_window_activities(state: State<'_, DatabaseState>) -> Result<
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_current_active_app() -> Result<AppInfoDto, String> {
-    mado::get_active_app()
-        .map(AppInfoDto::from)
-        .map_err(|e| e.to_string())
+pub fn get_current_active_app() -> Result<AppInfo, String> {
+    mado::get_active_app().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
 #[specta::specta]
-pub fn get_current_active_window() -> Result<WindowInfoDto, String> {
-    mado::get_active_window()
-        .map(WindowInfoDto::from)
-        .map_err(|e| e.to_string())
+pub fn get_current_active_window() -> Result<WindowInfo, String> {
+    mado::get_active_window().map_err(|e| e.to_string())
 }

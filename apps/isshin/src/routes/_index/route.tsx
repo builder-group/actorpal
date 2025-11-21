@@ -14,10 +14,13 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 
 		const totalTime = React.useMemo(() => {
 			const windowTime = windowActivities.reduce(
-				(sum, activity) => sum + activity.durationSeconds,
+				(sum, activity) => sum + (activity.endTime - activity.startTime),
 				0
 			);
-			const appTime = appActivities.reduce((sum, activity) => sum + activity.durationSeconds, 0);
+			const appTime = appActivities.reduce(
+				(sum, activity) => sum + (activity.endTime - activity.startTime),
+				0
+			);
 			return windowTime + appTime;
 		}, [windowActivities, appActivities]);
 
@@ -158,8 +161,8 @@ export const clientLoader = resultLoader<TSuccessLoaderData, TErrorLoaderData>(a
 type TSuccessLoaderData = {
 	windowActivities: specta.WindowActivity[];
 	appActivities: specta.AppActivity[];
-	currentWindow: specta.WindowInfoDto | null;
-	currentApp: specta.AppInfoDto | null;
+	currentWindow: specta.WindowInfo | null;
+	currentApp: specta.AppInfo | null;
 };
 
 type TErrorLoaderData = string;

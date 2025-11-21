@@ -109,7 +109,7 @@ async clearWindowActivities() : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getCurrentActiveApp() : Promise<Result<AppInfoDto, string>> {
+async getCurrentActiveApp() : Promise<Result<AppInfo, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_current_active_app") };
 } catch (e) {
@@ -117,7 +117,7 @@ async getCurrentActiveApp() : Promise<Result<AppInfoDto, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getCurrentActiveWindow() : Promise<Result<WindowInfoDto, string>> {
+async getCurrentActiveWindow() : Promise<Result<WindowInfo, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_current_active_window") };
 } catch (e) {
@@ -144,8 +144,8 @@ activeWindowChangedEvent: "active-window-changed-event"
 
 /** user-defined types **/
 
-export type ActiveAppChangedEvent = { data: AppInfoDto }
-export type ActiveWindowChangedEvent = { data: WindowInfoDto }
+export type ActiveAppChangedEvent = { data: AppInfo }
+export type ActiveWindowChangedEvent = { data: WindowInfo }
 /**
  * Settings for the activity window feature.
  */
@@ -159,7 +159,26 @@ trackWindow: boolean;
  */
 trackBrowser: boolean }
 export type AppActivity = { id: number; appId: number; startTime: number; endTime: number }
-export type AppInfoDto = { name: string | null; bundleId: string | null; pid: number | null; processPath: string | null }
+/**
+ * Information about an application.
+ */
+export type AppInfo = { 
+/**
+ * Process ID
+ */
+pid: number; 
+/**
+ * Application name (localized)
+ */
+name: string | null; 
+/**
+ * Bundle identifier (macOS) or application class (Linux)
+ */
+bundleId: string | null; 
+/**
+ * Path to the executable
+ */
+processPath: string | null }
 /**
  * Global application settings.
  */
@@ -168,8 +187,69 @@ export type AppSettings = {
  * Activity window tracking settings
  */
 activityWindow: ActivityWindowSettings }
-export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null; startTime: number; endTime: number }
-export type WindowInfoDto = { appName: string | null; appBundleId: string | null; appPid: number | null; appProcessPath: string | null; windowTitle: string | null; windowId: number | null; windowX: number | null; windowY: number | null; windowWidth: number | null; windowHeight: number | null; browserUrl: string | null; browserIsPrivate: boolean | null }
+/**
+ * Browser-specific information (macOS only).
+ * 
+ * Requires Automation permission: System Settings > Privacy & Security > Automation
+ */
+export type BrowserInfo = { 
+/**
+ * Current URL of the active tab.
+ */
+url: string | null; 
+/**
+ * Whether the window is in private/incognito mode.
+ * 
+ * - `None` if detection failed or not supported
+ * - `Some(true)` if private mode is active
+ * - `Some(false)` if private mode is not active
+ */
+isPrivate: boolean | null }
+export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowBounds: WindowBounds | null; browser: BrowserInfo | null; startTime: number; endTime: number }
+/**
+ * Window bounds (position and size).
+ */
+export type WindowBounds = { 
+/**
+ * X coordinate (left edge)
+ */
+x: number; 
+/**
+ * Y coordinate (top edge)
+ */
+y: number; 
+/**
+ * Window width
+ */
+width: number; 
+/**
+ * Window height
+ */
+height: number }
+/**
+ * Information about a window.
+ */
+export type WindowInfo = { 
+/**
+ * Window title
+ */
+title: string | null; 
+/**
+ * Platform-specific window identifier
+ */
+windowId: number | null; 
+/**
+ * Window position and size
+ */
+bounds: WindowBounds | null; 
+/**
+ * Application information
+ */
+app: AppInfo; 
+/**
+ * Browser information (only populated if `allow_browser` is enabled in config)
+ */
+browser: BrowserInfo | null }
 
 /** tauri-specta globals **/
 

@@ -158,7 +158,7 @@ export const ActivityTimeline: React.FC<TActivityTimelineProps> = (props) => {
 												return;
 											}
 
-											const duration = formatDuration(activity.durationSeconds);
+											const duration = formatDuration(activity.endTime - activity.startTime);
 											const startTime = formatTime(activity.startTime);
 											const endTime = formatTime(activity.endTime);
 
@@ -170,15 +170,18 @@ export const ActivityTimeline: React.FC<TActivityTimelineProps> = (props) => {
 												} else {
 													tooltipLines.push(`Window Activity (App ID: ${activity.appId})`);
 												}
-												if (activity.browserUrl != null) {
-													tooltipLines.push(`URL: ${activity.browserUrl}`);
-													if (activity.browserIsPrivate === true) {
+												if (activity.browser?.url != null) {
+													tooltipLines.push(`URL: ${activity.browser.url}`);
+													if (activity.browser.isPrivate === true) {
 														tooltipLines.push('Private browsing');
 													}
 												}
-												if (activity.windowWidth != null && activity.windowHeight != null) {
+												if (
+													activity.windowBounds?.width != null &&
+													activity.windowBounds?.height != null
+												) {
 													tooltipLines.push(
-														`Size: ${Math.round(activity.windowWidth)} × ${Math.round(activity.windowHeight)}`
+														`Size: ${Math.round(activity.windowBounds.width)} × ${Math.round(activity.windowBounds.height)}`
 													);
 												}
 											} else {

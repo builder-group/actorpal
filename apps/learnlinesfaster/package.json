@@ -48,7 +48,7 @@
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.17",
 		"@types/mdx": "^2.0.13",
-		"@types/react": "^19.2.5",
+		"@types/react": "^19.2.6",
 		"@types/react-dom": "^19.2.3",
 		"daisyui": "^5.5.5",
 		"tailwindcss": "^4.1.17",

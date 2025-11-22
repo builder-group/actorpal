@@ -28,7 +28,7 @@
 		"update:latest": "pnpm update --latest"
 	},
 	"dependencies": {
-		"@base-ui-components/react": "1.0.0-beta.5",
+		"@base-ui-components/react": "1.0.0-beta.6",
 		"@react-router/fs-routes": "^7.9.6",
 		"@react-router/node": "^7.9.6",
 		"@react-router/serve": "^7.9.6",
@@ -52,7 +52,7 @@
 		"@react-router/dev": "^7.9.6",
 		"@tailwindcss/vite": "^4.1.17",
 		"@tauri-apps/cli": "^2.9.4",
-		"@types/react": "^19.2.5",
+		"@types/react": "^19.2.6",
 		"@types/react-dom": "^19.2.3",
 		"tailwindcss": "^4.1.17",
 		"vite-tsconfig-paths": "^5.1.4"

@@ -45,38 +45,6 @@ async setSettings(settings: AppSettings) : Promise<Result<null, string>> {
     else return { status: "error", error: e  as any };
 }
 },
-async getActivityWindowSettings() : Promise<Result<ActivityWindowSettings, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("get_activity_window_settings") };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async setActivityWindowSettings(settings: ActivityWindowSettings) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("set_activity_window_settings", { settings }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async updateTrackWindow(value: boolean) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("update_track_window", { value }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
-async updateTrackBrowser(value: boolean) : Promise<Result<null, string>> {
-    try {
-    return { status: "ok", data: await TAURI_INVOKE("update_track_browser", { value }) };
-} catch (e) {
-    if(e instanceof Error) throw e;
-    else return { status: "error", error: e  as any };
-}
-},
 async getAppActivities() : Promise<Result<AppActivity[], string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("get_app_activities") };
@@ -146,18 +114,6 @@ activeWindowChangedEvent: "active-window-changed-event"
 
 export type ActiveAppChangedEvent = { data: AppInfo }
 export type ActiveWindowChangedEvent = { data: WindowInfo }
-/**
- * Settings for the activity window feature.
- */
-export type ActivityWindowSettings = { 
-/**
- * Whether to track window changes (tab switches, window switches within apps)
- */
-trackWindow: boolean; 
-/**
- * Whether to track browser URLs (requires Automation permission on macOS)
- */
-trackBrowser: boolean }
 export type AppActivity = { id: number; appId: number; startTime: number; endTime: number }
 /**
  * Information about an application.
@@ -184,9 +140,13 @@ processPath: string | null }
  */
 export type AppSettings = { 
 /**
- * Activity window tracking settings
+ * Activity tracking settings
  */
-activityWindow: ActivityWindowSettings }
+tracking: TrackingSettings; 
+/**
+ * Pomodoro timer settings
+ */
+pomodoro: PomodoroSettings }
 /**
  * Browser-specific information (macOS only).
  * 
@@ -205,6 +165,42 @@ url: string | null;
  * - `Some(false)` if private mode is not active
  */
 isPrivate: boolean | null }
+/**
+ * Settings for the Pomodoro timer.
+ */
+export type PomodoroSettings = { 
+/**
+ * Duration of focus phase in minutes
+ */
+focusDuration: number; 
+/**
+ * Duration of short break phase in minutes
+ */
+shortBreakDuration: number; 
+/**
+ * Duration of long break phase in minutes
+ */
+longBreakDuration: number; 
+/**
+ * Number of rounds before a long break
+ */
+rounds: number; 
+/**
+ * List of websites to block during focus phase
+ */
+blockedSites: string[] }
+/**
+ * Settings for activity tracking.
+ */
+export type TrackingSettings = { 
+/**
+ * Whether to track window changes (tab switches, window switches within apps)
+ */
+trackWindow: boolean; 
+/**
+ * Whether to track browser URLs (requires Automation permission on macOS)
+ */
+trackBrowser: boolean }
 export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowBounds: WindowBounds | null; browser: BrowserInfo | null; startTime: number; endTime: number }
 /**
  * Window bounds (position and size).

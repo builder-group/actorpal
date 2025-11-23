@@ -1,4 +1,14 @@
-import { ArrowLeftIcon, FolderOpenIcon } from 'lucide-react';
+import {
+	ArrowLeftIcon,
+	BanIcon,
+	ClockIcon,
+	FolderOpenIcon,
+	HardDriveIcon,
+	MonitorIcon,
+	PlusIcon,
+	SaveIcon,
+	XIcon
+} from 'lucide-react';
 import React from 'react';
 import { useLocation, useNavigate, useRevalidator } from 'react-router';
 import { Err, Ok } from 'tuple-result';
@@ -11,136 +21,356 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 		const navigate = useNavigate();
 		const location = useLocation();
 		const revalidator = useRevalidator();
-		const state = location.state as TLocationState;
-		const showBackButton = state?.source === 'main';
-		const isLoading = revalidator.state === 'loading';
+		const showBackButton = React.useMemo(() => location.state?.source === 'main', [location.state]);
 
-		const handleToggleTrackWindow = React.useCallback(async () => {
-			const newValue = !settings.trackWindow;
-			const result = await specta.commands.updateTrackWindow(newValue);
-			const [ok] = toTuple(result);
-			if (ok) {
-				revalidator.revalidate();
-			}
-		}, [settings.trackWindow, revalidator]);
+		const [localSettings, setLocalSettings] = React.useState<specta.AppSettings>(settings);
+		const [newSite, setNewSite] = React.useState('');
+		const [isDirty, setIsDirty] = React.useState(false);
 
-		const handleToggleTrackBrowser = React.useCallback(async () => {
-			const newValue = !settings.trackBrowser;
-			const result = await specta.commands.updateTrackBrowser(newValue);
-			const [ok] = toTuple(result);
-			if (ok) {
-				revalidator.revalidate();
-			}
-		}, [settings.trackBrowser, revalidator]);
+		// =============================================================================
+		// Events
+		// =============================================================================
+
+		const handleToggleTrackWindow = React.useCallback(() => {
+			setLocalSettings((prev) => ({
+				...prev,
+				tracking: { ...prev.tracking, trackWindow: !prev.tracking.trackWindow }
+			}));
+			setIsDirty(true);
+		}, []);
+
+		const handleToggleTrackBrowser = React.useCallback(() => {
+			setLocalSettings((prev) => ({
+				...prev,
+				tracking: { ...prev.tracking, trackBrowser: !prev.tracking.trackBrowser }
+			}));
+			setIsDirty(true);
+		}, []);
 
 		const handleOpenDatabaseDirectory = React.useCallback(async () => {
 			await specta.commands.openDatabaseDirectory();
 		}, []);
 
-		return (
-			<main className="min-h-screen bg-gray-50 p-8">
-				<div className="mx-auto max-w-2xl">
-					{showBackButton && (
-						<button
-							type="button"
-							onClick={() => navigate(-1)}
-							className="mb-4 flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-						>
-							<ArrowLeftIcon className="h-4 w-4" />
-							Back
-						</button>
-					)}
-					<h1 className="mb-2 text-3xl font-bold text-gray-900">Settings</h1>
-					<p className="mb-8 text-gray-600">Configure activity tracking preferences</p>
+		const handlePomodoroChange = React.useCallback(
+			(
+				key: keyof specta.PomodoroSettings,
+				value: specta.PomodoroSettings[keyof specta.PomodoroSettings]
+			) => {
+				setLocalSettings((prev) => ({
+					...prev,
+					pomodoro: { ...prev.pomodoro, [key]: value }
+				}));
+				setIsDirty(true);
+			},
+			[]
+		);
 
-					<div className="space-y-4">
-						<div className="rounded-lg border border-gray-200 bg-white">
-							<div className="border-b border-gray-200 px-6 py-4">
-								<h2 className="text-lg font-semibold">Activity Tracking</h2>
+		const handleAddSite = React.useCallback(() => {
+			if (newSite && !localSettings.pomodoro.blockedSites.includes(newSite)) {
+				setLocalSettings((prev) => ({
+					...prev,
+					pomodoro: {
+						...prev.pomodoro,
+						blockedSites: [...prev.pomodoro.blockedSites, newSite]
+					}
+				}));
+				setNewSite('');
+				setIsDirty(true);
+			}
+		}, [newSite, localSettings.pomodoro.blockedSites]);
+
+		const handleRemoveSite = React.useCallback((site: string) => {
+			setLocalSettings((prev) => ({
+				...prev,
+				pomodoro: {
+					...prev.pomodoro,
+					blockedSites: prev.pomodoro.blockedSites.filter((s) => s !== site)
+				}
+			}));
+			setIsDirty(true);
+		}, []);
+
+		const handleSaveSettings = React.useCallback(async () => {
+			const [isOk] = toTuple(await specta.commands.setSettings(localSettings));
+			if (isOk) {
+				setIsDirty(false);
+				revalidator.revalidate();
+			}
+		}, [localSettings, revalidator]);
+
+		// =============================================================================
+		// Effects
+		// =============================================================================
+
+		// Sync local settings when loaded settings change (e.g. after save/revalidation)
+		React.useEffect(() => {
+			setLocalSettings(settings);
+			setIsDirty(false);
+		}, [settings]);
+
+		// =============================================================================
+		// UI
+		// =============================================================================
+
+		return (
+			<main className="min-h-screen bg-gray-50 pb-20">
+				{/* Header */}
+				<header className="sticky top-0 z-10 border-b border-gray-200 bg-white px-8 py-6 shadow-sm">
+					<div className="mx-auto max-w-4xl">
+						{showBackButton && (
+							<button
+								type="button"
+								onClick={() => navigate(-1)}
+								className="mb-4 flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900"
+							>
+								<ArrowLeftIcon className="h-4 w-4" />
+								Back
+							</button>
+						)}
+						<div className="flex items-center justify-between">
+							<div>
+								<h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+								<p className="mt-1 text-gray-500">Configure Isshin preferences</p>
 							</div>
-							<div className="divide-y divide-gray-200">
-								<div className="px-6 py-4">
-									<div className="flex items-center justify-between">
-										<div>
-											<label htmlFor="track-window" className="text-sm font-medium">
-												Track Window Changes
-											</label>
-											<p className="mt-1 text-sm text-gray-500">
-												Monitor tab switches and window switches within applications
-											</p>
-										</div>
-										<button
-											type="button"
-											id="track-window"
-											onClick={handleToggleTrackWindow}
-											disabled={isLoading}
-											className={`relative h-6 w-11 rounded-full transition-colors disabled:opacity-50 ${
-												settings.trackWindow ? 'bg-blue-600' : 'bg-gray-300'
-											}`}
-											role="switch"
-											aria-checked={settings.trackWindow}
-										>
-											<span
-												className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-													settings.trackWindow ? 'left-[22px]' : 'left-0.5'
-												}`}
-											/>
-										</button>
-									</div>
+							{isDirty && (
+								<button
+									onClick={handleSaveSettings}
+									className="flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-2.5 font-medium text-white shadow-sm transition-all hover:bg-indigo-700 active:scale-95"
+								>
+									<SaveIcon className="h-4 w-4" />
+									Save Changes
+								</button>
+							)}
+						</div>
+					</div>
+				</header>
+
+				<div className="mx-auto max-w-4xl space-y-8 px-8 py-8">
+					{/* Section: Focus Timer */}
+					<section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+						<div className="border-b border-gray-200 bg-gray-50/50 px-6 py-4">
+							<div className="flex items-center gap-3">
+								<div className="rounded-lg bg-indigo-100 p-2 text-indigo-600">
+									<ClockIcon className="h-5 w-5" />
 								</div>
-								<div className="px-6 py-4">
-									<div className="flex items-center justify-between">
-										<div>
-											<label htmlFor="track-browser" className="text-sm font-medium">
-												Track Browser URLs
-											</label>
-											<p className="mt-1 text-sm text-gray-500">
-												Monitor browser URLs and tabs (requires Automation permission on macOS)
-											</p>
-										</div>
-										<button
-											type="button"
-											id="track-browser"
-											onClick={handleToggleTrackBrowser}
-											disabled={isLoading}
-											className={`relative h-6 w-11 rounded-full transition-colors disabled:opacity-50 ${
-												settings.trackBrowser ? 'bg-blue-600' : 'bg-gray-300'
-											}`}
-											role="switch"
-											aria-checked={settings.trackBrowser}
-										>
-											<span
-												className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-													settings.trackBrowser ? 'left-[22px]' : 'left-0.5'
-												}`}
-											/>
-										</button>
-									</div>
+								<div>
+									<h2 className="text-lg font-semibold text-gray-900">Focus Timer</h2>
+									<p className="text-sm text-gray-500">Customize your Pomodoro sessions</p>
 								</div>
 							</div>
 						</div>
 
-						<div className="rounded-lg border border-gray-200 bg-white">
-							<div className="border-b border-gray-200 px-6 py-4">
-								<h2 className="text-lg font-semibold">Storage</h2>
+						<div className="p-6">
+							<div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+								<div>
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Focus Duration (min)
+									</label>
+									<input
+										type="number"
+										min="1"
+										value={localSettings.pomodoro.focusDuration}
+										onChange={(e) =>
+											handlePomodoroChange('focusDuration', parseInt(e.target.value) || 0)
+										}
+										className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+									/>
+								</div>
+								<div>
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Short Break (min)
+									</label>
+									<input
+										type="number"
+										min="1"
+										value={localSettings.pomodoro.shortBreakDuration}
+										onChange={(e) =>
+											handlePomodoroChange('shortBreakDuration', parseInt(e.target.value) || 0)
+										}
+										className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+									/>
+								</div>
+								<div>
+									<label className="mb-2 block text-sm font-medium text-gray-700">
+										Long Break (min)
+									</label>
+									<input
+										type="number"
+										min="1"
+										value={localSettings.pomodoro.longBreakDuration}
+										onChange={(e) =>
+											handlePomodoroChange('longBreakDuration', parseInt(e.target.value) || 0)
+										}
+										className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+									/>
+								</div>
 							</div>
-							<div className="px-6 py-4">
-								<label className="mb-2 block text-sm font-medium">Database Location</label>
-								<div className="group relative rounded border border-gray-200 bg-gray-50 px-4 py-3">
-									<code className="block font-mono text-xs break-all text-gray-700">
-										{databasePath || 'Not available'}
-									</code>
-									<button
-										type="button"
-										onClick={handleOpenDatabaseDirectory}
-										className="absolute top-1/2 right-2 -translate-y-1/2 rounded bg-white px-2 py-1.5 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:bg-gray-50"
-										title="Open in Finder"
+							<div className="mt-6">
+								<label className="mb-2 block text-sm font-medium text-gray-700">
+									Rounds per Session
+								</label>
+								<div className="flex items-center gap-4">
+									<input
+										type="range"
+										min="1"
+										max="12"
+										value={localSettings.pomodoro.rounds}
+										onChange={(e) => handlePomodoroChange('rounds', parseInt(e.target.value) || 1)}
+										className="h-2 flex-1 cursor-pointer appearance-none rounded-lg bg-gray-200 accent-indigo-600"
+									/>
+									<span className="w-12 text-center text-lg font-semibold text-gray-900">
+										{localSettings.pomodoro.rounds}
+									</span>
+								</div>
+							</div>
+						</div>
+					</section>
+
+					{/* Section: Blocked Sites */}
+					<section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+						<div className="border-b border-gray-200 bg-gray-50/50 px-6 py-4">
+							<div className="flex items-center gap-3">
+								<div className="rounded-lg bg-red-100 p-2 text-red-600">
+									<BanIcon className="h-5 w-5" />
+								</div>
+								<div>
+									<h2 className="text-lg font-semibold text-gray-900">Blocked Sites</h2>
+									<p className="text-sm text-gray-500">
+										Websites to restrict during focus sessions
+									</p>
+								</div>
+							</div>
+						</div>
+
+						<div className="p-6">
+							<div className="mb-6 flex gap-2">
+								<input
+									type="text"
+									placeholder="e.g. facebook.com"
+									value={newSite}
+									onChange={(e) => setNewSite(e.target.value)}
+									onKeyDown={(e) => e.key === 'Enter' && handleAddSite()}
+									className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+								/>
+								<button
+									onClick={handleAddSite}
+									className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 font-medium text-white hover:bg-gray-800"
+								>
+									<PlusIcon className="h-4 w-4" />
+									Add
+								</button>
+							</div>
+
+							<div className="flex flex-wrap gap-2">
+								{localSettings.pomodoro.blockedSites.map((site) => (
+									<div
+										key={site}
+										className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 ring-1 ring-gray-200"
 									>
-										<FolderOpenIcon className="h-4 w-4 text-gray-600" />
+										<span>{site}</span>
+										<button
+											onClick={() => handleRemoveSite(site)}
+											className="ml-1 rounded-full p-0.5 text-gray-400 hover:bg-red-100 hover:text-red-600"
+										>
+											<XIcon className="h-3 w-3" />
+										</button>
+									</div>
+								))}
+								{localSettings.pomodoro.blockedSites.length === 0 && (
+									<p className="text-sm text-gray-500 italic">No sites blocked</p>
+								)}
+							</div>
+						</div>
+					</section>
+
+					{/* Section: Tracking & Storage */}
+					<div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+						{/* Tracking */}
+						<section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+							<div className="border-b border-gray-200 bg-gray-50/50 px-6 py-4">
+								<div className="flex items-center gap-3">
+									<div className="rounded-lg bg-blue-100 p-2 text-blue-600">
+										<MonitorIcon className="h-5 w-5" />
+									</div>
+									<div>
+										<h2 className="text-lg font-semibold text-gray-900">Activity Tracking</h2>
+									</div>
+								</div>
+							</div>
+							<div className="divide-y divide-gray-100 p-0">
+								<div className="flex items-center justify-between px-6 py-4">
+									<div>
+										<label className="text-sm font-medium text-gray-900">
+											Track Window Changes
+										</label>
+										<p className="text-xs text-gray-500">Monitor app and window switching</p>
+									</div>
+									<button
+										onClick={handleToggleTrackWindow}
+										className={`relative h-6 w-11 rounded-full transition-colors ${
+											localSettings.tracking.trackWindow ? 'bg-blue-600' : 'bg-gray-300'
+										}`}
+									>
+										<span
+											className={`absolute top-0.5 left-0.5 h-5 w-5 transform rounded-full bg-white shadow transition-transform ${localSettings.tracking.trackWindow ? 'translate-x-5' : 'translate-x-0'}`}
+										/>
+									</button>
+								</div>
+								<div className="flex items-center justify-between px-6 py-4">
+									<div>
+										<label className="text-sm font-medium text-gray-900">Track Browser URLs</label>
+										<p className="text-xs text-gray-500">Monitor visited websites (macOS)</p>
+									</div>
+									<button
+										onClick={handleToggleTrackBrowser}
+										className={`relative h-6 w-11 rounded-full transition-colors ${
+											localSettings.tracking.trackBrowser ? 'bg-blue-600' : 'bg-gray-300'
+										}`}
+									>
+										<span
+											className={`absolute top-0.5 left-0.5 h-5 w-5 transform rounded-full bg-white shadow transition-transform ${localSettings.tracking.trackBrowser ? 'translate-x-5' : 'translate-x-0'}`}
+										/>
 									</button>
 								</div>
 							</div>
-						</div>
+						</section>
+
+						{/* Storage */}
+						<section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+							<div className="border-b border-gray-200 bg-gray-50/50 px-6 py-4">
+								<div className="flex items-center gap-3">
+									<div className="rounded-lg bg-amber-100 p-2 text-amber-600">
+										<HardDriveIcon className="h-5 w-5" />
+									</div>
+									<div>
+										<h2 className="text-lg font-semibold text-gray-900">Data Storage</h2>
+									</div>
+								</div>
+							</div>
+							<div className="p-6">
+								<label className="mb-2 block text-sm font-medium text-gray-700">
+									Database Location
+								</label>
+								<div className="group relative flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+									<code
+										className="block flex-1 truncate font-mono text-xs text-gray-600"
+										title={databasePath}
+									>
+										{databasePath || 'Not available'}
+									</code>
+									<button
+										onClick={handleOpenDatabaseDirectory}
+										className="rounded p-1.5 text-gray-400 hover:bg-white hover:text-gray-700 hover:shadow-sm"
+										title="Open in Finder"
+									>
+										<FolderOpenIcon className="h-4 w-4" />
+									</button>
+								</div>
+								<p className="mt-2 text-xs text-gray-500">
+									All your activity data is stored locally on your device.
+								</p>
+							</div>
+						</section>
 					</div>
 				</div>
 			</main>
@@ -149,8 +379,9 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 	Error: ({ error }) => (
 		<main className="min-h-screen bg-gray-50 p-8">
 			<div className="mx-auto max-w-2xl">
-				<div className="rounded-xl border border-gray-200 bg-white px-6 py-12 text-center shadow-sm">
-					<p className="text-gray-600">Failed to load settings: {String(error)}</p>
+				<div className="rounded-xl border border-red-200 bg-red-50 px-6 py-12 text-center shadow-sm">
+					<p className="font-medium text-red-900">Failed to load settings</p>
+					<p className="mt-1 text-sm text-red-700">{String(error)}</p>
 				</div>
 			</div>
 		</main>
@@ -159,15 +390,11 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 
 export default Page;
 
-interface TLocationState {
-	source?: 'main' | 'tray';
-}
-
 export const clientLoader = resultLoader<TSuccessLoaderData, TErrorLoaderData>(async () => {
 	const [[isDbPathOk, isDbPathError, dbPath], [areSettingsOk, areSettingsError, settings]] =
 		await Promise.all([
 			toTuple(await specta.commands.getDatabasePath()),
-			toTuple(await specta.commands.getActivityWindowSettings())
+			toTuple(await specta.commands.getSettings())
 		]);
 	if (!isDbPathOk || !areSettingsOk) {
 		return Err(`Failed to load settings: ${areSettingsError || isDbPathError}`);
@@ -181,10 +408,7 @@ export const clientLoader = resultLoader<TSuccessLoaderData, TErrorLoaderData>(a
 
 interface TSuccessLoaderData {
 	databasePath: string;
-	settings: {
-		trackWindow: boolean;
-		trackBrowser: boolean;
-	};
+	settings: specta.AppSettings;
 }
 
 type TErrorLoaderData = string;

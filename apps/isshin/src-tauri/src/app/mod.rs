@@ -27,10 +27,6 @@ pub fn run() {
             settings_commands::open_database_directory,
             settings_commands::get_settings,
             settings_commands::set_settings,
-            settings_commands::get_activity_window_settings,
-            settings_commands::set_activity_window_settings,
-            settings_commands::update_track_window,
-            settings_commands::update_track_browser,
             // Activity commands
             activity_commands::get_app_activities,
             activity_commands::get_window_activities,

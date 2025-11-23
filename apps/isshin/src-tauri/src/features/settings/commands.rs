@@ -2,7 +2,7 @@ use crate::{
     app::window::Window,
     common::path::get_app_data_dir,
     environment::{configs::db::DbConfig, states::settings::SettingsState},
-    features::settings::types::{ActivityWindowSettings, AppSettings},
+    features::settings::types::AppSettings,
 };
 use std::process::Command;
 use tauri::{AppHandle, State};
@@ -38,44 +38,6 @@ pub async fn set_settings(
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
     *state.lock().unwrap() = settings;
-    return Ok(());
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn get_activity_window_settings(
-    state: State<'_, SettingsState>,
-) -> Result<ActivityWindowSettings, String> {
-    Ok(state.lock().unwrap().activity_window.clone())
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn set_activity_window_settings(
-    settings: ActivityWindowSettings,
-    state: State<'_, SettingsState>,
-) -> Result<(), String> {
-    state.lock().unwrap().activity_window = settings;
-    return Ok(());
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn update_track_window(
-    value: bool,
-    state: State<'_, SettingsState>,
-) -> Result<(), String> {
-    state.lock().unwrap().activity_window.track_window = value;
-    return Ok(());
-}
-
-#[tauri::command]
-#[specta::specta]
-pub async fn update_track_browser(
-    value: bool,
-    state: State<'_, SettingsState>,
-) -> Result<(), String> {
-    state.lock().unwrap().activity_window.track_browser = value;
     return Ok(());
 }
 

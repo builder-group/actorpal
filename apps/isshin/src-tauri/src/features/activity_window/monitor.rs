@@ -17,7 +17,7 @@ use tokio::sync::Mutex as TokioMutex;
 pub fn start_monitoring(app: AppHandle) {
     let settings = app
         .try_state::<SettingsState>()
-        .map(|state| state.lock().unwrap().activity_window.clone())
+        .map(|state| state.lock().unwrap().tracking.clone())
         .unwrap_or_default();
 
     #[cfg(target_os = "macos")]

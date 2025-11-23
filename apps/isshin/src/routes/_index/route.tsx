@@ -54,9 +54,11 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 			[]
 		);
 
-		const handleTimerComplete = React.useCallback(() => {
+		const handleTimerComplete = React.useCallback(async () => {
 			// TODO: Play sound / Notification via Tauri
 			// specta.commands.notify('Timer Complete');
+
+			await specta.commands.stopBlocking();
 
 			switch (timerState.phase) {
 				case 'focus': {
@@ -84,20 +86,40 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 			}
 		}, [pomodoroSettings, timerState.phase, timerState.currentRound]);
 
-		const toggleTimer = React.useCallback(() => {
+		const toggleTimer = React.useCallback(async () => {
 			if (!timerState.isActive) {
-				// TODO: Tell Tauri to start blocking sites
-				// specta.commands.startBlocking(pomodoroSettings.blockedSites);
+				// Start blocking only during focus phase (if there are sites or apps to block)
+				if (
+					timerState.phase === 'focus' &&
+					(pomodoroSettings.blockedSites.length > 0 || pomodoroSettings.blockedApps.length > 0)
+				) {
+					const [isOk, , error] = toTuple(
+						await specta.commands.startBlocking(
+							pomodoroSettings.blockedSites,
+							pomodoroSettings.blockedApps
+						)
+					);
+					if (!isOk) {
+						console.error('Failed to start blocking:', error);
+					}
+				}
 			} else {
-				// TODO: Tell Tauri to stop blocking sites
-				// specta.commands.stopBlocking();
+				// Stop blocking when pausing
+				const [isOk, , error] = toTuple(await specta.commands.stopBlocking());
+				if (!isOk) {
+					console.error('Failed to stop blocking:', error);
+				}
 			}
 			setTimerState((prev) => ({ ...prev, isActive: !prev.isActive }));
-		}, [timerState.isActive]);
+		}, [
+			timerState.isActive,
+			timerState.phase,
+			pomodoroSettings.blockedSites,
+			pomodoroSettings.blockedApps
+		]);
 
-		const resetTimer = React.useCallback(() => {
-			// TODO: Tell Tauri to stop blocking sites
-			// specta.commands.stopBlocking();
+		const resetTimer = React.useCallback(async () => {
+			await specta.commands.stopBlocking();
 			setTimerState({
 				timeLeft: getDurationForPhase(timerState.phase, pomodoroSettings) * 60,
 				isActive: false,

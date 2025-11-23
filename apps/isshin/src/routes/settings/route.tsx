@@ -25,7 +25,26 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 
 		const [localSettings, setLocalSettings] = React.useState<specta.AppSettings>(settings);
 		const [newSite, setNewSite] = React.useState('');
+		const [newApp, setNewApp] = React.useState('');
 		const [isDirty, setIsDirty] = React.useState(false);
+		const [activeApp, setActiveApp] = React.useState<specta.AppInfo | null>(null);
+		const [activeWindow, setActiveWindow] = React.useState<specta.WindowInfo | null>(null);
+
+		const currentUrl = React.useMemo(() => {
+			if (activeWindow?.browser?.url == null) return null;
+			try {
+				const url = new URL(activeWindow.browser.url);
+				return url.hostname;
+			} catch {
+				return null;
+			}
+		}, [activeWindow?.browser?.url]);
+		const currentBundleId = React.useMemo(() => {
+			return activeApp?.bundleId ?? null;
+		}, [activeApp?.bundleId]);
+		const currentAppName = React.useMemo(() => {
+			return activeApp?.name ?? null;
+		}, [activeApp?.name]);
 
 		// =============================================================================
 		// Events
@@ -90,6 +109,31 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 			setIsDirty(true);
 		}, []);
 
+		const handleAddApp = React.useCallback(() => {
+			if (newApp.trim() && !localSettings.pomodoro.blockedApps.includes(newApp.trim())) {
+				setLocalSettings((prev) => ({
+					...prev,
+					pomodoro: {
+						...prev.pomodoro,
+						blockedApps: [...prev.pomodoro.blockedApps, newApp.trim()]
+					}
+				}));
+				setNewApp('');
+				setIsDirty(true);
+			}
+		}, [newApp, localSettings.pomodoro.blockedApps]);
+
+		const handleRemoveApp = React.useCallback((app: string) => {
+			setLocalSettings((prev) => ({
+				...prev,
+				pomodoro: {
+					...prev.pomodoro,
+					blockedApps: prev.pomodoro.blockedApps.filter((a) => a !== app)
+				}
+			}));
+			setIsDirty(true);
+		}, []);
+
 		const handleSaveSettings = React.useCallback(async () => {
 			const [isOk] = toTuple(await specta.commands.setSettings(localSettings));
 			if (isOk) {
@@ -97,6 +141,13 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 				revalidator.revalidate();
 			}
 		}, [localSettings, revalidator]);
+
+		const isIsshinApp = React.useCallback((app: specta.AppInfo | null) => {
+			if (app == null) return false;
+			const bundleIdMatch = app.bundleId?.toLowerCase().includes('isshin') ?? false;
+			const nameMatch = app.name?.toLowerCase().includes('isshin') ?? false;
+			return bundleIdMatch || nameMatch;
+		}, []);
 
 		// =============================================================================
 		// Effects
@@ -107,6 +158,49 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 			setLocalSettings(settings);
 			setIsDirty(false);
 		}, [settings]);
+
+		// Track active app/window (skip if Isshin)
+		React.useEffect(() => {
+			let unlistenApp: (() => void) | null = null;
+			let unlistenWindow: (() => void) | null = null;
+
+			(async () => {
+				const [appOk, , currentApp] = toTuple(await specta.commands.getCurrentActiveApp());
+				const [windowOk, , currentWindow] = toTuple(await specta.commands.getCurrentActiveWindow());
+
+				if (appOk && currentApp != null) {
+					if (!isIsshinApp(currentApp)) {
+						setActiveApp(currentApp);
+					}
+				}
+				if (windowOk && currentWindow != null) {
+					if (!isIsshinApp(currentWindow.app)) {
+						setActiveWindow(currentWindow);
+					}
+				}
+
+				unlistenApp = await specta.events.activeAppChangedEvent.listen((event) => {
+					if (!isIsshinApp(event.payload.data)) {
+						setActiveApp(event.payload.data);
+					}
+				});
+
+				unlistenWindow = await specta.events.activeWindowChangedEvent.listen((event) => {
+					if (!isIsshinApp(event.payload.data.app)) {
+						setActiveWindow(event.payload.data);
+					}
+				});
+			})();
+
+			return () => {
+				if (unlistenApp != null) {
+					unlistenApp();
+				}
+				if (unlistenWindow != null) {
+					unlistenWindow();
+				}
+			};
+		}, [isIsshinApp]);
 
 		// =============================================================================
 		// UI
@@ -233,11 +327,33 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 								<div className="rounded-lg bg-red-100 p-2 text-red-600">
 									<BanIcon className="h-5 w-5" />
 								</div>
-								<div>
+								<div className="flex-1">
 									<h2 className="text-lg font-semibold text-gray-900">Blocked Sites</h2>
 									<p className="text-sm text-gray-500">
 										Websites to restrict during focus sessions
 									</p>
+									{currentUrl != null && (
+										<div className="mt-1 flex items-center gap-2">
+											<p className="font-mono text-xs text-indigo-600">Current: {currentUrl}</p>
+											{!localSettings.pomodoro.blockedSites.includes(currentUrl) && (
+												<button
+													onClick={() => {
+														setLocalSettings((prev) => ({
+															...prev,
+															pomodoro: {
+																...prev.pomodoro,
+																blockedSites: [...prev.pomodoro.blockedSites, currentUrl]
+															}
+														}));
+														setIsDirty(true);
+													}}
+													className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+												>
+													Add
+												</button>
+											)}
+										</div>
+									)}
 								</div>
 							</div>
 						</div>
@@ -278,6 +394,88 @@ const Page = withResultLoader<TSuccessLoaderData, TErrorLoaderData>({
 								))}
 								{localSettings.pomodoro.blockedSites.length === 0 && (
 									<p className="text-sm text-gray-500 italic">No sites blocked</p>
+								)}
+							</div>
+						</div>
+					</section>
+
+					{/* Section: Blocked Apps */}
+					<section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+						<div className="border-b border-gray-200 bg-gray-50/50 px-6 py-4">
+							<div className="flex items-center gap-3">
+								<div className="rounded-lg bg-red-100 p-2 text-red-600">
+									<BanIcon className="h-5 w-5" />
+								</div>
+								<div className="flex-1">
+									<h2 className="text-lg font-semibold text-gray-900">Blocked Apps</h2>
+									<p className="text-sm text-gray-500">
+										Applications to block during focus sessions (by bundle ID)
+									</p>
+									{currentBundleId != null && (
+										<div className="mt-1 flex items-center gap-2">
+											<p className="font-mono text-xs text-indigo-600">
+												Current: {currentBundleId}
+												{currentAppName != null && ` (${currentAppName})`}
+											</p>
+											{!localSettings.pomodoro.blockedApps.includes(currentBundleId) && (
+												<button
+													onClick={() => {
+														setLocalSettings((prev) => ({
+															...prev,
+															pomodoro: {
+																...prev.pomodoro,
+																blockedApps: [...prev.pomodoro.blockedApps, currentBundleId]
+															}
+														}));
+														setIsDirty(true);
+													}}
+													className="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+												>
+													Add
+												</button>
+											)}
+										</div>
+									)}
+								</div>
+							</div>
+						</div>
+
+						<div className="p-6">
+							<div className="mb-6 flex gap-2">
+								<input
+									type="text"
+									placeholder="e.g. com.google.Chrome"
+									value={newApp}
+									onChange={(e) => setNewApp(e.target.value)}
+									onKeyDown={(e) => e.key === 'Enter' && handleAddApp()}
+									className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+								/>
+								<button
+									onClick={handleAddApp}
+									className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 font-medium text-white hover:bg-gray-800"
+								>
+									<PlusIcon className="h-4 w-4" />
+									Add
+								</button>
+							</div>
+
+							<div className="flex flex-wrap gap-2">
+								{localSettings.pomodoro.blockedApps.map((app) => (
+									<div
+										key={app}
+										className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 ring-1 ring-gray-200"
+									>
+										<span>{app}</span>
+										<button
+											onClick={() => handleRemoveApp(app)}
+											className="ml-1 rounded-full p-0.5 text-gray-400 hover:bg-red-100 hover:text-red-600"
+										>
+											<XIcon className="h-3 w-3" />
+										</button>
+									</div>
+								))}
+								{localSettings.pomodoro.blockedApps.length === 0 && (
+									<p className="text-sm text-gray-500 italic">No apps blocked</p>
 								)}
 							</div>
 						</div>

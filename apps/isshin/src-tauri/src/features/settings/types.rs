@@ -52,6 +52,8 @@ pub struct PomodoroSettings {
     pub rounds: u32,
     /// List of websites to block during focus phase
     pub blocked_sites: Vec<String>,
+    /// List of application bundle IDs to block during focus phase
+    pub blocked_apps: Vec<String>,
 }
 
 impl Default for PomodoroSettings {
@@ -62,6 +64,7 @@ impl Default for PomodoroSettings {
             long_break_duration: 15,
             rounds: 4,
             blocked_sites: Vec::new(),
+            blocked_apps: Vec::new(),
         }
     }
 }

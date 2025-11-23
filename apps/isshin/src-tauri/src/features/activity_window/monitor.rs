@@ -8,6 +8,7 @@ use crate::environment::{
     logger::Logger,
     states::{db::DatabaseState, settings::SettingsState},
 };
+use crate::features::blocking::blocker;
 use mado::{BrowserInfo, MonitorConfig, WindowBounds, WindowEvent, WindowListener, WindowMonitor};
 use std::sync::Arc;
 use tauri::{AppHandle, Manager};
@@ -92,6 +93,14 @@ impl WindowListener for WindowMonitorHandler {
                     println!("\n[Window Monitor] 🔄 App Activated:\n{}", app_info);
                 }
 
+                // Check if app should be blocked
+                blocker::check_and_block_window(
+                    &app,
+                    &WindowEvent::AppActivated {
+                        app: app_info.clone(),
+                    },
+                );
+
                 // Emit frontend event
                 ActiveAppChangedEvent {
                     data: app_info.clone(),
@@ -155,6 +164,14 @@ impl WindowListener for WindowMonitorHandler {
                 {
                     println!("\n[Window Monitor] 🪟 Window Changed:\n{}", window_info);
                 }
+
+                // Check if window should be blocked
+                blocker::check_and_block_window(
+                    &app,
+                    &WindowEvent::WindowChanged {
+                        window: window_info.clone(),
+                    },
+                );
 
                 // Emit frontend event
                 ActiveWindowChangedEvent {

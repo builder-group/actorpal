@@ -4,13 +4,14 @@ pub mod window;
 use crate::{
     app::window::Window,
     common::db::Database,
-    environment::states::{app::AppState, settings::SettingsState},
+    environment::states::{app::AppState, blocking::BlockingState, settings::SettingsState},
     features::{
         activity,
         activity_window::{
             commands as activity_commands,
             types::{ActiveAppChangedEvent, ActiveWindowChangedEvent},
         },
+        blocking::{self, commands as blocking_commands},
         settings::{self, commands as settings_commands},
     },
 };
@@ -34,6 +35,10 @@ pub fn run() {
             activity_commands::clear_window_activities,
             activity_commands::get_current_active_app,
             activity_commands::get_current_active_window,
+            // Blocking commands
+            blocking_commands::start_blocking,
+            blocking_commands::stop_blocking,
+            blocking_commands::get_blocking_state,
         ])
         .events(collect_events![
             ActiveAppChangedEvent,
@@ -67,6 +72,7 @@ pub fn run() {
             app.manage(database);
             app.manage(AppState::new());
             app.manage(SettingsState::default());
+            app.manage(BlockingState::default());
 
             #[cfg(target_os = "macos")]
             {
@@ -83,6 +89,7 @@ pub fn run() {
             // Setup features
             activity::setup(app.handle().clone());
             settings::setup(app.handle().clone());
+            blocking::setup(app.handle().clone());
 
             return Ok(());
         })

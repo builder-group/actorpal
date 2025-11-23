@@ -92,6 +92,30 @@ async getCurrentActiveWindow() : Promise<Result<WindowInfo, string>> {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
+},
+async startBlocking(blockedSites: string[], blockedApps: string[]) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_blocking", { blockedSites, blockedApps }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopBlocking() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_blocking") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getBlockingState() : Promise<Result<BlockingState, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_blocking_state") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
@@ -148,6 +172,22 @@ tracking: TrackingSettings;
  */
 pomodoro: PomodoroSettings }
 /**
+ * Blocking state for managing site and app blocking during focus sessions.
+ */
+export type BlockingState = { 
+/**
+ * Whether blocking is currently active
+ */
+isActive: boolean; 
+/**
+ * List of blocked site domains
+ */
+blockedSites: string[]; 
+/**
+ * List of blocked application bundle IDs
+ */
+blockedApps: string[] }
+/**
  * Browser-specific information (macOS only).
  * 
  * Requires Automation permission: System Settings > Privacy & Security > Automation
@@ -188,7 +228,11 @@ rounds: number;
 /**
  * List of websites to block during focus phase
  */
-blockedSites: string[] }
+blockedSites: string[]; 
+/**
+ * List of application bundle IDs to block during focus phase
+ */
+blockedApps: string[] }
 /**
  * Settings for activity tracking.
  */

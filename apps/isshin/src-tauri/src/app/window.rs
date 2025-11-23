@@ -84,33 +84,40 @@ impl ShowWindow {
     }
 
     pub async fn show(&self, app: &AppHandle) -> tauri::Result<WebviewWindow> {
-        let id = self.id();
-
-        // Check if window already exists
-        if let Some(window) = id.get(app) {
-            window.show()?;
-            window.set_focus()?;
-            return Ok(window);
-        }
-
         // Build window based on variant
         let window = match self {
-            ShowWindow::Main => self
-                .window_builder(app, WebviewUrl::App("/".into()))
-                .resizable(false)
-                .maximizable(false)
-                .minimizable(false)
-                .always_on_top(true)
-                .visible_on_all_workspaces(true)
-                .build()?,
-            ShowWindow::Settings => self
-                .window_builder(app, WebviewUrl::App("/settings".into()))
-                .resizable(true)
-                .maximizable(true)
-                .minimizable(true)
-                .inner_size(600.0, 450.0)
-                .min_inner_size(600.0, 450.0)
-                .build()?,
+            ShowWindow::Main => {
+                // Reuse existing window if available
+                if let Some(existing) = WindowId::Main.get(app) {
+                    existing.show()?;
+                    existing.set_focus()?;
+                    return Ok(existing);
+                }
+
+                self.window_builder(app, WebviewUrl::App("/".into()))
+                    .resizable(false)
+                    .maximizable(false)
+                    .minimizable(false)
+                    .always_on_top(true)
+                    .visible_on_all_workspaces(true)
+                    .build()?
+            }
+            ShowWindow::Settings => {
+                // Reuse existing window if available
+                if let Some(existing) = WindowId::Settings.get(app) {
+                    existing.show()?;
+                    existing.set_focus()?;
+                    return Ok(existing);
+                }
+
+                self.window_builder(app, WebviewUrl::App("/settings".into()))
+                    .resizable(true)
+                    .maximizable(true)
+                    .minimizable(true)
+                    .inner_size(600.0, 450.0)
+                    .min_inner_size(600.0, 450.0)
+                    .build()?
+            }
             ShowWindow::BlockedNotification {
                 message,
                 x,
@@ -118,7 +125,7 @@ impl ShowWindow {
                 width,
                 height,
             } => {
-                // Close existing notification if any
+                // Always close existing and create new (to ensure correct position and message)
                 if let Some(existing) = WindowId::BlockedNotification.get(app) {
                     let _ = existing.close();
                 }

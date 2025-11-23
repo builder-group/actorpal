@@ -97,10 +97,15 @@ pub fn run() {
             return Ok(());
         })
         .on_window_event(|window, event| {
-            // Prevent app from exiting when windows are closed (tray app behavior)
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                let _ = window.hide();
+                let label = window.label();
+
+                // Only hide main window (can be reopened from tray)
+                // to prevent the app from exiting when the main window is closed
+                if label == "main" {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
             }
         })
         .build(tauri::generate_context!())

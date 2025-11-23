@@ -92,19 +92,6 @@ impl Window {
 
         return builder;
     }
-
-    pub fn setup(&self, app: &AppHandle) {
-        if let Some(window) = self.get(app) {
-            // Setup close handler to hide instead of quit
-            let window_clone = window.clone();
-            window.on_window_event(move |event| {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    api.prevent_close();
-                    let _ = window_clone.hide();
-                }
-            });
-        }
-    }
 }
 
 pub struct WindowConfig {

@@ -10,26 +10,6 @@
 		"frontendDist": "../build/client"
 	},
 	"app": {
-		"windows": [
-			{
-				"label": "main",
-				"title": "Isshin",
-				"width": 800,
-				"height": 800,
-				"visible": false,
-				"skipTaskbar": true
-			},
-			{
-				"label": "settings",
-				"title": "Isshin - Settings",
-				"url": "/settings",
-				"width": 800,
-				"height": 800,
-				"visible": false,
-				"skipTaskbar": true,
-				"center": true
-			}
-		],
 		"security": {
 			"csp": null
 		}

@@ -4,7 +4,7 @@ pub mod window;
 use crate::{
     app::window::Window,
     common::db::Database,
-    environment::states::{app::AppState, blocking::BlockingState, settings::SettingsState},
+    environment::states::{app::AppState, blocking::BlockingState},
     features::{
         activity,
         activity_window::{
@@ -12,7 +12,7 @@ use crate::{
             types::{ActiveAppChangedEvent, ActiveWindowChangedEvent},
         },
         blocking::{self, commands as blocking_commands},
-        settings::{self, commands as settings_commands},
+        settings::commands as settings_commands,
     },
 };
 use specta_typescript::Typescript;
@@ -85,15 +85,24 @@ pub fn run() {
                 let _ = Tray::setup(app.handle());
             }
 
-            // Setup windows
-            Window::Main.setup(app.handle());
-            Window::Settings.setup(app.handle());
-
             // Setup features
             activity::setup(app.handle().clone());
             blocking::setup(app.handle().clone());
 
+            // Show main window asynchronously
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = Window::Main.show(&app_handle).await;
+            });
+
             return Ok(());
+        })
+        .on_window_event(|window, event| {
+            // Prevent app from exiting when windows are closed (tray app behavior)
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                let _ = window.hide();
+            }
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")

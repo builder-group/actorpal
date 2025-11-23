@@ -68,10 +68,13 @@ pub fn run() {
                     .expect("Failed to initialize database");
             });
 
+            // Load settings from disk
+            let settings = crate::features::settings::persistence::load_settings(app);
+
             // Manage state
             app.manage(database);
             app.manage(AppState::new());
-            app.manage(SettingsState::default());
+            app.manage(std::sync::Mutex::new(settings));
             app.manage(BlockingState::default());
 
             #[cfg(target_os = "macos")]
@@ -88,7 +91,6 @@ pub fn run() {
 
             // Setup features
             activity::setup(app.handle().clone());
-            settings::setup(app.handle().clone());
             blocking::setup(app.handle().clone());
 
             return Ok(());

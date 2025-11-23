@@ -1,6 +1,3 @@
 pub mod commands;
+pub mod persistence;
 pub mod types;
-
-use tauri::AppHandle;
-
-pub fn setup(_app: AppHandle) {}

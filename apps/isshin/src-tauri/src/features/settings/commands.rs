@@ -2,7 +2,7 @@ use crate::{
     app::window::Window,
     common::path::get_app_data_dir,
     environment::{configs::db::DbConfig, states::settings::SettingsState},
-    features::settings::types::AppSettings,
+    features::settings::{persistence, types::AppSettings},
 };
 use std::process::Command;
 use tauri::{AppHandle, State};
@@ -35,9 +35,15 @@ pub async fn get_settings(state: State<'_, SettingsState>) -> Result<AppSettings
 #[specta::specta]
 pub async fn set_settings(
     settings: AppSettings,
+    app: AppHandle,
     state: State<'_, SettingsState>,
 ) -> Result<(), String> {
-    *state.lock().unwrap() = settings;
+    // Update in-memory state
+    *state.lock().unwrap() = settings.clone();
+
+    // Persist to disk
+    persistence::save_settings(&app, &settings)?;
+
     return Ok(());
 }
 

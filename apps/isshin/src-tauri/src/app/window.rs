@@ -128,6 +128,9 @@ impl ShowWindow {
                 // Always close existing and create new (to ensure correct position and message)
                 if let Some(existing) = WindowId::BlockedNotification.get(app) {
                     let _ = existing.close();
+                    // Wait a bit for window to be fully closed before creating new one
+                    // to prevent conflicts when creating a window with the same label
+                    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
                 }
 
                 let encoded_message =

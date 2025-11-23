@@ -1,59 +1,68 @@
-//! Main window monitor
-
 use std::sync::{Arc, RwLock};
 
 use crate::config::MonitorConfig;
 use crate::error::Error;
-use crate::handler::EventHandler;
+use crate::listener::WindowListener;
 
-/// Window monitor that tracks application and window focus changes
+/// Monitor for window and application focus changes.
 ///
 /// ## Example
 ///
 /// ```rust,no_run
-/// use mado::{Monitor, EventHandler, WindowInfo};
+/// use mado::{WindowMonitor, WindowListener, WindowEvent};
 ///
-/// struct MyHandler;
-/// impl EventHandler for MyHandler {
-///     fn on_focus_change(&self, window: WindowInfo) {
-///         println!("Window: {} in app: {}", window.title, window.app.name);
+/// struct MyListener;
+/// impl WindowListener for MyListener {
+///     fn on_focus_change(&self, event: WindowEvent) {
+///         match event {
+///             WindowEvent::AppActivated { app } => {
+///                 println!("App activated: {}", app.name);
+///             }
+///             WindowEvent::WindowChanged { window } => {
+///                 println!("Window: {} in app: {}", window.title, window.app.name);
+///             }
+///         }
 ///     }
 /// }
 ///
-/// let monitor = Monitor::new(MyHandler);
+/// let monitor = WindowMonitor::new(MyListener);
 /// monitor.run()?;
 /// ```
-pub struct Monitor {
-    handler: Arc<RwLock<dyn EventHandler>>,
+pub struct WindowMonitor {
+    listener: Arc<RwLock<dyn WindowListener>>,
     config: MonitorConfig,
 }
 
-impl Monitor {
-    /// Create a new monitor with default configuration
-    pub fn new<H: EventHandler + 'static>(handler: H) -> Self {
+impl WindowMonitor {
+    /// Create a new window monitor with default configuration.
+    pub fn new<L: WindowListener + 'static>(listener: L) -> Self {
         Self {
-            handler: Arc::new(RwLock::new(handler)),
+            listener: Arc::new(RwLock::new(listener)),
             config: MonitorConfig::default(),
         }
     }
 
-    /// Create a new monitor with custom configuration
-    pub fn with_config<H: EventHandler + 'static>(handler: H, config: MonitorConfig) -> Self {
+    /// Create a new window monitor with custom configuration.
+    pub fn with_config<L: WindowListener + 'static>(listener: L, config: MonitorConfig) -> Self {
         Self {
-            handler: Arc::new(RwLock::new(handler)),
+            listener: Arc::new(RwLock::new(listener)),
             config,
         }
     }
 
-    /// Start monitoring (blocks until stopped)
+    /// Start monitoring (blocks until stopped).
     ///
     /// # Errors
-    /// Returns `Error` if platform initialization fails or permissions are missing
+    ///
+    /// Returns `Error` if platform initialization fails or permissions are missing.
     pub fn run(self) -> Result<(), Error> {
-        crate::platform::run(self.handler, self.config)
+        crate::platform::run(self.listener, self.config)
     }
 
-    /// Stop the monitor (can be called from another thread)
+    /// Stop the monitor (can be called from another thread).
+    ///
+    /// This is a static method because the monitor runs in its own thread.
+    /// Call this from any thread to signal the monitor to stop.
     pub fn stop() -> Result<(), Error> {
         crate::platform::stop()
     }

@@ -2,65 +2,22 @@
 //!
 //! This example demonstrates event-driven monitoring.
 //! The monitor runs continuously and calls your handler whenever:
-//! - The user switches to a different app
-//! - The focused window changes
-//! - A browser tab switches
+//! - The user switches to a different app (AppActivated event)
+//! - The focused window changes (WindowChanged event)
+//! - A browser tab switches (WindowChanged event)
 
-use mado::{EventHandler, Monitor, WindowInfo};
+use mado::{WindowEvent, WindowListener, WindowMonitor};
 
-struct FocusListener {
-    last_bundle_id: std::sync::Mutex<Option<String>>,
-}
+struct FocusListener;
 
-impl FocusListener {
-    fn new() -> Self {
-        Self {
-            last_bundle_id: std::sync::Mutex::new(None),
-        }
-    }
-}
-
-impl EventHandler for FocusListener {
-    fn on_focus_change(&self, window: WindowInfo) {
-        let mut last_bundle = self.last_bundle_id.lock().unwrap();
-        let app_changed = last_bundle.as_deref() != Some(&window.app.bundle_id);
-
-        if app_changed {
-            println!("\n🔄 App Switch");
-            *last_bundle = Some(window.app.bundle_id.clone());
-        } else {
-            println!("\n🪟 Window Change");
-        }
-
-        println!("   Window:");
-        println!("      Title:      '{}'", window.title);
-        println!("      Window ID:  {}", window.window_id);
-        println!(
-            "      Bounds:     ({:.0}, {:.0})",
-            window.bounds.x, window.bounds.y
-        );
-        println!(
-            "      Size:       {:.0}x{:.0}",
-            window.bounds.width, window.bounds.height
-        );
-
-        println!("   App:");
-        println!("      Name:       {}", window.app.name);
-        println!("      PID:        {}", window.app.pid);
-        println!("      Bundle ID:  {}", window.app.bundle_id);
-        println!("      Path:       {}", window.app.process_path);
-
-        if let Some(browser) = &window.browser {
-            println!("   Browser:");
-            if let Some(url) = &browser.url {
-                println!("      URL:        {}", url);
-            } else {
-                println!("      URL:        (not available - may need Automation permission)");
+impl WindowListener for FocusListener {
+    fn on_focus_change(&self, event: WindowEvent) {
+        match event {
+            WindowEvent::AppActivated { app } => {
+                println!("\n🔄 App Activated:\n{}", app);
             }
-            if let Some(is_private) = browser.is_private {
-                if is_private {
-                    println!("      Mode:       Private/Incognito");
-                }
+            WindowEvent::WindowChanged { window } => {
+                println!("\n🪟 Window Change:\n{}", window);
             }
         }
     }
@@ -84,6 +41,6 @@ fn main() -> Result<(), mado::Error> {
         allow_browser: true,
         track_window_changes: true,
     };
-    let monitor = Monitor::with_config(FocusListener::new(), config);
+    let monitor = WindowMonitor::with_config(FocusListener, config);
     monitor.run()
 }

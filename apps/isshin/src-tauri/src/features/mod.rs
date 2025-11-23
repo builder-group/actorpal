@@ -1,4 +1,4 @@
-pub mod app;
-pub mod hosts;
-pub mod process;
-pub mod tracking;
+pub mod activity;
+pub mod activity_window;
+pub mod blocking;
+pub mod settings;

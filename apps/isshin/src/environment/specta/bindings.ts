@@ -5,83 +5,130 @@
 
 
 export const commands = {
-async listProcess() : Promise<ProcessInfo[]> {
-    return await TAURI_INVOKE("list_process");
-},
-async maxRunningProcess() : Promise<ProcessInfo | null> {
-    return await TAURI_INVOKE("max_running_process");
-},
-async maxMemory() : Promise<ProcessInfo | null> {
-    return await TAURI_INVOKE("max_memory");
-},
-async killProcess(id: string) : Promise<boolean> {
-    return await TAURI_INVOKE("kill_process", { id });
-},
-async getFocusedApplication() : Promise<string | null> {
-    return await TAURI_INVOKE("get_focused_application");
-},
-async blockWebsites(domains: string[]) : Promise<Result<number, string>> {
+async showSettingsWindow() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("block_websites", { domains }) };
+    return { status: "ok", data: await TAURI_INVOKE("show_settings_window") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async unblockWebsite(domain: string) : Promise<Result<boolean, string>> {
+async getDatabasePath() : Promise<Result<string, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("unblock_website", { domain }) };
+    return { status: "ok", data: await TAURI_INVOKE("get_database_path") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async getBlockedWebsites() : Promise<Result<string[], string>> {
+async openDatabaseDirectory() : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_blocked_websites") };
+    return { status: "ok", data: await TAURI_INVOKE("open_database_directory") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async getActivityEntries() : Promise<Result<ActivityEntry[], string>> {
+async getSettings() : Promise<Result<AppSettings, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_activity_entries") };
+    return { status: "ok", data: await TAURI_INVOKE("get_settings") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async getTodayStats() : Promise<Result<DailyStats, string>> {
+async setSettings(settings: AppSettings) : Promise<Result<null, string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("get_today_stats") };
+    return { status: "ok", data: await TAURI_INVOKE("set_settings", { settings }) };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async clearTrackingData() : Promise<Result<null, string>> {
+async getAppActivities() : Promise<Result<AppActivity[], string>> {
     try {
-    return { status: "ok", data: await TAURI_INVOKE("clear_tracking_data") };
+    return { status: "ok", data: await TAURI_INVOKE("get_app_activities") };
 } catch (e) {
     if(e instanceof Error) throw e;
     else return { status: "error", error: e  as any };
 }
 },
-async showSettingsWindow() : Promise<void> {
-    await TAURI_INVOKE("show_settings_window");
+async getWindowActivities() : Promise<Result<WindowActivity[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_window_activities") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 },
-async isExitBlocked() : Promise<boolean> {
-    return await TAURI_INVOKE("is_exit_blocked");
+async clearAppActivities() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_app_activities") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 },
-async setExitBlocked(block: boolean) : Promise<void> {
-    await TAURI_INVOKE("set_exit_blocked", { block });
+async clearWindowActivities() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("clear_window_activities") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getCurrentActiveApp() : Promise<Result<AppInfo, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_current_active_app") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getCurrentActiveWindow() : Promise<Result<WindowInfo, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_current_active_window") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async startBlocking(blockedSites: string[], blockedApps: string[]) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("start_blocking", { blockedSites, blockedApps }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async stopBlocking() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("stop_blocking") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async getBlockingState() : Promise<Result<BlockingState, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("get_blocking_state") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
 }
 }
 
 /** user-defined events **/
 
 
+export const events = __makeEvents__<{
+activeAppChangedEvent: ActiveAppChangedEvent,
+activeWindowChangedEvent: ActiveWindowChangedEvent
+}>({
+activeAppChangedEvent: "active-app-changed-event",
+activeWindowChangedEvent: "active-window-changed-event"
+})
 
 /** user-defined constants **/
 
@@ -89,11 +136,160 @@ async setExitBlocked(block: boolean) : Promise<void> {
 
 /** user-defined types **/
 
-export type ActivityEntry = { application: string; bundle_id: string | null; window_title: string | null; url: string | null; start_time: number; end_time: number; duration_seconds: number }
-export type ActivitySummary = { application: string; bundle_id: string | null; total_duration_seconds: number; percentage: number }
-export type DailyStats = { date: string; total_time_seconds: number; activities: ActivitySummary[]; websites: WebsiteSummary[] }
-export type ProcessInfo = { id: string; nume: string; running_time_formatted: string; memory_in_bytes: number }
-export type WebsiteSummary = { domain: string; total_duration_seconds: number; percentage: number }
+export type ActiveAppChangedEvent = { data: AppInfo }
+export type ActiveWindowChangedEvent = { data: WindowInfo }
+export type AppActivity = { id: number; appId: number; startTime: number; endTime: number }
+/**
+ * Information about an application.
+ */
+export type AppInfo = { 
+/**
+ * Process ID
+ */
+pid: number; 
+/**
+ * Application name (localized)
+ */
+name: string | null; 
+/**
+ * Bundle identifier (macOS) or application class (Linux)
+ */
+bundleId: string | null; 
+/**
+ * Path to the executable
+ */
+processPath: string | null }
+/**
+ * Global application settings.
+ */
+export type AppSettings = { 
+/**
+ * Activity tracking settings
+ */
+tracking: TrackingSettings; 
+/**
+ * Pomodoro timer settings
+ */
+pomodoro: PomodoroSettings }
+/**
+ * Blocking state for managing site and app blocking during focus sessions.
+ */
+export type BlockingState = { 
+/**
+ * Whether blocking is currently active
+ */
+isActive: boolean; 
+/**
+ * List of blocked site domains
+ */
+blockedSites: string[]; 
+/**
+ * List of blocked application bundle IDs
+ */
+blockedApps: string[] }
+/**
+ * Browser-specific information (macOS only).
+ * 
+ * Requires Automation permission: System Settings > Privacy & Security > Automation
+ */
+export type BrowserInfo = { 
+/**
+ * Current URL of the active tab.
+ */
+url: string | null; 
+/**
+ * Whether the window is in private/incognito mode.
+ * 
+ * - `None` if detection failed or not supported
+ * - `Some(true)` if private mode is active
+ * - `Some(false)` if private mode is not active
+ */
+isPrivate: boolean | null }
+/**
+ * Settings for the Pomodoro timer.
+ */
+export type PomodoroSettings = { 
+/**
+ * Duration of focus phase in minutes
+ */
+focusDuration: number; 
+/**
+ * Duration of short break phase in minutes
+ */
+shortBreakDuration: number; 
+/**
+ * Duration of long break phase in minutes
+ */
+longBreakDuration: number; 
+/**
+ * Number of rounds before a long break
+ */
+rounds: number; 
+/**
+ * List of websites to block during focus phase
+ */
+blockedSites: string[]; 
+/**
+ * List of application bundle IDs to block during focus phase
+ */
+blockedApps: string[] }
+/**
+ * Settings for activity tracking.
+ */
+export type TrackingSettings = { 
+/**
+ * Whether to track window changes (tab switches, window switches within apps)
+ */
+trackWindow: boolean; 
+/**
+ * Whether to track browser URLs (requires Automation permission on macOS)
+ */
+trackBrowser: boolean }
+export type WindowActivity = { id: number; appId: number; windowTitle: string | null; windowId: number | null; windowBounds: WindowBounds | null; browser: BrowserInfo | null; startTime: number; endTime: number }
+/**
+ * Window bounds (position and size).
+ */
+export type WindowBounds = { 
+/**
+ * X coordinate (left edge)
+ */
+x: number; 
+/**
+ * Y coordinate (top edge)
+ */
+y: number; 
+/**
+ * Window width
+ */
+width: number; 
+/**
+ * Window height
+ */
+height: number }
+/**
+ * Information about a window.
+ */
+export type WindowInfo = { 
+/**
+ * Window title
+ */
+title: string | null; 
+/**
+ * Platform-specific window identifier
+ */
+windowId: number | null; 
+/**
+ * Window position and size
+ */
+bounds: WindowBounds | null; 
+/**
+ * Application information
+ */
+app: AppInfo; 
+/**
+ * Browser information (only populated if `allow_browser` is enabled in config)
+ */
+browser: BrowserInfo | null }
 
 /** tauri-specta globals **/
 

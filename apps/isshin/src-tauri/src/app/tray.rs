@@ -1,4 +1,4 @@
-use crate::app::window::Window;
+use crate::app::window::ShowWindow;
 use crate::environment::configs::app::AppConfig;
 use std::io::Cursor;
 use tauri::{
@@ -40,13 +40,13 @@ impl TrayItem {
             TrayItem::ShowDashboard => {
                 let app_handle = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    let _ = Window::Main.show(&app_handle).await;
+                    let _ = ShowWindow::Main.show(&app_handle).await;
                 });
             }
             TrayItem::ShowSettings => {
                 let app_handle = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    let _ = Window::Settings.show(&app_handle).await;
+                    let _ = ShowWindow::Settings.show(&app_handle).await;
                 });
             }
             TrayItem::Quit => app.exit(0),
@@ -88,7 +88,7 @@ impl Tray {
                 } => {
                     let app_handle = tray.app_handle().clone();
                     tauri::async_runtime::spawn(async move {
-                        let _ = Window::Main.show(&app_handle).await;
+                        let _ = ShowWindow::Main.show(&app_handle).await;
                     });
                 }
                 _ => {}

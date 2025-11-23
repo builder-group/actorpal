@@ -1,4 +1,7 @@
-use crate::environment::{logger::Logger, states::blocking::BlockingState};
+use crate::{
+    app::window::ShowWindow,
+    environment::{logger::Logger, states::blocking::BlockingState},
+};
 use mado::WindowEvent;
 use tauri::{AppHandle, Manager};
 
@@ -9,7 +12,12 @@ fn is_app_blocked(bundle_id: &Option<String>, blocked_apps: &[String]) -> bool {
     false
 }
 
-fn handle_blocked_app(app: &AppHandle, bundle_id: &str, app_name: &str) {
+fn handle_blocked_app(
+    app: &AppHandle,
+    bundle_id: &str,
+    app_name: &str,
+    bounds: Option<mado::WindowBounds>,
+) {
     let msg = format!("[Blocker] 🚫 Blocked app: {} ({})", app_name, bundle_id);
     Logger::log(app, &msg);
 
@@ -17,6 +25,28 @@ fn handle_blocked_app(app: &AppHandle, bundle_id: &str, app_name: &str) {
         let error_msg = format!("[Blocker] Failed to close app: {}", e);
         Logger::log(app, &error_msg);
     }
+
+    // Show notification window
+    let app_handle = app.clone();
+    let notification_msg = format!("{} is blocked during focus time", app_name);
+    tauri::async_runtime::spawn(async move {
+        let (x, y, width, height) = if let Some(bounds) = bounds {
+            (bounds.x, bounds.y, bounds.width, bounds.height)
+        } else {
+            // Fallback: center on screen
+            (100.0, 100.0, 400.0, 200.0)
+        };
+
+        let _ = ShowWindow::BlockedNotification {
+            message: notification_msg,
+            x,
+            y,
+            width,
+            height,
+        }
+        .show(&app_handle)
+        .await;
+    });
 }
 
 /// Handle window change event and block if necessary.
@@ -32,20 +62,16 @@ pub fn check_and_block_window(app: &AppHandle, event: &WindowEvent) {
     }
 
     match event {
-        WindowEvent::AppActivated { app: app_info } => {
-            // Block entire app if bundle ID is in blocked list
-            if is_app_blocked(&app_info.bundle_id, &blocking.blocked_apps) {
-                let bundle_id = app_info.bundle_id.as_deref().unwrap_or("unknown");
-                let app_name = app_info.name.as_deref().unwrap_or("Unknown");
-                handle_blocked_app(app, bundle_id, app_name);
-            }
+        WindowEvent::AppActivated { .. } => {
+            // Don't block on AppActivated - wait for WindowChanged to get bounds
+            // WindowChanged will fire shortly after with complete window information
         }
         WindowEvent::WindowChanged { window } => {
             // Check app blocking first (takes precedence over URL blocking)
             if is_app_blocked(&window.app.bundle_id, &blocking.blocked_apps) {
                 let bundle_id = window.app.bundle_id.as_deref().unwrap_or("unknown");
                 let app_name = window.app.name.as_deref().unwrap_or("Unknown");
-                handle_blocked_app(app, bundle_id, app_name);
+                handle_blocked_app(app, bundle_id, app_name, window.bounds.clone());
                 return;
             }
 
@@ -61,6 +87,30 @@ pub fn check_and_block_window(app: &AppHandle, event: &WindowEvent) {
                             let error_msg = format!("[Blocker] Failed to close window: {}", e);
                             Logger::log(app, &error_msg);
                         }
+
+                        // Show notification window with same position and dimensions as blocked window
+                        let app_handle = app.clone();
+                        let notification_msg = format!("{} is blocked during focus time", url);
+                        let bounds_clone = window.bounds.clone();
+                        tauri::async_runtime::spawn(async move {
+                            let (x, y, width, height) = if let Some(bounds) = bounds_clone {
+                                // Use full bounds of blocked window
+                                (bounds.x, bounds.y, bounds.width, bounds.height)
+                            } else {
+                                // Fallback: center on screen
+                                (100.0, 100.0, 400.0, 200.0)
+                            };
+
+                            let _ = ShowWindow::BlockedNotification {
+                                message: notification_msg,
+                                x,
+                                y,
+                                width,
+                                height,
+                            }
+                            .show(&app_handle)
+                            .await;
+                        });
                     }
                 }
             }

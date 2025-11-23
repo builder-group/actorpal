@@ -1,5 +1,5 @@
 use crate::{
-    app::window::Window,
+    app::window::ShowWindow,
     common::path::get_app_data_dir,
     environment::{configs::db::DbConfig, states::settings::SettingsState},
     features::settings::{persistence, types::AppSettings},
@@ -10,7 +10,7 @@ use tauri::{AppHandle, State};
 #[tauri::command]
 #[specta::specta]
 pub async fn show_settings_window(app: AppHandle) -> Result<(), String> {
-    Window::Settings
+    ShowWindow::Settings
         .show(&app)
         .await
         .map_err(|e| e.to_string())?;

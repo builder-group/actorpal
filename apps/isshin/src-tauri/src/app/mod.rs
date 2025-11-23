@@ -2,7 +2,6 @@ pub mod tray;
 pub mod window;
 
 use crate::{
-    app::window::Window,
     common::db::Database,
     environment::states::{app::AppState, blocking::BlockingState},
     features::{
@@ -92,7 +91,7 @@ pub fn run() {
             // Show main window asynchronously
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                let _ = Window::Main.show(&app_handle).await;
+                let _ = window::ShowWindow::Main.show(&app_handle).await;
             });
 
             return Ok(());

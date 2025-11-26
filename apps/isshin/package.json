@@ -20,11 +20,11 @@
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"install:clean": "pnpm run clean && pnpm install",
 		"lint": "eslint . --fix",
-		"pre:build": "pnpm typecheck && react-router build",
-		"pre:dev": "react-router dev",
 		"start:dev": "tauri dev",
 		"test": "echo \"🧪 No tests defined yet.\"",
 		"typecheck": "react-router typegen && tsc --noEmit",
+		"ui:build": "pnpm typecheck && react-router build",
+		"ui:dev": "react-router dev",
 		"update:latest": "pnpm update --latest"
 	},
 	"dependencies": {

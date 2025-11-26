@@ -46,6 +46,7 @@ struct MascotCounterView: View {
             .frame(width: 40, height: 30)
             .background(Color.black.opacity(0.6))
             .cornerRadius(10)
+            .offset(x: 20, y: -15)
     }
 }
 

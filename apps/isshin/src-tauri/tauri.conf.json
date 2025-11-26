@@ -1,12 +1,12 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Isshin POC",
+	"productName": "Isshin - Lab",
 	"version": "0.0.1",
-	"identifier": "com.buildergroup.isshin.poc",
+	"identifier": "com.buildergroup.isshin.lab",
 	"build": {
-		"beforeDevCommand": "pnpm pre:dev",
+		"beforeDevCommand": "pnpm ui:dev",
 		"devUrl": "http://localhost:1420",
-		"beforeBuildCommand": "pnpm pre:build",
+		"beforeBuildCommand": "pnpm ui:build",
 		"frontendDist": "../build/client"
 	},
 	"app": {

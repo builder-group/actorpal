@@ -70,7 +70,13 @@ struct MascotOverlayView: View {
         )
         .padding(paddingForPosition(storageObserver.catPosition))
         .modifier(DebugFrameModifier(isEnabled: storageObserver.showDebugView))
-        .allowsHitTesting(false)
+        .allowsHitTesting(storageObserver.catPosition == .autocompleteBar)
+        .onTapGesture {
+            // Play meow sound when cat is tapped in autocomplete bar (if sound is enabled)
+            if storageObserver.catPosition == .autocompleteBar && storageObserver.soundEnabled {
+                MeowSoundPlayer.shared.play()
+            }
+        }
         .zIndex(500)
         .onAppear {
             storageObserver.start()

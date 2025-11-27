@@ -53,3 +53,8 @@ File-based storage for documents, images, or custom data formats. Use `FileManag
 #### Keychain
 
 Secure storage for sensitive data like passwords, tokens, and certificates. Encrypted and protected by the system. Use `KeychainAccess` framework or `Security` framework APIs. Required for storing credentials securely. See [Apple's Keychain Services documentation](https://developer.apple.com/documentation/security/keychain_services) for details.
+
+## 🗂️ Assets
+
+- `meow.mp3` ([Source](https://pixabay.com/de/sound-effects/cat-meow-8-fx-306184/))
+- `base.png`, `left-down.png`, `left-up.png`, `right-down.png`, `right-up.png` ([Source](https://github.com/Gamma-Software/BongoCat-mac/tree/develop/Assets/resources/Images))

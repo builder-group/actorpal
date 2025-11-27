@@ -11,6 +11,7 @@ import SwiftUI
 class KeyboardViewController: KeyboardInputViewController {
 
     private let mascotState = MascotState()
+    private var meowActionHandler: MeowActionHandler?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -18,6 +19,14 @@ class KeyboardViewController: KeyboardInputViewController {
     }
 
     override func viewWillSetupKeyboardView() {
+        // Create meow action handler with controller
+        meowActionHandler = MeowActionHandler(controller: self as KeyboardController)
+        
+        // Set meow action handler
+        if let handler = meowActionHandler {
+            services.actionHandler = handler
+        }
+        
         setupKeyboardView { [weak self] controller in
             guard let self = self else {
                 return AnyView(Self.makeKeyboardView(services: controller.services))

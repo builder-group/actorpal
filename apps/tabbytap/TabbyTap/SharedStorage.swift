@@ -71,6 +71,19 @@ class SharedStorage {
                 name: NSNotification.Name("DebugViewChanged"), object: nil)
         }
     }
+
+    // MARK: - Sound Enabled
+
+    var soundEnabled: Bool {
+        get {
+            return defaults?.bool(forKey: "soundEnabled") ?? true
+        }
+        set {
+            defaults?.set(newValue, forKey: "soundEnabled")
+            NotificationCenter.default.post(
+                name: NSNotification.Name("SoundEnabledChanged"), object: nil)
+        }
+    }
 }
 
 // MARK: - Storage Observer
@@ -79,6 +92,7 @@ class StorageObserver: ObservableObject {
     @Published var tapCount: Int = SharedStorage.shared.tapCount
     @Published var catPosition: CatPosition = SharedStorage.shared.catPosition
     @Published var showDebugView: Bool = SharedStorage.shared.showDebugView
+    @Published var soundEnabled: Bool = SharedStorage.shared.soundEnabled
 
     private var timer: Timer?
     private let storage = SharedStorage.shared
@@ -100,6 +114,11 @@ class StorageObserver: ObservableObject {
             let currentDebugView = self.storage.showDebugView
             if currentDebugView != self.showDebugView {
                 self.showDebugView = currentDebugView
+            }
+
+            let currentSoundEnabled = self.storage.soundEnabled
+            if currentSoundEnabled != self.soundEnabled {
+                self.soundEnabled = currentSoundEnabled
             }
         }
     }

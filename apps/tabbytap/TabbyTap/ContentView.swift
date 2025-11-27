@@ -96,6 +96,24 @@ struct ContentView: View {
                 .background(Color(uiColor: .systemGray6))
                 .cornerRadius(12)
 
+                // Sound Toggle
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("Meow Sound")
+                            .font(.headline)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        Toggle("", isOn: Binding(
+                            get: { storageObserver.soundEnabled },
+                            set: { storage.soundEnabled = $0 }
+                        ))
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color(uiColor: .systemGray6))
+                .cornerRadius(12)
+
                 // Debug Toggle
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {

@@ -27,7 +27,7 @@ extension KeyboardApp {
         .init(
             name: "TabbyTab",
             // licenseKey: "299B33C6-061C-4285-8189-90525BCAF098",  // Sets up KeyboardKit Pro!
-            appGroupId: "com.buildergroup.tabbytab",  // Sets up App Group data sync
+            appGroupId: "group.com.buildergroup.tabbytab",  // Sets up App Group data sync
             locales: .keyboardKitSupported,  // Sets up the enabled locales
             autocomplete: .init(  // Sets up custom autocomplete
                 // nextWordPredictionRequest: .claude(apiKey: "")   // Sets up AI-based prediction (add your own key)

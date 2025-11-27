@@ -25,7 +25,7 @@ class KeyboardViewController: KeyboardInputViewController {
 
             return AnyView(
                 ZStack(alignment: .topTrailing) {
-                    Self.makeKeyboardView(services: controller.services)
+                    KeyboardViewWithStorage(services: controller.services)
                     MascotOverlayView(state: self.mascotState)
                 }
             )
@@ -61,5 +61,39 @@ class KeyboardViewController: KeyboardInputViewController {
             emojiKeyboard: { $0.view },
             toolbar: { $0.view }
         )
+    }
+}
+
+struct KeyboardViewWithStorage: View {
+    let services: Keyboard.Services
+    @StateObject private var storageObserver = StorageObserver()
+
+    var body: some View {
+        KeyboardView(
+            services: services,
+            buttonContent: { $0.view },
+            buttonView: { button in
+                AnyView(
+                    Group {
+                        let shouldHide = (button.item.action == KeyboardAction.space && storageObserver.catPosition == .spaceBar) ||
+                                        (button.item.action.isPrimaryAction && storageObserver.catPosition == .enterBar)
+                        if shouldHide {
+                            Color.clear.frame(height: 0)
+                        } else {
+                            button.view
+                        }
+                    }
+                )
+            },
+            collapsedView: { $0.view },
+            emojiKeyboard: { $0.view },
+            toolbar: { $0.view }
+        )
+        .onAppear {
+            storageObserver.start()
+        }
+        .onDisappear {
+            storageObserver.stop()
+        }
     }
 }

@@ -60,11 +60,13 @@ struct MascotOverlayView: View {
             MascotCounterView(count: state.keyPressCount)
             MascotView(state: state)
         }
+        .modifier(DebugModifier(isEnabled: storageObserver.showDebugView))
         .frame(
             maxWidth: .infinity, maxHeight: .infinity,
             alignment: alignmentForPosition(storageObserver.catPosition)
         )
         .padding(paddingForPosition(storageObserver.catPosition))
+        .modifier(DebugFrameModifier(isEnabled: storageObserver.showDebugView))
         .allowsHitTesting(false)
         .zIndex(1000)
         .onAppear {
@@ -78,11 +80,11 @@ struct MascotOverlayView: View {
     private func paddingForPosition(_ position: CatPosition) -> EdgeInsets {
         switch position {
         case .autocompleteBar:
-            return EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 10)
+            return EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 20)
         case .spaceBar:
-            return EdgeInsets(top: 0, leading: 0, bottom: 5, trailing: 0)
+            return EdgeInsets(top: 0, leading: 0, bottom: -10, trailing: 0)
         case .enterBar:
-            return EdgeInsets(top: 0, leading: 0, bottom: 5, trailing: 10)
+            return EdgeInsets(top: 0, leading: 0, bottom: -10, trailing: 0)
         }
     }
 
@@ -94,6 +96,36 @@ struct MascotOverlayView: View {
             return .bottom
         case .enterBar:
             return .bottomTrailing
+        }
+    }
+}
+
+// MARK: - Debug Modifiers
+
+struct DebugModifier: ViewModifier {
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content
+                .background(Color.red.opacity(0.3))
+                .border(Color.blue, width: 2)
+        } else {
+            content
+        }
+    }
+}
+
+struct DebugFrameModifier: ViewModifier {
+    let isEnabled: Bool
+
+    func body(content: Content) -> some View {
+        if isEnabled {
+            content
+                .background(Color.green.opacity(0.2))
+                .border(Color.yellow, width: 1)
+        } else {
+            content
         }
     }
 }

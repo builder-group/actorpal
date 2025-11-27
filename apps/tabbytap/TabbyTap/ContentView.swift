@@ -72,6 +72,24 @@ struct ContentView: View {
             .background(Color(uiColor: .systemGray6))
             .cornerRadius(12)
 
+            // Debug Toggle
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Debug View")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { storageObserver.showDebugView },
+                        set: { storage.showDebugView = $0 }
+                    ))
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color(uiColor: .systemGray6))
+            .cornerRadius(12)
+
             Spacer()
         }
         .padding()

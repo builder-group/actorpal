@@ -58,6 +58,19 @@ class SharedStorage {
                 name: NSNotification.Name("CatPositionChanged"), object: nil)
         }
     }
+
+    // MARK: - Debug View
+
+    var showDebugView: Bool {
+        get {
+            return defaults?.bool(forKey: "showDebugView") ?? false
+        }
+        set {
+            defaults?.set(newValue, forKey: "showDebugView")
+            NotificationCenter.default.post(
+                name: NSNotification.Name("DebugViewChanged"), object: nil)
+        }
+    }
 }
 
 // MARK: - Storage Observer
@@ -65,6 +78,7 @@ class SharedStorage {
 class StorageObserver: ObservableObject {
     @Published var tapCount: Int = SharedStorage.shared.tapCount
     @Published var catPosition: CatPosition = SharedStorage.shared.catPosition
+    @Published var showDebugView: Bool = SharedStorage.shared.showDebugView
 
     private var timer: Timer?
     private let storage = SharedStorage.shared
@@ -81,6 +95,11 @@ class StorageObserver: ObservableObject {
             let currentPosition = self.storage.catPosition
             if currentPosition != self.catPosition {
                 self.catPosition = currentPosition
+            }
+
+            let currentDebugView = self.storage.showDebugView
+            if currentDebugView != self.showDebugView {
+                self.showDebugView = currentDebugView
             }
         }
     }

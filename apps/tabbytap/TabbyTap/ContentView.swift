@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ContentView: View {
     @StateObject private var storageObserver = StorageObserver()
     @State private var testText: String = ""
+    @State private var isKeyboardEnabled: Bool = false
     private let storage = SharedStorage.shared
 
     var body: some View {
@@ -28,12 +30,12 @@ struct ContentView: View {
             .background(Color(uiColor: .systemGray6))
             .cornerRadius(12)
 
-            // Test Text Field
+            // Playground Text Field
             VStack(alignment: .leading, spacing: 10) {
-                Text("Test Keyboard")
+                Text("Playground")
                     .font(.headline)
                     .foregroundColor(.secondary)
-                TextField("Type here to test keyboard...", text: $testText)
+                TextField("Type here to play...", text: $testText)
                     .textFieldStyle(.roundedBorder)
                     .padding(.horizontal, 4)
             }
@@ -41,6 +43,27 @@ struct ContentView: View {
             .frame(maxWidth: .infinity)
             .background(Color(uiColor: .systemGray6))
             .cornerRadius(12)
+            
+            // Keyboard Status
+            Button(action: openKeyboardSettings) {
+                HStack(spacing: 12) {
+                    Image(systemName: isKeyboardEnabled ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .foregroundColor(isKeyboardEnabled ? .green : .red)
+                        .font(.title2)
+                    Text(isKeyboardEnabled ? "Keyboard Enabled" : "Keyboard Not Enabled")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color(uiColor: .systemGray6))
+                .cornerRadius(12)
+            }
+            .buttonStyle(PlainButtonStyle())
 
             // Cat Position Selector
             VStack(alignment: .leading, spacing: 15) {
@@ -95,9 +118,16 @@ struct ContentView: View {
         .padding()
         .onAppear {
             storageObserver.start()
+            checkKeyboardStatus()
         }
         .onDisappear {
             storageObserver.stop()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            checkKeyboardStatus()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            checkKeyboardStatus()
         }
     }
 
@@ -109,6 +139,27 @@ struct ContentView: View {
             return "Space Bar"
         case .enterBar:
             return "Enter Bar"
+        }
+    }
+    
+    private func openKeyboardSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
+        }
+    }
+    
+    private func checkKeyboardStatus() {
+        let keyboardBundleId = "com.buildergroup.TabbyTap.Keyboard"
+        
+        // Get all active input modes
+        let activeInputModes = UITextInputMode.activeInputModes
+        
+        // Check if our keyboard extension is in the list
+        isKeyboardEnabled = activeInputModes.contains { inputMode in
+            if let identifier = inputMode.value(forKey: "identifier") as? String {
+                return identifier.contains(keyboardBundleId) || identifier == keyboardBundleId
+            }
+            return false
         }
     }
 }

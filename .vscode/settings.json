@@ -70,5 +70,9 @@
 	"rust-analyzer.runnableEnv": {
 		"ENV_ROOT_DIR": "${workspaceFolder}",
 		"GENERATE_IMAGES": "true"
-	}
+	},
+
+	// XCode Settings
+	"lldb.library": "/Applications/Xcode.app/Contents/SharedFrameworks/LLDB.framework/Versions/A/LLDB",
+    "lldb.launch.expressions": "native"
 }

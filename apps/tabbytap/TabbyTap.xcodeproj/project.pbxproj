@@ -52,6 +52,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"KeyboardApp+Extension.swift",
+				SharedStorage.swift,
 			);
 			target = D333750B2ED75E3800F3FE52 /* Keyboard */;
 		};

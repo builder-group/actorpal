@@ -48,11 +48,21 @@
 			);
 			target = D333750B2ED75E3800F3FE52 /* Keyboard */;
 		};
+		D333772C2ED81BA300F3FE52 /* Exceptions for "TabbyTap" folder in "Keyboard" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"KeyboardApp+Extension.swift",
+			);
+			target = D333750B2ED75E3800F3FE52 /* Keyboard */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D33374F62ED75DB000F3FE52 /* TabbyTap */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D333772C2ED81BA300F3FE52 /* Exceptions for "TabbyTap" folder in "Keyboard" target */,
+			);
 			path = TabbyTap;
 			sourceTree = "<group>";
 		};
@@ -369,6 +379,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TabbyTap/TabbyTapDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9RQRHCCMVL;
@@ -401,6 +412,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TabbyTap/TabbyTap.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9RQRHCCMVL;
@@ -431,6 +443,7 @@
 		D33375152ED75E3800F3FE52 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Keyboard/KeyboardDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9RQRHCCMVL;
@@ -459,6 +472,7 @@
 		D33375162ED75E3800F3FE52 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Keyboard/Keyboard.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 9RQRHCCMVL;

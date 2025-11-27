@@ -52,16 +52,45 @@ struct MascotCounterView: View {
 
 struct MascotOverlayView: View {
     @ObservedObject var state: MascotState
+    @State private var catPosition: CatPosition = SharedStorage.shared.catPosition
 
     var body: some View {
         HStack(spacing: 15) {
             MascotCounterView(count: state.keyPressCount)
             MascotView(state: state)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-        .padding(.trailing, 10)
-        .padding(.top, 5)
+        .frame(
+            maxWidth: .infinity, maxHeight: .infinity, alignment: alignmentForPosition(catPosition)
+        )
+        .padding(paddingForPosition(catPosition))
         .allowsHitTesting(false)
         .zIndex(1000)
+        .onReceive(
+            NotificationCenter.default.publisher(for: NSNotification.Name("CatPositionChanged"))
+        ) { _ in
+            catPosition = SharedStorage.shared.catPosition
+        }
+    }
+
+    private func paddingForPosition(_ position: CatPosition) -> EdgeInsets {
+        switch position {
+        case .autocompleteBar:
+            return EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 10)
+        case .spaceBar:
+            return EdgeInsets(top: 0, leading: 0, bottom: 5, trailing: 0)
+        case .enterBar:
+            return EdgeInsets(top: 0, leading: 0, bottom: 5, trailing: 10)
+        }
+    }
+
+    private func alignmentForPosition(_ position: CatPosition) -> Alignment {
+        switch position {
+        case .autocompleteBar:
+            return .topTrailing
+        case .spaceBar:
+            return .bottom
+        case .enterBar:
+            return .bottomTrailing
+        }
     }
 }

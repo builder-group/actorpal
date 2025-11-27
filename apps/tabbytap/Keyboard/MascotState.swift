@@ -14,6 +14,11 @@ class MascotState: ObservableObject {
 
     private var lastTextLength: Int = 0
     private var pollingTimer: Timer?
+    private let storage = SharedStorage.shared
+
+    init() {
+        keyPressCount = storage.tapCount
+    }
 
     func startTracking(textLengthProvider: @escaping () -> Int) {
         lastTextLength = textLengthProvider()
@@ -35,7 +40,8 @@ class MascotState: ObservableObject {
     }
 
     private func handleKeyPress() {
-        keyPressCount += 1
+        storage.incrementTapCount()
+        keyPressCount = storage.tapCount
         isLeftHandUp.toggle()
     }
 

@@ -79,8 +79,10 @@ struct KeyboardViewWithStorage: View {
                                            (button.item.action.isPrimaryAction && storageObserver.catPosition == .enterBar)
                         if shouldReplace {
                             ZStack {
+                                // Hit area (invisible button that handles taps)
                                 button.view
-                                    .opacity(0.01)
+                                    .opacity(storageObserver.showDebugView ? 0.5 : 0.01)
+                                // Dashed outline (visual indicator)
                                 GeometryReader { geometry in
                                     Rectangle()
                                         .fill(storageObserver.showDebugView ? Color.blue.opacity(0.2) : Color.clear)

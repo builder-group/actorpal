@@ -8,8 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var tapCount: Int = SharedStorage.shared.tapCount
-    @State private var catPosition: CatPosition = SharedStorage.shared.catPosition
+    @StateObject private var storageObserver = StorageObserver()
     @State private var testText: String = ""
     private let storage = SharedStorage.shared
 
@@ -20,7 +19,7 @@ struct ContentView: View {
                 Text("Total Taps")
                     .font(.headline)
                     .foregroundColor(.secondary)
-                Text("\(tapCount)")
+                Text("\(storageObserver.tapCount)")
                     .font(.system(size: 48, weight: .bold))
                     .foregroundColor(.primary)
             }
@@ -53,15 +52,14 @@ struct ContentView: View {
                     ForEach(CatPosition.allCases, id: \.self) { position in
                         Button(action: {
                             storage.catPosition = position
-                            catPosition = position
                         }) {
                             Text(positionLabel(position))
                                 .font(.subheadline)
-                                .foregroundColor(catPosition == position ? .white : .primary)
+                                .foregroundColor(storageObserver.catPosition == position ? .white : .primary)
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(
-                                    catPosition == position
+                                    storageObserver.catPosition == position
                                         ? Color.accentColor : Color(uiColor: .systemGray6)
                                 )
                                 .cornerRadius(8)
@@ -78,18 +76,10 @@ struct ContentView: View {
         }
         .padding()
         .onAppear {
-            updateTapCount()
-            startTapCountObserver()
+            storageObserver.start()
         }
-        .onReceive(
-            NotificationCenter.default.publisher(for: NSNotification.Name("TapCountChanged"))
-        ) { _ in
-            updateTapCount()
-        }
-        .onReceive(
-            NotificationCenter.default.publisher(for: NSNotification.Name("CatPositionChanged"))
-        ) { _ in
-            catPosition = storage.catPosition
+        .onDisappear {
+            storageObserver.stop()
         }
     }
 
@@ -101,19 +91,6 @@ struct ContentView: View {
             return "Space Bar"
         case .enterBar:
             return "Enter Bar"
-        }
-    }
-
-    private func updateTapCount() {
-        tapCount = storage.tapCount
-    }
-
-    private func startTapCountObserver() {
-        Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-            let currentCount = storage.tapCount
-            if currentCount != tapCount {
-                tapCount = currentCount
-            }
         }
     }
 }

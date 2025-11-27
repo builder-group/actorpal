@@ -5,6 +5,7 @@
 //  Created by Benno on 26.11.25.
 //
 
+import Combine
 import Foundation
 
 enum CatPosition: String, CaseIterable {
@@ -56,5 +57,40 @@ class SharedStorage {
             NotificationCenter.default.post(
                 name: NSNotification.Name("CatPositionChanged"), object: nil)
         }
+    }
+}
+
+// MARK: - Storage Observer
+
+class StorageObserver: ObservableObject {
+    @Published var tapCount: Int = SharedStorage.shared.tapCount
+    @Published var catPosition: CatPosition = SharedStorage.shared.catPosition
+
+    private var timer: Timer?
+    private let storage = SharedStorage.shared
+
+    func start() {
+        timer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+
+            let currentTapCount = self.storage.tapCount
+            if currentTapCount != self.tapCount {
+                self.tapCount = currentTapCount
+            }
+
+            let currentPosition = self.storage.catPosition
+            if currentPosition != self.catPosition {
+                self.catPosition = currentPosition
+            }
+        }
+    }
+
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    deinit {
+        stop()
     }
 }

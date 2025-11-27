@@ -5,6 +5,7 @@
 //  Created by Benno on 26.11.25.
 //
 
+import Combine
 import SwiftUI
 
 struct MascotView: View {
@@ -52,7 +53,7 @@ struct MascotCounterView: View {
 
 struct MascotOverlayView: View {
     @ObservedObject var state: MascotState
-    @State private var catPosition: CatPosition = SharedStorage.shared.catPosition
+    @StateObject private var storageObserver = StorageObserver()
 
     var body: some View {
         HStack(spacing: 15) {
@@ -60,15 +61,17 @@ struct MascotOverlayView: View {
             MascotView(state: state)
         }
         .frame(
-            maxWidth: .infinity, maxHeight: .infinity, alignment: alignmentForPosition(catPosition)
+            maxWidth: .infinity, maxHeight: .infinity,
+            alignment: alignmentForPosition(storageObserver.catPosition)
         )
-        .padding(paddingForPosition(catPosition))
+        .padding(paddingForPosition(storageObserver.catPosition))
         .allowsHitTesting(false)
         .zIndex(1000)
-        .onReceive(
-            NotificationCenter.default.publisher(for: NSNotification.Name("CatPositionChanged"))
-        ) { _ in
-            catPosition = SharedStorage.shared.catPosition
+        .onAppear {
+            storageObserver.start()
+        }
+        .onDisappear {
+            storageObserver.stop()
         }
     }
 

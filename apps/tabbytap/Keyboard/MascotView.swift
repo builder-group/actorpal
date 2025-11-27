@@ -6,6 +6,7 @@
 //
 
 import Combine
+import KeyboardKit
 import SwiftUI
 
 struct MascotView: View {
@@ -54,8 +55,10 @@ struct MascotCounterView: View {
 struct MascotOverlayView: View {
     @ObservedObject var state: MascotState
     @StateObject private var storageObserver = StorageObserver()
+    let services: Keyboard.Services
 
     var body: some View {
+        // Cat and counter
         HStack(spacing: 15) {
             MascotCounterView(count: state.keyPressCount)
             MascotView(state: state)
@@ -68,7 +71,7 @@ struct MascotOverlayView: View {
         .padding(paddingForPosition(storageObserver.catPosition))
         .modifier(DebugFrameModifier(isEnabled: storageObserver.showDebugView))
         .allowsHitTesting(false)
-        .zIndex(1000)
+        .zIndex(500)
         .onAppear {
             storageObserver.start()
         }
@@ -82,9 +85,9 @@ struct MascotOverlayView: View {
         case .autocompleteBar:
             return EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 20)
         case .spaceBar:
-            return EdgeInsets(top: 0, leading: 0, bottom: -10, trailing: 0)
+            return EdgeInsets(top: 0, leading: 0, bottom: -3, trailing: 0)
         case .enterBar:
-            return EdgeInsets(top: 0, leading: 0, bottom: -10, trailing: 0)
+            return EdgeInsets(top: 0, leading: 0, bottom: -3, trailing: 0)
         }
     }
 
@@ -129,3 +132,4 @@ struct DebugFrameModifier: ViewModifier {
         }
     }
 }
+

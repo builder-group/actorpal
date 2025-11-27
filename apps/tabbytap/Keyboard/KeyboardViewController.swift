@@ -26,7 +26,7 @@ class KeyboardViewController: KeyboardInputViewController {
             return AnyView(
                 ZStack(alignment: .topTrailing) {
                     KeyboardViewWithStorage(services: controller.services)
-                    MascotOverlayView(state: self.mascotState)
+                    MascotOverlayView(state: self.mascotState, services: controller.services)
                 }
             )
         }
@@ -75,10 +75,24 @@ struct KeyboardViewWithStorage: View {
             buttonView: { button in
                 AnyView(
                     Group {
-                        let shouldHide = (button.item.action == KeyboardAction.space && storageObserver.catPosition == .spaceBar) ||
-                                        (button.item.action.isPrimaryAction && storageObserver.catPosition == .enterBar)
-                        if shouldHide {
-                            Color.clear.frame(height: 0)
+                        let shouldReplace = (button.item.action == KeyboardAction.space && storageObserver.catPosition == .spaceBar) ||
+                                           (button.item.action.isPrimaryAction && storageObserver.catPosition == .enterBar)
+                        if shouldReplace {
+                            ZStack {
+                                button.view
+                                    .opacity(0.01)
+                                GeometryReader { geometry in
+                                    Rectangle()
+                                        .fill(storageObserver.showDebugView ? Color.blue.opacity(0.2) : Color.clear)
+                                        .overlay(
+                                            Rectangle()
+                                                .stroke(style: StrokeStyle(lineWidth: 2, dash: [5, 5]))
+                                                .foregroundColor(.gray.opacity(0.6))
+                                        )
+                                        .padding(8)
+                                        .allowsHitTesting(false)
+                                }
+                            }
                         } else {
                             button.view
                         }

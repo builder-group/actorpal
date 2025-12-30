@@ -27,31 +27,31 @@
 		"update:latest": "pnpm update --latest"
 	},
 	"dependencies": {
-		"@react-router/fs-routes": "^7.9.6",
-		"@react-router/node": "^7.9.6",
-		"@react-router/serve": "^7.9.6",
-		"@vercel/analytics": "^1.5.0",
-		"@vercel/react-router": "^1.2.3",
+		"@react-router/fs-routes": "^7.11.0",
+		"@react-router/node": "^7.11.0",
+		"@react-router/serve": "^7.11.0",
+		"@vercel/analytics": "^1.6.1",
+		"@vercel/react-router": "^1.2.4",
 		"clsx": "^2.1.1",
 		"feature-react": "^0.0.66",
 		"feature-state": "^0.0.64",
 		"isbot": "^5.1.32",
-		"lucide-react": "^0.555.0",
-		"react": "^19.2.0",
-		"react-dom": "^19.2.0",
-		"react-router": "^7.9.6",
+		"lucide-react": "^0.562.0",
+		"react": "^19.2.3",
+		"react-dom": "^19.2.3",
+		"react-router": "^7.11.0",
 		"tailwind-merge": "^3.4.0"
 	},
 	"devDependencies": {
 		"@mdx-js/rollup": "^3.1.1",
-		"@react-router/dev": "^7.9.6",
+		"@react-router/dev": "^7.11.0",
 		"@tailwindcss/typography": "^0.5.19",
-		"@tailwindcss/vite": "^4.1.17",
+		"@tailwindcss/vite": "^4.1.18",
 		"@types/mdx": "^2.0.13",
 		"@types/react": "^19.2.7",
 		"@types/react-dom": "^19.2.3",
-		"daisyui": "^5.5.5",
-		"tailwindcss": "^4.1.17",
-		"vite-tsconfig-paths": "^5.1.4"
+		"daisyui": "^5.5.14",
+		"tailwindcss": "^4.1.18",
+		"vite-tsconfig-paths": "^6.0.3"
 	}
 }

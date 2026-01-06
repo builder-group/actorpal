@@ -2,81 +2,92 @@
 //  BrowseView.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
-import SwiftData
 import SwiftUI
 
 struct BrowseView: View {
-    @QuerySingleton private var player: Player
-    @Environment(\.modelContext) private var modelContext
+    @Binding var selectedTab: AppTab
+    @State private var selectedChallenge: Challenge?
 
     private let challenges = ChallengeRegistry.shared.all
 
-    var body: some View {
-        List {
-            if player.hasActiveDerive {
-                activeWarningSection
-            }
-
-            challengesSection
-        }
-        .navigationTitle("Discover")
-    }
-
     // MARK: - UI
 
-    private var activeWarningSection: some View {
-        Section {
-            Label("You have an active derive", systemImage: "info.circle")
-                .foregroundStyle(.secondary)
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                colorSection
+
+                Spacer().frame(height: 32)
+
+                soonSection
+
+                Spacer().frame(height: 40)
+            }
+            .padding(.horizontal, 20)
+        }
+        .scrollIndicators(.hidden)
+        .background(Color.appBackground)
+        .navigationTitle("Discover")
+        .navigationDestination(item: $selectedChallenge) { challenge in
+            ChallengeDetailView(challenge: challenge, selectedTab: $selectedTab)
         }
     }
 
-    private var challengesSection: some View {
-        Section("COLOR CHALLENGES") {
-            ForEach(challenges) { challenge in
-                Button {
-                    startDerive(challenge)
-                } label: {
-                    HStack(spacing: 16) {
-                        Circle()
-                            .fill(challenge.color)
-                            .frame(width: 40, height: 40)
+    private var colorSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Color")
+                .font(.erode(24, weight: .semibold))
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(challenge.prompt)
-                                .foregroundStyle(.primary)
-
-                            Text(challenge.durationText)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-
-                        if !player.hasActiveDerive {
-                            Image(systemName: "chevron.right")
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12)
+                ],
+                spacing: 12
+            ) {
+                ForEach(challenges) { challenge in
+                    challengeCard(challenge)
                 }
-                .disabled(player.hasActiveDerive)
             }
         }
     }
 
-    // MARK: - Actions
+    private func challengeCard(_ challenge: Challenge) -> some View {
+        Button {
+            selectedChallenge = challenge
+        } label: {
+            VStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(challenge.color)
+                    .aspectRatio(1, contentMode: .fit)
 
-    private func startDerive(_ challenge: Challenge) {
-        let derive = Derive(challengeId: challenge.id, player: player)
-        modelContext.insert(derive)
-        try? modelContext.save()
+                Text(challenge.title)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.primary)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var soonSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Soon")
+                .font(.erode(24, weight: .semibold))
+
+            Text("More challenge types coming soon — shapes, textures, themes, and more.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
 #Preview {
     NavigationStack {
-        BrowseView()
+        BrowseView(selectedTab: .constant(.discover))
     }
     .previewDataContainer()
 }

@@ -2,13 +2,20 @@
 //  ContentView.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import SwiftData
 import SwiftUI
 
+enum AppTab: Hashable {
+    case derive, discover, settings
+}
+
 struct ContentView: View {
     @QuerySingleton private var player: Player
     @State private var showSplash = true
+    @State private var selectedTab: AppTab = .derive
 
     var body: some View {
         Group {
@@ -30,23 +37,29 @@ struct ContentView: View {
     // MARK: - UI
 
     private var mainTabView: some View {
-        TabView {
-            Tab("Derive", systemImage: "square.grid.3x3") {
+        TabView(selection: $selectedTab) {
+            Tab(value: .derive) {
                 NavigationStack {
-                    HomeView()
+                    HomeView(selectedTab: $selectedTab)
                 }
+            } label: {
+                Label("Dérive", image: "logo")
             }
 
-            Tab("Discover", systemImage: "magnifyingglass") {
+            Tab(value: .discover) {
                 NavigationStack {
-                    BrowseView()
+                    BrowseView(selectedTab: $selectedTab)
                 }
+            } label: {
+                Label("Discover", systemImage: "sparkle.magnifyingglass")
             }
 
-            Tab("Settings", systemImage: "gearshape") {
+            Tab(value: .settings) {
                 NavigationStack {
                     SettingsView()
                 }
+            } label: {
+                Label("Settings", systemImage: "gearshape")
             }
         }
     }

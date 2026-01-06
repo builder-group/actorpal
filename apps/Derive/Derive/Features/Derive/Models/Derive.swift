@@ -2,6 +2,8 @@
 //  Derive.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import Foundation
 import SwiftData
@@ -89,13 +91,5 @@ final class Derive {
 
     var isComplete: Bool {
         filledCount == 9
-    }
-
-    var canShare: Bool {
-        isComplete
-    }
-
-    var progressText: String {
-        "\(filledCount)/9"
     }
 }

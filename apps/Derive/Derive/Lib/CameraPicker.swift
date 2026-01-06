@@ -2,6 +2,8 @@
 //  CameraPicker.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import SwiftUI
 import UIKit

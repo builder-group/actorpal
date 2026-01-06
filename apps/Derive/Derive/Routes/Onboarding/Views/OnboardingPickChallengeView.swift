@@ -2,6 +2,8 @@
 //  OnboardingPickChallengeView.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import SwiftData
 import SwiftUI
@@ -14,48 +16,53 @@ struct OnboardingPickChallengeView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Title
             Text("Pick a color")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.horizontal)
+                .font(.erode(36, weight: .bold))
 
-            Text("Start your first derive")
+            Spacer().frame(height: 8)
+
+            // Subtitle
+            Text("Start your first dérive")
+                .font(.body)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal)
-                .padding(.top, 8)
 
-            Spacer()
-                .frame(height: 24)
+            Spacer().frame(height: 32)
 
-            ScrollView {
-                LazyVGrid(
-                    columns: [GridItem(.flexible()), GridItem(.flexible())],
-                    spacing: 16
-                ) {
-                    ForEach(challenges) { challenge in
-                        Button {
-                            startDerive(challenge)
-                        } label: {
-                            VStack(spacing: 12) {
-                                Circle()
-                                    .fill(challenge.color)
-                                    .frame(width: 60, height: 60)
+            // Content (color grid)
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12),
+                ],
+                spacing: 12
+            ) {
+                ForEach(challenges) { challenge in
+                    Button {
+                        startDerive(challenge)
+                    } label: {
+                        VStack(spacing: 8) {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(challenge.color)
+                                .aspectRatio(1, contentMode: .fit)
 
-                                Text(challenge.id.capitalized)
-                                    .font(.headline)
-                                    .foregroundStyle(.primary)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color(.secondarySystemBackground))
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            Text(challenge.title)
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.primary)
                         }
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal)
             }
+
+            Spacer()
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .padding(.horizontal, 24)
+        .padding(.top, 60)
+        .padding(.bottom, 24)
+        .background(Color.appBackground)
+        .navigationBarHidden(true)
     }
 
     private func startDerive(_ challenge: Challenge) {

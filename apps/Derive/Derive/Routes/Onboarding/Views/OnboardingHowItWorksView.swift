@@ -2,60 +2,67 @@
 //  OnboardingHowItWorksView.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import SwiftUI
 
 struct OnboardingHowItWorksView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Title
             Text("How it works")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .padding(.horizontal)
+                .font(.erode(36, weight: .bold))
 
+            Spacer().frame(height: 8)
+
+            // Subtitle
             Text("Three simple steps")
+                .font(.body)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal)
-                .padding(.top, 8)
 
-            Spacer()
-                .frame(height: 32)
+            Spacer().frame(height: 40)
 
+            // Content
             VStack(spacing: 24) {
                 stepRow(number: 1, title: "Pick a color", description: "Choose from yellow, red, blue, and more")
                 stepRow(number: 2, title: "Find 9 things", description: "Look around and photograph what you find")
-                stepRow(number: 3, title: "Share your grid", description: "Save or share your completed derive")
+                stepRow(number: 3, title: "Complete your grid", description: "Save or share your finished dérive")
             }
-            .padding(.horizontal)
 
             Spacer()
 
+            // CTA
             NavigationLink {
                 OnboardingPickChallengeView()
             } label: {
                 Text("Choose a Color")
+                    .font(.headline)
                     .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.vertical, 16)
+                    .background(Color.appCta)
+                    .foregroundStyle(Color.appCtaContent)
+                    .clipShape(Capsule())
             }
-            .padding()
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .padding(.horizontal, 24)
+        .padding(.top, 60)
+        .padding(.bottom, 24)
+        .background(Color.appBackground)
+        .navigationBarHidden(true)
     }
 
     private func stepRow(number: Int, title: String, description: String) -> some View {
         HStack(alignment: .top, spacing: 16) {
             Text("\(number)")
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(width: 32, height: 32)
-                .background(Circle().fill(Color.accentColor))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.appCtaContent)
+                .frame(width: 28, height: 28)
+                .background(Circle().fill(Color.appCta))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.headline)
+                    .font(.subheadline.weight(.semibold))
 
                 Text(description)
                     .font(.subheadline)

@@ -2,6 +2,8 @@
 //  SplashView.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import SwiftUI
 
@@ -11,6 +13,8 @@ struct SplashView: View {
             .resizable()
             .scaledToFit()
             .frame(width: 80, height: 80)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background { Color.appBackground.ignoresSafeArea() }
     }
 }
 

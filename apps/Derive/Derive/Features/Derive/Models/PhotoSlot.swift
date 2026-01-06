@@ -2,6 +2,8 @@
 //  PhotoSlot.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import Foundation
 
@@ -16,10 +18,6 @@ struct PhotoSlot: Codable, Identifiable {
         self.id = id
         self.imageData = imageData
         self.capturedAt = capturedAt
-    }
-
-    var isEmpty: Bool {
-        imageData == nil
     }
 
     var isFilled: Bool {

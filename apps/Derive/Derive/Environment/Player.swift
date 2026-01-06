@@ -2,6 +2,8 @@
 //  Player.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import Foundation
 import SwiftData
@@ -44,18 +46,8 @@ final class Player: SingletonModel {
             .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
     }
 
-    /// All expired but incomplete derives
-    var expiredDerives: [Derive] {
-        derives.filter { $0.isExpired }
-    }
-
     /// Whether the player currently has an active derive
     var hasActiveDerive: Bool {
         activeDerive != nil
-    }
-
-    /// IDs of challenges the player has already done
-    var completedChallengeIds: Set<String> {
-        Set(derives.filter { $0.completedAt != nil }.map { $0.challengeId })
     }
 }

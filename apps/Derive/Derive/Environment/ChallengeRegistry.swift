@@ -2,6 +2,8 @@
 //  ChallengeRegistry.swift
 //  Derive
 //
+//  Created by Benno on 06.01.26.
+//
 
 import SwiftUI
 
@@ -9,30 +11,18 @@ struct ChallengeRegistry {
     static let shared = ChallengeRegistry()
     private init() {}
 
-    // Only color challenges for now
     let all: [Challenge] = [
-        Challenge(id: "yellow", prompt: "Find 9 yellow things", color: .yellow),
-        Challenge(id: "red", prompt: "Find 9 red things", color: .red),
-        Challenge(id: "blue", prompt: "Find 9 blue things", color: .blue),
-        Challenge(id: "green", prompt: "Find 9 green things", color: .green),
-        Challenge(id: "orange", prompt: "Find 9 orange things", color: .orange),
-        Challenge(id: "pink", prompt: "Find 9 pink things", color: .pink),
+        Challenge(id: "yellow", prompt: "find things in yellow"),
+        Challenge(id: "red", prompt: "find things in red"),
+        Challenge(id: "blue", prompt: "find things in blue"),
+        Challenge(id: "green", prompt: "find things in green"),
+        Challenge(id: "orange", prompt: "find things in orange"),
+        Challenge(id: "pink", prompt: "find things in pink"),
+        Challenge(id: "purple", prompt: "find things in purple"),
+        Challenge(id: "brown", prompt: "find things in brown"),
     ]
 
     func challenge(id: String) -> Challenge? {
         all.first { $0.id == id }
-    }
-
-    var featured: Challenge {
-        let weekNumber = Calendar.current.component(.weekOfYear, from: Date())
-        return all[weekNumber % all.count]
-    }
-}
-
-// MARK: - Time Helpers
-
-extension Int {
-    var days: TimeInterval {
-        TimeInterval(self * 24 * 60 * 60)
     }
 }

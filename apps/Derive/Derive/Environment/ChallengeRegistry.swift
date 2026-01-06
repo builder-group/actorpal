@@ -3,40 +3,20 @@
 //  Derive
 //
 
-import Foundation
+import SwiftUI
 
 struct ChallengeRegistry {
     static let shared = ChallengeRegistry()
     private init() {}
 
+    // Only color challenges for now
     let all: [Challenge] = [
-        Challenge(
-            id: "yellow",
-            prompt: "Find 9 things in yellow",
-            duration: 5.days,
-            themeColor: "yellow"
-        ),
-        Challenge(
-            id: "red",
-            prompt: "Find 9 things in red",
-            duration: 5.days,
-            themeColor: "red"
-        ),
-        Challenge(
-            id: "circles",
-            prompt: "Find 9 circles",
-            duration: 7.days
-        ),
-        Challenge(
-            id: "shadows",
-            prompt: "Find 9 interesting shadows",
-            duration: 7.days
-        ),
-        Challenge(
-            id: "lonely",
-            prompt: "Find 9 lonely objects",
-            duration: 10.days
-        ),
+        Challenge(id: "yellow", prompt: "Find 9 yellow things", color: .yellow),
+        Challenge(id: "red", prompt: "Find 9 red things", color: .red),
+        Challenge(id: "blue", prompt: "Find 9 blue things", color: .blue),
+        Challenge(id: "green", prompt: "Find 9 green things", color: .green),
+        Challenge(id: "orange", prompt: "Find 9 orange things", color: .orange),
+        Challenge(id: "pink", prompt: "Find 9 pink things", color: .pink),
     ]
 
     func challenge(id: String) -> Challenge? {

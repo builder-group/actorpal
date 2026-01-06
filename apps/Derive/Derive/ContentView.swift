@@ -2,8 +2,6 @@
 //  ContentView.swift
 //  Derive
 //
-//  Created by Benno on 06.01.26.
-//
 
 import SwiftData
 import SwiftUI
@@ -13,24 +11,18 @@ struct ContentView: View {
     @State private var showSplash = true
 
     var body: some View {
-        ZStack {
+        Group {
             if showSplash {
                 SplashView()
-                    .transition(.opacity)
             } else if !player.hasCompletedOnboarding {
                 OnboardingView()
-                    .transition(.opacity)
             } else {
                 mainTabView
-                    .transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: showSplash)
         .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                withAnimation {
-                    showSplash = false
-                }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                showSplash = false
             }
         }
     }
@@ -51,9 +43,9 @@ struct ContentView: View {
                 }
             }
 
-            Tab("History", systemImage: "clock.arrow.circlepath") {
+            Tab("Settings", systemImage: "gearshape") {
                 NavigationStack {
-                    HistoryView()
+                    SettingsView()
                 }
             }
         }

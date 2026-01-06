@@ -7,93 +7,51 @@ import SwiftUI
 
 struct OnboardingHowItWorksView: View {
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(spacing: 32) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Text("How It Works")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("How it works")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.horizontal)
 
-                        Text("Three simple steps to your first derive")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.top, 20)
+            Text("Three simple steps")
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+                .padding(.top, 8)
 
-                    // Steps
-                    VStack(spacing: 16) {
-                        stepCard(
-                            number: "1",
-                            icon: "sparkles",
-                            title: "Pick a prompt",
-                            description: "Choose a creative constraint to guide your exploration",
-                            color: .deriveTerracotta
-                        )
+            Spacer()
+                .frame(height: 32)
 
-                        stepCard(
-                            number: "2",
-                            icon: "camera",
-                            title: "Wander & capture",
-                            description: "Take photos during your walks to fill all 9 slots",
-                            color: .deriveSage
-                        )
-
-                        stepCard(
-                            number: "3",
-                            icon: "square.and.arrow.up",
-                            title: "Share your grid",
-                            description: "Complete your derive and share it with friends",
-                            color: .deriveLavender
-                        )
-                    }
-                    .padding(.horizontal)
-                }
-                .padding(.bottom, 100)
+            VStack(spacing: 24) {
+                stepRow(number: 1, title: "Pick a color", description: "Choose from yellow, red, blue, and more")
+                stepRow(number: 2, title: "Find 9 things", description: "Look around and photograph what you find")
+                stepRow(number: 3, title: "Share your grid", description: "Save or share your completed derive")
             }
+            .padding(.horizontal)
 
-            // CTA
-            VStack {
-                NavigationLink {
-                    OnboardingPickChallengeView()
-                } label: {
-                    HStack {
-                        Text("Choose Your First Prompt")
-                        Image(systemName: "arrow.right")
-                    }
-                }
-                .buttonStyle(.derivePrimary(color: .deriveSage))
+            Spacer()
+
+            NavigationLink {
+                OnboardingPickChallengeView()
+            } label: {
+                Text("Choose a Color")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .padding()
-            .background(
-                Color.deriveBackground
-                    .shadow(color: .black.opacity(0.05), radius: 10, y: -5)
-                    .ignoresSafeArea()
-            )
         }
-        .background(Color.deriveBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func stepCard(
-        number: String,
-        icon: String,
-        title: String,
-        description: String,
-        color: Color
-    ) -> some View {
-        HStack(spacing: 16) {
-            // Number badge
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.2))
-                    .frame(width: 50, height: 50)
-
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
-            }
+    private func stepRow(number: Int, title: String, description: String) -> some View {
+        HStack(alignment: .top, spacing: 16) {
+            Text("\(number)")
+                .font(.headline)
+                .foregroundStyle(.white)
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(Color.accentColor))
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -106,8 +64,6 @@ struct OnboardingHowItWorksView: View {
 
             Spacer()
         }
-        .padding(16)
-        .deriveCard()
     }
 }
 

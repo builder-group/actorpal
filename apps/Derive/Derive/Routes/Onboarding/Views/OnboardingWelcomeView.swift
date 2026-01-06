@@ -10,50 +10,57 @@ struct OnboardingWelcomeView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // Illustration
-            ZStack {
-                Circle()
-                    .fill(Color.deriveSand)
-                    .frame(width: 200, height: 200)
+            gridIllustration
 
-                Image(systemName: "square.grid.3x3.fill")
-                    .font(.system(size: 80))
-                    .foregroundStyle(Color.deriveTerracotta)
-            }
-            .padding(.bottom, 40)
+            Spacer()
+                .frame(height: 48)
 
-            // Content
-            VStack(spacing: 16) {
-                Text("Welcome to Derive")
+            VStack(spacing: 12) {
+                Text("Derive")
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                Text(
-                    "A playful photo ritual for curious wanderers. Pick a creative prompt, explore your surroundings, and fill a 3×3 grid with what you discover."
-                )
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+                Text("A photo ritual for curious wanderers")
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
+                .frame(height: 24)
 
-            // CTA
+            Text("Pick a color, find 9 things in that color,\nand fill your grid.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Spacer()
+
             NavigationLink {
                 OnboardingHowItWorksView()
             } label: {
-                HStack {
-                    Text("Begin")
-                    Image(systemName: "arrow.right")
-                }
+                Text("Get Started")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .buttonStyle(.derivePrimary(color: .deriveTerracotta))
-            .padding(.horizontal)
-            .padding(.bottom)
+            .padding()
         }
-        .background(Color.deriveBackground.ignoresSafeArea())
         .navigationBarHidden(true)
+    }
+
+    private var gridIllustration: some View {
+        LazyVGrid(
+            columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 3),
+            spacing: 4
+        ) {
+            ForEach(0 ..< 9, id: \.self) { _ in
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(.tertiarySystemFill))
+                    .aspectRatio(1, contentMode: .fit)
+            }
+        }
+        .frame(width: 200)
     }
 }
 

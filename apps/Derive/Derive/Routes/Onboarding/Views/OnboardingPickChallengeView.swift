@@ -10,84 +10,55 @@ struct OnboardingPickChallengeView: View {
     @QuerySingleton private var player: Player
     @Environment(\.modelContext) private var modelContext
 
-    private let registry = ChallengeRegistry.shared
+    private let challenges = ChallengeRegistry.shared.all
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Pick a color")
+                .font(.largeTitle)
+                .fontWeight(.bold)
+                .padding(.horizontal)
+
+            Text("Start your first derive")
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+            Spacer()
+                .frame(height: 24)
+
             ScrollView {
-                VStack(spacing: 24) {
-                    // Header
-                    VStack(spacing: 8) {
-                        Text("Pick a Prompt")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
+                LazyVGrid(
+                    columns: [GridItem(.flexible()), GridItem(.flexible())],
+                    spacing: 16
+                ) {
+                    ForEach(challenges) { challenge in
+                        Button {
+                            startDerive(challenge)
+                        } label: {
+                            VStack(spacing: 12) {
+                                Circle()
+                                    .fill(challenge.color)
+                                    .frame(width: 60, height: 60)
 
-                        Text("Tap one to start your first derive")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.top, 20)
-
-                    // Challenge list
-                    VStack(spacing: 12) {
-                        ForEach(registry.all) { challenge in
-                            challengeCard(challenge)
+                                Text(challenge.id.capitalized)
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(.secondarySystemBackground))
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                     }
-                    .padding(.horizontal)
                 }
-                .padding(.bottom, 40)
+                .padding(.horizontal)
             }
         }
-        .background(Color.deriveBackground.ignoresSafeArea())
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func challengeCard(_ challenge: Challenge) -> some View {
-        let accentColor = challenge.color ?? .accentColor
-
-        return Button {
-            startDerive(with: challenge)
-        } label: {
-            HStack(spacing: 16) {
-                // Image
-                ChallengeImageView(challenge: challenge, size: 60)
-
-                // Content
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(challenge.prompt)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.primary)
-                        .multilineTextAlignment(.leading)
-
-                    HStack(spacing: 8) {
-                        Label(challenge.durationText, systemImage: "clock")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                // Arrow
-                Circle()
-                    .fill(accentColor)
-                    .frame(width: 36, height: 36)
-                    .overlay {
-                        Image(systemName: "arrow.right")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.white)
-                    }
-            }
-            .padding(16)
-            .deriveCard()
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func startDerive(with challenge: Challenge) {
+    private func startDerive(_ challenge: Challenge) {
         let derive = Derive(challengeId: challenge.id, player: player)
         modelContext.insert(derive)
         player.onboardingCompletedAt = Date()

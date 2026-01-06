@@ -4,6 +4,7 @@
 //
 
 import Combine
+import Photos
 import PhotosUI
 import SwiftData
 import SwiftUI
@@ -13,10 +14,11 @@ struct HomeView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var selectedSlotIndex: Int?
-    @State private var showPhotoSourcePicker = false
     @State private var showCamera = false
-    @State private var showPhotoLibrary = false
-    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var isProcessing = false
+    @State private var showSaveSuccess = false
+    @State private var showSaveError = false
 
     var body: some View {
         Group {
@@ -26,274 +28,259 @@ struct HomeView: View {
                 emptyStateView
             }
         }
-        .background(Color.deriveBackground.ignoresSafeArea())
+        .alert("Saved!", isPresented: $showSaveSuccess) {
+            Button("OK") {}
+        } message: {
+            Text("Your derive grid has been saved to Photos.")
+        }
+        .alert("Error", isPresented: $showSaveError) {
+            Button("OK") {}
+        } message: {
+            Text("Could not save to Photos. Please check permissions in Settings.")
+        }
     }
 
     // MARK: - Active Derive
 
     private func activeDeriveView(_ derive: Derive) -> some View {
-        let accentColor = derive.challenge?.color ?? .accentColor
+        let emptyCount = derive.photos.filter { $0.imageData == nil }.count
 
         return ScrollView {
             VStack(spacing: 24) {
-                // Progress card
-                progressCard(derive, accentColor: accentColor)
-                    .padding(.horizontal)
+                gridSection(derive)
 
-                // Grid section
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Text("Your Grid")
-                            .font(.title3)
-                            .fontWeight(.bold)
-
-                        Spacer()
-
-                        Text("\(derive.filledCount)/9")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(accentColor)
-                    }
-                    .padding(.horizontal)
-
-                    GridView(photos: derive.photos) { index in
-                        selectedSlotIndex = index
-                        showPhotoSourcePicker = true
-                    }
-                    .padding(.horizontal)
+                if !derive.isComplete {
+                    addPhotosSection(derive, emptyCount: emptyCount)
                 }
 
                 if derive.isComplete {
-                    completeSection(derive, accentColor: accentColor)
-                        .padding(.horizontal)
+                    completeSection(derive)
                 }
+
+                progressSection(derive)
             }
-            .padding(.vertical)
+            .padding()
         }
         .navigationTitle(derive.prompt)
-        .navigationBarTitleDisplayMode(.large)
-        .confirmationDialog("Add Photo", isPresented: $showPhotoSourcePicker) {
-            Button("Take Photo") { showCamera = true }
-            Button("Choose from Library") { showPhotoLibrary = true }
-            Button("Cancel", role: .cancel) { selectedSlotIndex = nil }
+        .confirmationDialog("Add Photo", isPresented: .constant(selectedSlotIndex != nil)) {
+            Button("Take Photo") {
+                showCamera = true
+            }
+            Button("Cancel", role: .cancel) {
+                selectedSlotIndex = nil
+            }
         }
         .fullScreenCover(isPresented: $showCamera) {
             CameraPicker { image in
                 if let image, let derive = player.activeDerive {
-                    savePhoto(image, to: derive)
+                    saveSinglePhoto(image, to: derive)
                 }
                 showCamera = false
             }
             .ignoresSafeArea()
         }
-        .photosPicker(
-            isPresented: $showPhotoLibrary,
-            selection: $selectedPhotoItem,
-            matching: .images
-        )
-        .onChange(of: selectedPhotoItem) { _, newItem in
-            guard let newItem else { return }
-            Task {
-                if let image = try? await newItem.loadTransferable(type: TransferableImage.self),
-                   let derive = player.activeDerive
-                {
-                    await MainActor.run { savePhoto(image.uiImage, to: derive) }
-                }
-                await MainActor.run { selectedPhotoItem = nil }
-            }
+        .onChange(of: selectedPhotos) { _, items in
+            guard !items.isEmpty, let derive = player.activeDerive else { return }
+            Task { await processPhotos(items, for: derive) }
         }
     }
 
-    private func progressCard(_ derive: Derive, accentColor: Color) -> some View {
-        HStack(spacing: 20) {
-            // Progress ring
-            ZStack {
-                Circle()
-                    .stroke(accentColor.opacity(0.2), lineWidth: 10)
-
-                Circle()
-                    .trim(from: 0, to: Double(derive.filledCount) / 9.0)
-                    .stroke(
-                        accentColor,
-                        style: StrokeStyle(lineWidth: 10, lineCap: .round)
-                    )
-                    .rotationEffect(.degrees(-90))
-                    .animation(.spring(response: 0.6), value: derive.filledCount)
-
-                VStack(spacing: 2) {
-                    Text("\(derive.filledCount)")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-
-                    Text("of 9")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .frame(width: 90, height: 90)
-
-            VStack(alignment: .leading, spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Time Left")
+    private func gridSection(_ derive: Derive) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("\(derive.filledCount) of 9")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if derive.isComplete {
+                    Label("Complete", systemImage: "checkmark.circle.fill")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
-
-                    TimeRemainingLabel(endsAt: derive.endsAt)
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .foregroundStyle(.green)
                 }
-
-                // Progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(accentColor.opacity(0.2))
-
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(accentColor)
-                            .frame(width: geo.size.width * Double(derive.filledCount) / 9.0)
-                            .animation(.spring(response: 0.6), value: derive.filledCount)
-                    }
-                }
-                .frame(height: 8)
             }
 
-            Spacer()
+            GridView(photos: derive.photos) { index in
+                if derive.photos[index].imageData == nil {
+                    selectedSlotIndex = index
+                }
+            }
         }
-        .padding(20)
-        .deriveCard()
     }
 
-    private func completeSection(_ derive: Derive, accentColor: Color) -> some View {
-        VStack(spacing: 16) {
-            HStack(spacing: 12) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title)
-                    .foregroundStyle(Color.deriveSage)
-
-                Text("Grid Complete!")
-                    .font(.title3)
-                    .fontWeight(.bold)
+    private func addPhotosSection(_ derive: Derive, emptyCount: Int) -> some View {
+        VStack(spacing: 12) {
+            PhotosPicker(
+                selection: $selectedPhotos,
+                maxSelectionCount: emptyCount,
+                matching: .images
+            ) {
+                Label(
+                    emptyCount == 9 ? "Add Photos" : "Add \(emptyCount) More Photos",
+                    systemImage: "photo.on.rectangle.angled"
+                )
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(.secondarySystemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .disabled(isProcessing)
+
+            if isProcessing {
+                ProgressView("Processing photos...")
+            }
+        }
+    }
+
+    private func completeSection(_ derive: Derive) -> some View {
+        VStack(spacing: 16) {
+            Text("Your derive is complete!")
+                .font(.headline)
 
             Button {
-                // TODO: Share
+                saveGridToLibrary(derive)
             } label: {
-                Label("Share Your Derive", systemImage: "square.and.arrow.up")
+                Label("Save to Photos", systemImage: "square.and.arrow.down")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .buttonStyle(.derivePrimary(color: accentColor))
         }
-        .padding(20)
-        .deriveCard()
+        .padding()
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func progressSection(_ derive: Derive) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "clock")
+                    .foregroundStyle(.secondary)
+                Text("Time remaining")
+                    .foregroundStyle(.secondary)
+                Spacer()
+                TimeRemainingLabel(endsAt: derive.endsAt)
+                    .fontWeight(.medium)
+            }
+            .font(.subheadline)
+
+            ProgressView(value: Double(derive.filledCount), total: 9)
+                .tint(derive.challenge?.color ?? .accentColor)
+        }
+        .padding()
+        .background(Color(.secondarySystemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Empty State
 
     private var emptyStateView: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                Spacer(minLength: 40)
-
-                // Illustration placeholder
-                ZStack {
-                    Circle()
-                        .fill(Color.deriveSand)
-                        .frame(width: 140, height: 140)
-
-                    Image(systemName: "figure.walk")
-                        .font(.system(size: 60))
-                        .foregroundStyle(Color.deriveTerracotta)
-                }
-
-                VStack(spacing: 12) {
-                    Text("Ready to wander?")
-                        .font(.title)
-                        .fontWeight(.bold)
-
-                    Text("Pick a creative prompt and start\ncapturing your surroundings")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                featuredSuggestion
-
-                Spacer(minLength: 40)
-            }
-            .padding()
+        ContentUnavailableView {
+            Label("No Active Derive", systemImage: "square.grid.3x3")
+        } description: {
+            Text("Pick a color challenge from Discover to start.")
         }
         .navigationTitle("Derive")
     }
 
-    private var featuredSuggestion: some View {
-        let featured = ChallengeRegistry.shared.featured
-        let accentColor = featured.color ?? .accentColor
-
-        return NavigationLink {
-            ChallengeDetailView(challenge: featured)
-        } label: {
-            VStack(spacing: 0) {
-                // Header with badge
-                HStack {
-                    Label("Featured", systemImage: "star.fill")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Capsule().fill(accentColor))
-
-                    Spacer()
-                }
-                .padding()
-                .background(accentColor.opacity(0.15))
-
-                // Content
-                HStack(spacing: 14) {
-                    ChallengeImageView(challenge: featured, size: 56)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(featured.prompt)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.primary)
-                            .multilineTextAlignment(.leading)
-
-                        Text(featured.durationText)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    Image(systemName: "arrow.right.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(accentColor)
-                }
-                .padding()
-            }
-            .deriveCard()
-        }
-        .buttonStyle(.plain)
-    }
-
     // MARK: - Actions
 
-    private func savePhoto(_ image: UIImage, to derive: Derive) {
+    private func saveSinglePhoto(_ image: UIImage, to derive: Derive) {
         guard let index = selectedSlotIndex else { return }
-        guard let imageData = cropAndResizeImage(image) else { return }
+        guard let data = processImage(image) else { return }
 
         var photos = derive.photos
-        photos[index] = PhotoSlot(
-            id: photos[index].id,
-            imageData: imageData,
-            capturedAt: Date()
-        )
+        photos[index] = PhotoSlot(id: photos[index].id, imageData: data, capturedAt: Date())
         derive.photos = photos
         try? modelContext.save()
         selectedSlotIndex = nil
     }
 
-    private func cropAndResizeImage(_ image: UIImage) -> Data? {
+    @MainActor
+    private func processPhotos(_ items: [PhotosPickerItem], for derive: Derive) async {
+        isProcessing = true
+        defer {
+            isProcessing = false
+            selectedPhotos = []
+        }
+
+        var emptyIndices = derive.photos.enumerated()
+            .filter { $0.element.imageData == nil }
+            .map { $0.offset }
+
+        var photos = derive.photos
+
+        for item in items {
+            guard !emptyIndices.isEmpty else { break }
+
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let image = UIImage(data: data),
+               let processed = processImage(image)
+            {
+                let index = emptyIndices.removeFirst()
+                photos[index] = PhotoSlot(id: photos[index].id, imageData: processed, capturedAt: Date())
+            }
+        }
+
+        derive.photos = photos
+        try? modelContext.save()
+    }
+
+    private func saveGridToLibrary(_ derive: Derive) {
+        let image = createGridImage(from: derive.photos)
+
+        PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
+            guard status == .authorized || status == .limited else {
+                DispatchQueue.main.async {
+                    showSaveError = true
+                }
+                return
+            }
+
+            PHPhotoLibrary.shared().performChanges {
+                PHAssetCreationRequest.creationRequestForAsset(from: image)
+            } completionHandler: { success, _ in
+                DispatchQueue.main.async {
+                    if success {
+                        showSaveSuccess = true
+                    } else {
+                        showSaveError = true
+                    }
+                }
+            }
+        }
+    }
+
+    private func createGridImage(from photos: [PhotoSlot]) -> UIImage {
+        let cellSize: CGFloat = 400
+        let spacing: CGFloat = 4
+        let gridSize = cellSize * 3 + spacing * 2
+
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: gridSize, height: gridSize))
+
+        return renderer.image { ctx in
+            UIColor.systemBackground.setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: gridSize, height: gridSize)))
+
+            for (index, slot) in photos.enumerated() {
+                let row = index / 3
+                let col = index % 3
+                let x = CGFloat(col) * (cellSize + spacing)
+                let y = CGFloat(row) * (cellSize + spacing)
+                let rect = CGRect(x: x, y: y, width: cellSize, height: cellSize)
+
+                if let data = slot.imageData, let image = UIImage(data: data) {
+                    image.draw(in: rect)
+                } else {
+                    UIColor.secondarySystemBackground.setFill()
+                    ctx.fill(rect)
+                }
+            }
+        }
+    }
+
+    private func processImage(_ image: UIImage) -> Data? {
         let size = image.size
         let shortSide = min(size.width, size.height)
         let cropRect = CGRect(
@@ -305,62 +292,50 @@ struct HomeView: View {
 
         guard let cgImage = image.cgImage?.cropping(to: cropRect) else { return nil }
 
-        let croppedImage = UIImage(
-            cgImage: cgImage,
-            scale: image.scale,
-            orientation: image.imageOrientation
-        )
+        let cropped = UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+        let maxDim = AppConfig.maxImageDimension
+        let finalSize = shortSide > maxDim ? maxDim : shortSide
 
-        let maxDimension = AppConfig.maxImageDimension
-        let finalSize = shortSide > maxDimension ? maxDimension : shortSide
-
-        let renderer = UIGraphicsImageRenderer(
-            size: CGSize(width: finalSize, height: finalSize)
-        )
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: finalSize, height: finalSize))
         let resized = renderer.image { _ in
-            croppedImage.draw(
-                in: CGRect(origin: .zero, size: CGSize(width: finalSize, height: finalSize))
-            )
+            cropped.draw(in: CGRect(origin: .zero, size: CGSize(width: finalSize, height: finalSize)))
         }
 
         return resized.jpegData(compressionQuality: 0.8)
     }
 }
 
-// MARK: - Time Remaining Label
+// MARK: - Time Remaining
 
 struct TimeRemainingLabel: View {
     let endsAt: Date
 
-    @State private var timeRemaining: TimeInterval = 0
-
+    @State private var remaining: TimeInterval = 0
     private let timer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        Text(formattedTime)
+        Text(formatted)
             .monospacedDigit()
-            .onAppear { updateTime() }
-            .onReceive(timer) { _ in updateTime() }
+            .onAppear { update() }
+            .onReceive(timer) { _ in update() }
     }
 
-    private var formattedTime: String {
-        if timeRemaining <= 0 { return "Time's up!" }
+    private var formatted: String {
+        if remaining <= 0 { return "Time's up!" }
 
-        let days = Int(timeRemaining) / 86400
-        let hours = (Int(timeRemaining) % 86400) / 3600
-        let minutes = (Int(timeRemaining) % 3600) / 60
+        let days = Int(remaining) / 86400
+        let hours = (Int(remaining) % 86400) / 3600
 
         if days > 0 {
             return "\(days)d \(hours)h"
-        } else if hours > 0 {
-            return "\(hours)h \(minutes)m"
         } else {
-            return "\(minutes)m"
+            let minutes = (Int(remaining) % 3600) / 60
+            return "\(hours)h \(minutes)m"
         }
     }
 
-    private func updateTime() {
-        timeRemaining = max(0, endsAt.timeIntervalSinceNow)
+    private func update() {
+        remaining = max(0, endsAt.timeIntervalSinceNow)
     }
 }
 
@@ -368,20 +343,18 @@ struct TimeRemainingLabel: View {
     NavigationStack {
         HomeView()
     }
-    .previewDataContainer { context in
-        let player = Player.instance(with: context)
-        player.onboardingCompletedAt = Date()
+    .previewDataContainer { ctx in
+        Player.instance(with: ctx).onboardingCompletedAt = Date()
     }
 }
 
-#Preview("With Active") {
+#Preview("Active") {
     NavigationStack {
         HomeView()
     }
-    .previewDataContainer { context in
-        let player = Player.instance(with: context)
+    .previewDataContainer { ctx in
+        let player = Player.instance(with: ctx)
         player.onboardingCompletedAt = Date()
-        let derive = Derive(challengeId: "yellow", player: player)
-        context.insert(derive)
+        ctx.insert(Derive(challengeId: "yellow", player: player))
     }
 }

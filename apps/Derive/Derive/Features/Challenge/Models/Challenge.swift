@@ -3,47 +3,32 @@
 //  Derive
 //
 
-import Foundation
 import SwiftUI
 
 struct Challenge: Identifiable, Codable, Hashable {
     let id: String
     let prompt: String
     let duration: TimeInterval
-    let themeColor: String?
+    private let colorName: String
 
-    init(
-        id: String,
-        prompt: String,
-        duration: TimeInterval = AppConfig.defaultChallengeDuration,
-        themeColor: String? = nil
-    ) {
+    init(id: String, prompt: String, duration: TimeInterval = 7.days, color: Color) {
         self.id = id
         self.prompt = prompt
         self.duration = duration
-        self.themeColor = themeColor
-    }
-
-    // MARK: - Asset
-
-    /// Asset name for the challenge image
-    /// Place images in: Assets.xcassets/challenges/challenge_{id}.imageset
-    var imageName: String {
-        "challenge_\(id)"
+        self.colorName = id // Use id as color name since they match
     }
 
     // MARK: - Display
 
-    var color: Color? {
-        guard let themeColor else { return nil }
-        switch themeColor {
+    var color: Color {
+        switch colorName {
         case "yellow": return .yellow
         case "red": return .red
         case "blue": return .blue
         case "green": return .green
         case "orange": return .orange
         case "pink": return .pink
-        default: return nil
+        default: return .accentColor
         }
     }
 

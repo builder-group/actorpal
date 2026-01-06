@@ -78,7 +78,7 @@ struct BrowseView: View {
             Text("Soon")
                 .font(.erode(24, weight: .semibold))
 
-            Text("More challenge types coming soon — shapes, textures, themes, and more.")
+            Text("More ways to explore coming soon — textures, shapes, themes, and beyond.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }

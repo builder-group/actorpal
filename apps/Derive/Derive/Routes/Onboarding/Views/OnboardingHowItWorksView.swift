@@ -26,7 +26,7 @@ struct OnboardingHowItWorksView: View {
             // Content
             VStack(spacing: 24) {
                 stepRow(number: 1, title: "Pick a color", description: "Choose from yellow, red, blue, and more")
-                stepRow(number: 2, title: "Find 9 things", description: "Look around and photograph what you find")
+                stepRow(number: 2, title: "Notice 9 things", description: "Look around and capture what you notice")
                 stepRow(number: 3, title: "Complete your grid", description: "Save or share your finished dérive")
             }
 

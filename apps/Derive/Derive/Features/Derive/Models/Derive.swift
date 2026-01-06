@@ -16,7 +16,6 @@ final class Derive {
     var challengeId: String
     var startedAt: Date
     var completedAt: Date?
-    var sharedAt: Date?
 
     /// Photos stored as JSON-encoded Data for SwiftData compatibility
     var photosData: Data?
@@ -61,26 +60,10 @@ final class Derive {
         challenge?.prompt ?? "Unknown challenge"
     }
 
-    var duration: TimeInterval {
-        challenge?.duration ?? AppConfig.defaultChallengeDuration
-    }
-
-    // MARK: - Time
-
-    var endsAt: Date {
-        startedAt.addingTimeInterval(duration)
-    }
-
-    var timeRemaining: TimeInterval {
-        max(0, endsAt.timeIntervalSinceNow)
-    }
-
-    var isExpired: Bool {
-        completedAt == nil && timeRemaining <= 0
-    }
+    // MARK: - State
 
     var isActive: Bool {
-        completedAt == nil && !isExpired
+        completedAt == nil
     }
 
     // MARK: - Progress

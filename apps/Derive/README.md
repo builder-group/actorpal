@@ -1,27 +1,22 @@
-# Derive
+# Dérive
 
-## Introduction
+**Dérive** (French: [de.ʁiv], "drift") — a journey through a landscape where you drop your everyday routine and let curiosity guide you. The concept originates from Guy Debord's "Theory of the Dérive" (1956).
 
-**Dérive** (French: [de.ʁiv], "drift") — an unplanned journey through a landscape, usually urban, where participants drop their everyday routines and let curiosity guide them. The concept originates from Guy Debord's "Theory of the Dérive" (1956).
+Dérive is a native iOS app that gives you a reason to look up from your phone. City streets or forest trails. Your neighborhood or a new country.
 
-Derive is a native iOS app with playful minigames that change how you see and move through your surroundings.
+## Inspiration
 
-## POC — Grid Challenge
+- [Berlin color hunt tweet](https://x.com/malisauskasLT/status/2008123520727867451) — organic interest in the concept
 
-The first feature to validate the Derive concept: one prompt, nine photos, one grid.
+## POC: Color Grid
 
-**Evidence:**
+The first challenge to validate the Dérive concept — one prompt, nine photos, one grid.
 
-- [Berlin color hunt tweet](https://x.com/malisauskasLT/status/2008123520727867451) — 700k+ views demonstrating organic interest
-
-**Scope:**
-
-- **Weekly Challenge** — Join a prompt (e.g., "Find 9 things in yellow")
-- **3×3 Photo Grid** — Tap cells to capture or upload photos
-- **Countdown Timer** — Time remaining in the challenge
-- **Share** — Export completed grid as single image with subtle watermark
+- **Pick a Color** — Yellow, red, blue, and more
+- **Fill the Grid** — Capture or select photos for each cell
+- **Save & Share** — Export completed grid as a single image
 - **History** — View past completed grids
 
 ## Vision
 
-If validated, Derive expands into a collection of urban exploration minigames — sound walks, route randomizers, texture hunts, and more.
+If validated, Dérive expands into more exploration challenges — textures, shapes, sound walks, route randomizers, and beyond.

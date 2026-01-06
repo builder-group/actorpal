@@ -80,6 +80,12 @@ struct HomeView: View {
 
             Text(navigationTitle)
                 .font(.erode(36, weight: .bold))
+
+            if let derive = player.activeDerive {
+                Text("(\(derive.filledCount)/9)")
+                    .font(.erode(24, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
         }
     }
 

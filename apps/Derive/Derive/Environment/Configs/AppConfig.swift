@@ -63,10 +63,7 @@ enum AppConfig {
         return URL(string: "mailto:\(feedbackEmail)?subject=\(encodedSubject)")
     }
 
-    // MARK: - Challenge Configuration
-
-    /// Default duration for challenges (7 days)
-    static let defaultChallengeDuration: TimeInterval = 7 * 24 * 60 * 60
+    // MARK: - Image Configuration
 
     /// Maximum image dimension when storing photos
     static let maxImageDimension: CGFloat = 1000

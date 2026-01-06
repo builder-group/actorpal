@@ -9,13 +9,13 @@ import SwiftUI
 
 struct Challenge: Identifiable, Codable, Hashable {
     let id: String
+    let type: String
     let prompt: String
-    let duration: TimeInterval?
 
-    init(id: String, prompt: String, duration: TimeInterval? = nil) {
+    init(id: String, type: String = "color", prompt: String) {
         self.id = id
+        self.type = type
         self.prompt = prompt
-        self.duration = duration
     }
 
     // MARK: - Display

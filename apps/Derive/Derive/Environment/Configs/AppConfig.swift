@@ -33,7 +33,7 @@ enum AppConfig {
     // MARK: - External Links
 
     static var websiteURL: URL? {
-        URL(string: "https://builder.group")
+        URL(string: "https://builder.group/apps/derive")
     }
 
     static var appStoreURL: URL? {
@@ -41,7 +41,7 @@ enum AppConfig {
     }
 
     static var privacyPolicyURL: URL? {
-        URL(string: "https://tapling.app/legal/privacy")
+        URL(string: "https://builder.group/apps/derive/legal/privacy")
     }
 
     static var githubURL: URL? {

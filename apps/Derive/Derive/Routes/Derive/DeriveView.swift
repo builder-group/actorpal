@@ -19,16 +19,34 @@ struct DeriveView: View {
     @State private var showPhotoLibrary = false
     @State private var selectedPhotoItem: PhotosPickerItem?
 
+    private var accentColor: Color {
+        derive.challenge?.color ?? .accentColor
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                headerSection
                 gridSection
                 if derive.isComplete {
                     shareSection
                 }
             }
             .padding()
+        }
+        .background(Color.deriveBackground.ignoresSafeArea())
+        .navigationTitle("Add Photos")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                VStack(spacing: 2) {
+                    Text(derive.progressText)
+                        .font(.headline)
+                        .foregroundStyle(accentColor)
+                    Text(timeRemainingText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .confirmationDialog("Add Photo", isPresented: $showPhotoSourcePicker) {
             Button("Take Photo") {
@@ -72,18 +90,23 @@ struct DeriveView: View {
 
     // MARK: - UI
 
-    private var headerSection: some View {
-        VStack(spacing: 8) {
-            Text(derive.prompt)
-                .font(.headline)
-                .foregroundStyle(.secondary)
+    private var timeRemainingText: String {
+        let timeRemaining = max(0, derive.endsAt.timeIntervalSinceNow)
+        if timeRemaining <= 0 {
+            return "Time's up!"
+        }
 
-            Text(derive.progressText)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .foregroundStyle(derive.challenge?.color ?? .primary)
+        let days = Int(timeRemaining) / 86400
+        let hours = (Int(timeRemaining) % 86400) / 3600
 
-            TimeRemainingView(endsAt: derive.endsAt)
+        if days > 0 {
+            return "\(days)d \(hours)h left"
+        } else if hours > 0 {
+            let minutes = (Int(timeRemaining) % 3600) / 60
+            return "\(hours)h \(minutes)m left"
+        } else {
+            let minutes = Int(timeRemaining) / 60
+            return "\(minutes)m left"
         }
     }
 
@@ -95,7 +118,12 @@ struct DeriveView: View {
     }
 
     private var shareSection: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 16) {
+            Text("Grid Complete!")
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(accentColor)
+
             Button {
                 // TODO: Implement share
             } label: {
@@ -103,7 +131,7 @@ struct DeriveView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(derive.challenge?.color ?? .accentColor)
+                    .background(accentColor)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             }
@@ -111,11 +139,12 @@ struct DeriveView: View {
             Button {
                 completeDerive()
             } label: {
-                Text("Complete Derive")
+                Text("Finish & Save to History")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(.top, 8)
     }
 
     // MARK: - Actions

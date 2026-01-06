@@ -22,6 +22,7 @@ struct HistoryView: View {
                 historyList
             }
         }
+        .background(Color.deriveBackground.ignoresSafeArea())
         .navigationTitle("History")
     }
 

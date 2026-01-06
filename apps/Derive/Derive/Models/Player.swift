@@ -11,6 +11,7 @@ import SwiftData
 @Model
 final class Player: SingletonModel {
     var createdAt: Date
+    var onboardingCompletedAt: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \Derive.player)
     var derives: [Derive] = []
@@ -21,6 +22,12 @@ final class Player: SingletonModel {
 
     static var `default`: Player {
         Player()
+    }
+
+    // MARK: - Onboarding
+
+    var hasCompletedOnboarding: Bool {
+        onboardingCompletedAt != nil
     }
 
     // MARK: - Derives

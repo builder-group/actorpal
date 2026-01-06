@@ -13,7 +13,8 @@ struct GridCellView: View {
         Button(action: onTap) {
             ZStack {
                 if let imageData = slot.imageData,
-                   let uiImage = UIImage(data: imageData) {
+                   let uiImage = UIImage(data: imageData)
+                {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
@@ -24,22 +25,38 @@ struct GridCellView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .aspectRatio(1, contentMode: .fit)
             .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(GridCellButtonStyle())
     }
 
     // MARK: - UI
 
     private var emptyState: some View {
-        RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(Color(.systemGray5))
-            .overlay {
-                Image(systemName: "plus")
-                    .font(.title2)
-                    .foregroundStyle(.tertiary)
-            }
+        ZStack {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.deriveSand.opacity(0.6))
+
+            Circle()
+                .fill(Color(.systemBackground))
+                .frame(width: 40, height: 40)
+                .overlay {
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(Color.deriveTerracotta)
+                }
+        }
+    }
+}
+
+// MARK: - Button Style
+
+struct GridCellButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.95 : 1)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 
@@ -50,4 +67,5 @@ struct GridCellView: View {
         GridCellView(slot: PhotoSlot(), onTap: {})
     }
     .padding()
+    .background(Color.deriveBackground)
 }

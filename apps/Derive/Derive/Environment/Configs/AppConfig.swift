@@ -33,7 +33,7 @@ enum AppConfig {
     // MARK: - External Links
 
     static var websiteURL: URL? {
-        URL(string: "https://tapling.app")
+        URL(string: "https://builder.group")
     }
 
     static var appStoreURL: URL? {
@@ -41,7 +41,7 @@ enum AppConfig {
     }
 
     static var privacyPolicyURL: URL? {
-        URL(string: "https://tapling.app/privacy")
+        URL(string: "https://tapling.app/legal/privacy")
     }
 
     static var githubURL: URL? {
@@ -51,14 +51,15 @@ enum AppConfig {
     // MARK: - Feedback & Support
 
     static var feedbackEmail: String {
-        "feedback@tapling.app"
+        "support@builder.group"
     }
 
     static func mailtoURL(subject: String) -> URL? {
+        let fullSubject = "[Dérive] \(subject)"
         let encodedSubject =
-            subject.addingPercentEncoding(
+            fullSubject.addingPercentEncoding(
                 withAllowedCharacters: .urlQueryAllowed
-            ) ?? subject
+            ) ?? fullSubject
         return URL(string: "mailto:\(feedbackEmail)?subject=\(encodedSubject)")
     }
 

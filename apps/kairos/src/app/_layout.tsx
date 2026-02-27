@@ -1,16 +1,21 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import React from 'react';
-import { useColorScheme } from 'react-native';
+import { AnimatedSplashOverlay, AppTabs } from '@/components';
+import { useColorScheme } from '@/hooks';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+const Layout: React.FC = () => {
+	const colorScheme = useColorScheme();
+	const theme = React.useMemo(
+		() => (colorScheme === 'dark' ? DarkTheme : DefaultTheme),
+		[colorScheme]
+	);
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
-  );
-}
+	return (
+		<ThemeProvider value={theme}>
+			<AnimatedSplashOverlay />
+			<AppTabs />
+		</ThemeProvider>
+	);
+};
+
+export default Layout;

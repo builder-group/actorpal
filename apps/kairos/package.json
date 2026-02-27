@@ -19,7 +19,6 @@
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"install:clean": "pnpm run clean && pnpm install",
 		"lint": "expo lint",
-		"reset-project": "node ./scripts/reset-project.js",
 		"start:android": "expo start --android",
 		"start:dev": "expo start",
 		"start:ios": "expo start --ios",

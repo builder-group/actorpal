@@ -5,15 +5,11 @@
 **Domain:** midimarble.com
 **Stack:** ecsify, Three.js, Rapier 3D, React, TypeScript, Vite, @tonejs/midi, Tone.js
 
----
-
 ## Concept
 
 A browser-based tool where users turn MIDI files into 3D marble runs. The marble falls through a scene, bouncing off platforms that the user places. Each platform collision triggers a note from the MIDI file. The physics engine pre-computes the marble's trajectory, showing the user exactly where each note will occur. The user clicks to place platforms, rotates them to shape the path, and watches the whole thing play back as a synchronized music visualizer.
 
 It's not auto-generated. It's not fully manual either. The physics guides you -- you make the creative decisions.
-
----
 
 ## How It Works
 
@@ -72,8 +68,6 @@ Hit play. The marble drops. Physics runs in real-time. Each platform collision t
 
 Controls: play, pause, reset (marble returns to start).
 
----
-
 ## Trajectory & Pre-computation
 
 The trajectory system is the backbone. Rapier is used for both build preview and playback -- one physics model, guaranteed consistency, no drift between what you see and what plays.
@@ -97,8 +91,6 @@ Rapier simulating a single marble through ~200 platforms is fast -- milliseconds
 ### Consistency Guarantee
 
 **The marble cannot miss.** Build preview and playback use the same Rapier engine, same timestep, same world setup. What you see in build mode is exactly what plays back. One physics model, zero drift. This also means V2 features (curved platforms, bumpers, decorative elements) work automatically -- Rapier handles any collider shape.
-
----
 
 ## UI
 
@@ -169,8 +161,6 @@ Every note is a tick mark on the timeline. The tick's state tells the full story
 
 This IS the Fusion 360 timeline. Each green tick is an "operation." The chain of operations is the marble's path. Go back, tweak platform 3, and platforms 4-N reposition automatically. No separate action history needed -- the music itself is the history.
 
----
-
 ## Parametric Chain
 
 Every platform depends on the ones before it. This dependency chain works like parametric modeling:
@@ -196,8 +186,6 @@ marble start pos
 
 **Edge case -- platform goes off-screen or into impossible position:** The dot turns red. User needs to adjust upstream platforms to fix the chain. This is the creative puzzle.
 
----
-
 ## Visual Language
 
 | Element             | Appearance                                          | Interaction                              |
@@ -213,8 +201,6 @@ marble start pos
 Dot size reflects velocity -- louder notes get bigger dots.
 
 Number of visible upcoming dots is user-configurable (default 5-10).
-
----
 
 ## Sound
 
@@ -234,8 +220,6 @@ Between two note-dots, the path is "dead space." Users can click the trajectory 
 **V1:** Not included.
 **V2 Option A (simple):** Visual only -- marble phases through them.
 **V2 Option B (full):** Affect physics. Downstream dots reposition to account for altered travel time.
-
----
 
 ## Architecture
 
@@ -352,8 +336,6 @@ React → ECS:  React calls app extensions:
 
 App extensions (ecsify feature) expose clean callable APIs without React needing to know about entities/components internals.
 
----
-
 ## Tech Stack
 
 | Component       | Library                               | Notes                                           |
@@ -368,8 +350,6 @@ App extensions (ecsify feature) expose clean callable APIs without React needing
 | Build           | Vite + TypeScript                     | WASM support for Rapier via vite-plugin-wasm    |
 
 **Rapier is step-based, not frame-based.** `world.step()` advances physics by a fixed timestep regardless of rendering. For pre-computation, call it in a tight loop thousands of times without rendering. For playback, call it in sync with `requestAnimationFrame`. Fully decoupled from the render loop.
-
----
 
 ## V1 Scope
 
@@ -391,8 +371,6 @@ The minimum to prove the concept:
 - Save/load to localStorage
 
 **Not in V1:** Multiple platform types, decorative elements, video export, multi-track, camera animation, undo/redo.
-
----
 
 ## Future Roadmap
 

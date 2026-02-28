@@ -8,7 +8,11 @@
 		"scheme": "kairos",
 		"userInterfaceStyle": "automatic",
 		"ios": {
-			"icon": "./assets/expo.icon"
+			"icon": "./assets/expo.icon",
+			"bundleIdentifier": "com.buildergroup.kairos",
+			"infoPlist": {
+				"ITSAppUsesNonExemptEncryption": false
+			}
 		},
 		"android": {
 			"adaptiveIcon": {
@@ -39,6 +43,12 @@
 		"experiments": {
 			"typedRoutes": true,
 			"reactCompiler": true
+		},
+		"extra": {
+			"router": {},
+			"eas": {
+				"projectId": "2b00705a-3054-4eb0-8ada-c793d01adbc7"
+			}
 		}
 	}
 }

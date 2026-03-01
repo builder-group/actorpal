@@ -1,18 +1,10 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import React from 'react';
-import { AnimatedSplashOverlay, AppTabs } from '@/components';
-import { useColorScheme } from '@/hooks';
+import { AppTabs, ThemeProvider } from '@/components';
+import '../global.css';
 
 const Layout: React.FC = () => {
-	const colorScheme = useColorScheme();
-	const theme = React.useMemo(
-		() => (colorScheme === 'dark' ? DarkTheme : DefaultTheme),
-		[colorScheme]
-	);
-
 	return (
-		<ThemeProvider value={theme}>
-			<AnimatedSplashOverlay />
+		<ThemeProvider>
 			<AppTabs />
 		</ThemeProvider>
 	);

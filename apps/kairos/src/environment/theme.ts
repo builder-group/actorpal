@@ -1,59 +1,55 @@
-import '@/global.css';
-import { Platform } from 'react-native';
-
-export const Colors = {
+export const themeTokens = {
 	light: {
-		text: '#000000',
-		background: '#ffffff',
-		backgroundElement: '#F0F0F3',
-		backgroundSelected: '#E0E1E6',
-		textSecondary: '#60646C'
+		base0: '#FFFFFF',
+		base50: '#FAFAFA',
+		base100: '#F4F4F5',
+		base200: '#E4E4E7',
+		base300: '#D4D4D8',
+		base400: '#A1A1AA',
+		base500: '#71717A',
+		base600: '#52525B',
+		base700: '#3F3F46',
+		base800: '#27272A',
+		base900: '#18181B',
+		base950: '#09090B',
+		primary: '#2563EB'
 	},
 	dark: {
-		text: '#ffffff',
-		background: '#000000',
-		backgroundElement: '#212225',
-		backgroundSelected: '#2E3135',
-		textSecondary: '#B0B4BA'
+		base0: '#09090B',
+		base50: '#18181B',
+		base100: '#27272A',
+		base200: '#3F3F46',
+		base300: '#52525B',
+		base400: '#71717A',
+		base500: '#A1A1AA',
+		base600: '#D4D4D8',
+		base700: '#E4E4E7',
+		base800: '#F4F4F5',
+		base900: '#FAFAFA',
+		base950: '#FFFFFF',
+		primary: '#60A5FA'
 	}
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type TThemeMode = keyof typeof themeTokens;
+export type TThemeTokens = (typeof themeTokens)[TThemeMode];
 
-export const Fonts = Platform.select({
-	ios: {
-		/** iOS `UIFontDescriptorSystemDesignDefault` */
-		sans: 'system-ui',
-		/** iOS `UIFontDescriptorSystemDesignSerif` */
-		serif: 'ui-serif',
-		/** iOS `UIFontDescriptorSystemDesignRounded` */
-		rounded: 'ui-rounded',
-		/** iOS `UIFontDescriptorSystemDesignMonospaced` */
-		mono: 'ui-monospace'
-	},
-	default: {
-		sans: 'normal',
-		serif: 'serif',
-		rounded: 'normal',
-		mono: 'monospace'
-	},
-	web: {
-		sans: 'var(--font-display)',
-		serif: 'var(--font-serif)',
-		rounded: 'var(--font-rounded)',
-		mono: 'var(--font-mono)'
-	}
-});
+export function toCssVariables(tokens: TThemeTokens): TCssVariables {
+	return {
+		'--base-0': tokens.base0,
+		'--base-50': tokens.base50,
+		'--base-100': tokens.base100,
+		'--base-200': tokens.base200,
+		'--base-300': tokens.base300,
+		'--base-400': tokens.base400,
+		'--base-500': tokens.base500,
+		'--base-600': tokens.base600,
+		'--base-700': tokens.base700,
+		'--base-800': tokens.base800,
+		'--base-900': tokens.base900,
+		'--base-950': tokens.base950,
+		'--primary': tokens.primary
+	};
+}
 
-export const Spacing = {
-	half: 2,
-	one: 4,
-	two: 8,
-	three: 16,
-	four: 24,
-	five: 32,
-	six: 64
-} as const;
-
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+export type TCssVariables = Record<`--${string}`, string>;

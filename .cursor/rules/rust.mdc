@@ -128,15 +128,13 @@ pub async fn upsert(input: &UpsertInput) -> Result<i64, Error> {
 ```
 
 ### Section Dividers
+- Always use `// MARK: -` style section dividers (Xcode convention)
 - Always use section dividers to organize large files into logical sections
-- Always use consistent divider style
 - Always place dividers before major sections, not between every function
 
 ✅ Good:
 ```rust
-// =============================================================================
-// App Repository
-// =============================================================================
+// MARK: - App Repository
 
 pub struct AppRepository;
 
@@ -144,9 +142,7 @@ impl AppRepository {
     // ...
 }
 
-// =============================================================================
-// App Activity Repository
-// =============================================================================
+// MARK: - App Activity Repository
 
 pub struct AppActivityRepository;
 ```
@@ -339,9 +335,7 @@ pub fn insert(input: &UpsertInput) -> Result<Option<i64>, Error> {  // Wrong: No
 
 ✅ Good:
 ```rust
-// =============================================================================
-// App Repository
-// =============================================================================
+// MARK: - App Repository
 
 pub struct AppRepository;
 

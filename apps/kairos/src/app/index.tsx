@@ -1,5 +1,3 @@
-import { Host } from '@expo/ui/swift-ui';
-import { background, cornerRadius, padding } from '@expo/ui/swift-ui/modifiers';
 import React from 'react';
 import { ScrollView, Switch, Text, View } from 'react-native';
 import {
@@ -8,7 +6,7 @@ import {
 	type TWheelPickerItem,
 	type TWheelSelectColumn
 } from '@/components';
-import { TimePickerView } from '../../modules/time-picker';
+import { DurationPickerView } from '../../modules/duration-picker';
 
 const Screen: React.FC = () => {
 	const [expandedRowId, setExpandedRowId] = React.useState<string | null>('start-time');
@@ -17,6 +15,9 @@ const Screen: React.FC = () => {
 	const [endHour, setEndHour] = React.useState(10);
 	const [endMinute, setEndMinute] = React.useState(0);
 	const [repeatDaily, setRepeatDaily] = React.useState(true);
+	const [previewHours, setPreviewHours] = React.useState(8);
+	const [previewMinutes, setPreviewMinutes] = React.useState(30);
+	const [previewSeconds, setPreviewSeconds] = React.useState(0);
 
 	const hourItems = React.useMemo<TWheelPickerItem<number>[]>(
 		() =>
@@ -126,14 +127,24 @@ const Screen: React.FC = () => {
 				/>
 			</View>
 
-			<Host style={{ flex: 1 }}>
-				<TimePickerView
-					title="Hello World"
-					modifiers={[padding({ all: 16 }), cornerRadius(12), background('#f0f0f0')]}
-				>
-					<Text>Child content</Text>
-				</TimePickerView>
-			</Host>
+			<View className="mt-4">
+				<DurationPickerView
+					style={{ height: 216 }}
+					hours={previewHours}
+					minutes={previewMinutes}
+					seconds={previewSeconds}
+					onDurationChange={({ nativeEvent }) => {
+						setPreviewHours(nativeEvent.hours);
+						setPreviewMinutes(nativeEvent.minutes);
+						setPreviewSeconds(nativeEvent.seconds);
+					}}
+				/>
+				<Text className="text-base-500 mt-2 text-sm">
+					{`${previewHours.toString().padStart(2, '0')}:${previewMinutes
+						.toString()
+						.padStart(2, '0')}:${previewSeconds.toString().padStart(2, '0')}`}
+				</Text>
+			</View>
 		</ScrollView>
 	);
 };

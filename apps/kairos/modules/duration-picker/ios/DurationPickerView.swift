@@ -50,7 +50,7 @@ final class DurationPickerView: ExpoView, UIPickerViewDataSource,
         static let unitFont = UIFont.systemFont(ofSize: 17, weight: .semibold)
         static let rowHeight: CGFloat = 32
         static let columnSpacing: CGFloat = 5
-        static let valueToUnitSpacing: CGFloat = 6
+        static let valueToUnitSpacing: CGFloat = 4
         static let unitVerticalAdjustment: CGFloat =
             UIScreen.main.scale == 2 ? 2 : 1
     }

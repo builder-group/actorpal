@@ -1,7 +1,7 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import React from 'react';
-import { useTheme } from '@/components/provider';
 import { hexToRgba } from '@/lib';
+import { useTheme } from '../provider';
 
 export const AppTabs: React.FC = () => {
 	const { tokens } = useTheme();

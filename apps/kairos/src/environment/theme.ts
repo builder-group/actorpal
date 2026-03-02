@@ -1,33 +1,33 @@
 export const themeTokens = {
 	light: {
 		base0: '#FFFFFF',
-		base50: '#FAFAFA',
-		base100: '#F4F4F5',
-		base200: '#E4E4E7',
-		base300: '#D4D4D8',
-		base400: '#A1A1AA',
-		base500: '#71717A',
-		base600: '#52525B',
-		base700: '#3F3F46',
-		base800: '#27272A',
-		base900: '#18181B',
-		base950: '#09090B',
-		primary: '#2563EB'
+		base50: '#F2F2F7',
+		base100: '#EFEFF4',
+		base200: '#E5E5EA',
+		base300: '#D1D1D6',
+		base400: '#C7C7CC',
+		base500: '#8E8E93',
+		base600: '#636366',
+		base700: '#48484A',
+		base800: '#3A3A3C',
+		base900: '#1C1C1E',
+		base950: '#000000',
+		primary: '#007AFF'
 	},
 	dark: {
-		base0: '#09090B',
-		base50: '#18181B',
-		base100: '#27272A',
-		base200: '#3F3F46',
-		base300: '#52525B',
-		base400: '#71717A',
-		base500: '#A1A1AA',
-		base600: '#D4D4D8',
-		base700: '#E4E4E7',
-		base800: '#F4F4F5',
-		base900: '#FAFAFA',
-		base950: '#FFFFFF',
-		primary: '#60A5FA'
+		base0: '#000000',
+		base50: '#1C1C1E',
+		base100: '#2C2C2E',
+		base200: '#3A3A3C',
+		base300: '#48484A',
+		base400: '#636366',
+		base500: '#8E8E93',
+		base600: '#AEAEB2',
+		base700: '#C7C7CC',
+		base800: '#D1D1D6',
+		base900: '#E5E5EA',
+		base950: '#F2F2F7',
+		primary: '#0A84FF'
 	}
 } as const;
 

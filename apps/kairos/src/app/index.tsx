@@ -1,30 +1,127 @@
 import React from 'react';
-import { Text, View } from 'react-native';
-import { WheelPicker } from '@/components';
+import { ScrollView, Switch, View } from 'react-native';
+import {
+	SettingsRow,
+	WheelSelectRow,
+	type TWheelPickerItem,
+	type TWheelSelectColumn
+} from '@/components';
 
 const Screen: React.FC = () => {
-	const [value, setValue] = React.useState(3);
-	const numberItems = React.useMemo(() => {
-		return Array.from({ length: 60 }, (_, index) => {
-			const value = index + 1;
-			return { label: `${value}`, value };
-		});
+	const [expandedRowId, setExpandedRowId] = React.useState<string | null>('start-time');
+	const [startHour, setStartHour] = React.useState(8);
+	const [startMinute, setStartMinute] = React.useState(45);
+	const [endHour, setEndHour] = React.useState(10);
+	const [endMinute, setEndMinute] = React.useState(0);
+	const [repeatDaily, setRepeatDaily] = React.useState(true);
+
+	const hourItems = React.useMemo<TWheelPickerItem<number>[]>(
+		() =>
+			Array.from({ length: 24 }, (_, index) => ({
+				label: `${index}`.padStart(2, '0'),
+				value: index
+			})),
+		[]
+	);
+
+	const minuteItems = React.useMemo<TWheelPickerItem<number>[]>(
+		() =>
+			Array.from({ length: 12 }, (_, index) => {
+				const value = index * 5;
+				return { label: `${value}`.padStart(2, '0'), value };
+			}),
+		[]
+	);
+
+	const startColumns = React.useMemo<[TWheelSelectColumn, TWheelSelectColumn]>(
+		() => [
+			{
+				id: 'start-hour',
+				items: hourItems,
+				value: startHour,
+				onChange: (value) => setStartHour(Number(value)),
+				width: 92,
+				suffix: 'h'
+			},
+			{
+				id: 'start-minute',
+				items: minuteItems,
+				value: startMinute,
+				onChange: (value) => setStartMinute(Number(value)),
+				width: 92,
+				suffix: 'm'
+			}
+		],
+		[hourItems, minuteItems, startHour, startMinute]
+	);
+
+	const endColumns = React.useMemo<[TWheelSelectColumn, TWheelSelectColumn]>(
+		() => [
+			{
+				id: 'end-hour',
+				items: hourItems,
+				value: endHour,
+				onChange: (value) => setEndHour(Number(value)),
+				width: 92,
+				suffix: 'h'
+			},
+			{
+				id: 'end-minute',
+				items: minuteItems,
+				value: endMinute,
+				onChange: (value) => setEndMinute(Number(value)),
+				width: 92,
+				suffix: 'm'
+			}
+		],
+		[hourItems, minuteItems, endHour, endMinute]
+	);
+
+	// MARK: - Actions
+
+	const toggleRow = React.useCallback((id: string) => {
+		setExpandedRowId((current) => (current === id ? null : id));
 	}, []);
 
 	return (
-		<View className="bg-base-0 flex-1 items-center justify-center px-6">
-			<Text className="text-base-900 text-4xl font-semibold tracking-tight">Home</Text>
-			<Text className="text-base-500 mt-3 text-sm">Styled with NativeWind v5 + Tailwind v4.</Text>
-			<WheelPicker
-				items={numberItems}
-				value={value}
-				onChange={(nextValue) => {
-					setValue(nextValue);
-					console.log('changed', nextValue);
-				}}
-				className="mt-6 w-28"
-			/>
-		</View>
+		<ScrollView
+			className="bg-base-0 flex-1"
+			contentContainerClassName="px-5 py-10"
+			showsVerticalScrollIndicator={false}
+		>
+			<View className="border-base-200 bg-base-50 overflow-hidden rounded-[32px] border p-4">
+				<WheelSelectRow
+					title="Start time"
+					subtitle="Alarm begins"
+					columns={startColumns}
+					separator=""
+					compactSeparator=":"
+					expanded={expandedRowId === 'start-time'}
+					onToggle={() => toggleRow('start-time')}
+				/>
+
+				<View className="bg-base-200 my-4 h-px" />
+
+				<WheelSelectRow
+					title="End time"
+					subtitle="Alarm snoozes"
+					columns={endColumns}
+					separator=""
+					compactSeparator=":"
+					expanded={expandedRowId === 'end-time'}
+					onToggle={() => toggleRow('end-time')}
+				/>
+
+				<View className="bg-base-200 my-4 h-px" />
+
+				<SettingsRow
+					title="Repeat"
+					subtitle="Repeat alarm every day"
+					rightAccessory={<Switch value={repeatDaily} onValueChange={setRepeatDaily} />}
+					className="px-1"
+				/>
+			</View>
+		</ScrollView>
 	);
 };
 

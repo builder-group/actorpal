@@ -19,11 +19,11 @@
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"install:clean": "pnpm run clean && pnpm install",
 		"ios:build": "eas build --platform ios --profile production",
-		"ios:rebuild:device": "expo run:ios --device",
 		"ios:submit": "eas submit --platform ios --latest",
 		"lint": "expo lint",
 		"start:dev": "expo start --dev-client --lan",
 		"start:dev:ios": "expo start --dev-client --ios --lan",
+		"start:dev:ios:rebuild": "expo run:ios --device",
 		"test": "echo \"🧪 No tests defined yet.\"",
 		"typecheck": "tsc --noEmit",
 		"update:latest": "echo \"⚠️ Avoid updating to latest in React Native projects. Expo, React, React Native and other related packages depend strongly on each other and must be upgraded in sync.\""

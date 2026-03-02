@@ -1,11 +1,14 @@
+import { Host } from '@expo/ui/swift-ui';
+import { background, cornerRadius, padding } from '@expo/ui/swift-ui/modifiers';
 import React from 'react';
-import { ScrollView, Switch, View } from 'react-native';
+import { ScrollView, Switch, Text, View } from 'react-native';
 import {
 	SettingsRow,
 	WheelSelectRow,
 	type TWheelPickerItem,
 	type TWheelSelectColumn
 } from '@/components';
+import { TimePickerView } from '../../modules/time-picker';
 
 const Screen: React.FC = () => {
 	const [expandedRowId, setExpandedRowId] = React.useState<string | null>('start-time');
@@ -89,6 +92,7 @@ const Screen: React.FC = () => {
 			contentContainerClassName="px-5 py-10"
 			showsVerticalScrollIndicator={false}
 		>
+			{/* Existing timer-settings card */}
 			<View className="border-base-200 bg-base-50 overflow-hidden rounded-[32px] border p-4">
 				<WheelSelectRow
 					title="Start time"
@@ -121,6 +125,15 @@ const Screen: React.FC = () => {
 					className="px-1"
 				/>
 			</View>
+
+			<Host style={{ flex: 1 }}>
+				<TimePickerView
+					title="Hello World"
+					modifiers={[padding({ all: 16 }), cornerRadius(12), background('#f0f0f0')]}
+				>
+					<Text>Child content</Text>
+				</TimePickerView>
+			</Host>
 		</ScrollView>
 	);
 };

@@ -53,7 +53,7 @@ export const SegmentControl: React.FC<TSegmentControlProps> = (props) => {
 	return (
 		<View
 			className={cn(
-				'dark:bg-base-50 bg-base-200 border-base-300 dark:border-base-100 h-16 flex-row overflow-hidden rounded-4xl border',
+				'dark:bg-base-50 bg-base-0 border-base-100 h-16 flex-row overflow-hidden rounded-4xl border',
 				className
 			)}
 			style={style}
@@ -61,7 +61,7 @@ export const SegmentControl: React.FC<TSegmentControlProps> = (props) => {
 		>
 			{segmentWidth > 0 ? (
 				<Animated.View
-					className="bg-base-0 dark:bg-base-300 absolute"
+					className="bg-base-200 absolute"
 					style={{
 						top: thumbInset,
 						bottom: thumbInset,

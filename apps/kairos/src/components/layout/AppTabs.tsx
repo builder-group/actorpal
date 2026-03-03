@@ -29,9 +29,12 @@ export const AppTabs: React.FC = () => {
 				selected: { color: tabColors.labelSelected, fontSize: 12, fontWeight: '600' }
 			}}
 		>
-			<NativeTabs.Trigger name="index">
-				<NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-				<NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
+			<NativeTabs.Trigger name="timer">
+				<NativeTabs.Trigger.Label>Timer</NativeTabs.Trigger.Label>
+				<NativeTabs.Trigger.Icon
+					sf={{ default: 'stopwatch', selected: 'stopwatch.fill' }}
+					md="timer"
+				/>
 			</NativeTabs.Trigger>
 
 			<NativeTabs.Trigger name="settings">

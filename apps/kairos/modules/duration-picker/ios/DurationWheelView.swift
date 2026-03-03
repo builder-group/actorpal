@@ -34,16 +34,24 @@ final class DurationWheelView: UIView, UIPickerViewDataSource,
         }
     }
 
+    // valueToUnitSpacing is mutable so ExpoView can update it via React Native props.
+    var valueToUnitSpacing: CGFloat {
+        didSet {
+            guard oldValue != valueToUnitSpacing else { return }
+            picker.reloadAllComponents()
+            setNeedsLayout()
+        }
+    }
+
     private let picker = UIPickerView()
     private let units: [String]
     private let unitLabels: [UILabel]
-    private let valueToUnitSpacing: CGFloat
     private let numberWidth: CGFloat
     private let maxUnitWidth: CGFloat
     private var selection = [0, 0, 0]
     private var isProgrammaticSelect = false
 
-    // columnWidth is computed so it picks up groupSpacing changes automatically.
+    // columnWidth is computed so it picks up spacing changes automatically.
     private var columnWidth: CGFloat {
         floor(numberWidth + valueToUnitSpacing + maxUnitWidth + groupSpacing)
     }
@@ -202,7 +210,7 @@ private final class RowView: UIView {
 
 // MARK: - SwiftUI Wrapper
 //
-// Xcode Preview doesn't seem to work with ExpoView, 
+// Xcode Preview doesn't seem to work with ExpoView,
 // so UI changes are developed here first using the #Preview below.
 // DurationPickerView (the React Native module) wraps DurationWheelView from this file.
 

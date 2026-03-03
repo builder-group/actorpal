@@ -78,4 +78,20 @@ final class DurationPickerView: ExpoView {
         get { Double(picker.groupSpacing) }
         set { picker.groupSpacing = CGFloat(max(0, min(newValue, 20))) }
     }
+
+    var valueToUnitSpacing: Double {
+        get { Double(picker.valueToUnitSpacing) }
+        set { picker.valueToUnitSpacing = CGFloat(max(0, min(newValue, 20))) }
+    }
+
+    var colorScheme: String {
+        get { "" }
+        set {
+            switch newValue {
+            case "dark": overrideUserInterfaceStyle = .dark
+            case "light": overrideUserInterfaceStyle = .light
+            default: overrideUserInterfaceStyle = .unspecified
+            }
+        }
+    }
 }

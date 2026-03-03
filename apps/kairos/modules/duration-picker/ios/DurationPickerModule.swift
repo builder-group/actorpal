@@ -22,6 +22,15 @@ public class DurationPickerModule: Module {
             Prop("groupSpacing") { (view: DurationPickerView, value: Double) in
                 view.groupSpacing = value
             }
+
+            Prop("valueToUnitSpacing") {
+                (view: DurationPickerView, value: Double) in
+                view.valueToUnitSpacing = value
+            }
+
+            Prop("colorScheme") { (view: DurationPickerView, value: String) in
+                view.colorScheme = value
+            }
         }
     }
 }

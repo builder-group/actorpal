@@ -18,11 +18,7 @@ Example:
 import { Host } from '@expo/ui/swift-ui';
 
 export function Screen() {
-  return (
-    <Host style={{ flex: 1 }}>
-      {/* Expo UI components + custom Expo UI native views */}
-    </Host>
-  );
+	return <Host style={{ flex: 1 }}>{/* Expo UI components + custom Expo UI native views */}</Host>;
 }
 ```
 

@@ -1,5 +1,1 @@
-export {
-	DurationPickerView,
-	type DurationPickerChangeEvent,
-	type DurationPickerViewProps
-} from './src/DurationPickerView';
+export * from './src';

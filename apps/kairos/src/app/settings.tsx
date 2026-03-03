@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
-import { ThemeToggle, useTheme } from '@/components';
+import { ThemeSelector, useTheme } from '@/components';
 
 const Screen: React.FC = () => {
 	const { theme } = useTheme();
@@ -12,10 +12,12 @@ const Screen: React.FC = () => {
 
 			<View className="border-base-200 bg-base-50 mt-8 rounded-2xl border p-5">
 				<Text className="text-base-900 text-base font-medium">Appearance</Text>
-				<Text className="text-base-500 mt-1 text-sm">Toggle between light and dark mode.</Text>
+				<Text className="text-base-500 mt-1 text-sm">
+					Choose light, dark, or follow the system.
+				</Text>
 				<View className="mt-4 flex-row items-center justify-between">
-					<Text className="text-base-900 text-sm font-medium">Dark Mode</Text>
-					<ThemeToggle />
+					<Text className="text-base-900 text-sm font-medium">Theme</Text>
+					<ThemeSelector />
 				</View>
 			</View>
 		</View>

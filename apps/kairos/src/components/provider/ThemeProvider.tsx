@@ -1,22 +1,29 @@
 import { StatusBar } from 'expo-status-bar';
 import { VariableContextProvider } from 'nativewind';
 import React from 'react';
-import { ColorSchemeName, useColorScheme } from 'react-native';
+import { Appearance, ColorSchemeName, useColorScheme } from 'react-native';
 import { themeTokens, toCssVariables, TThemeMode, TThemeTokens } from '@/environment';
 
 const ThemeCx = React.createContext<TThemeCx | null>(null);
 
 interface TThemeCx {
 	theme: TThemeMode;
+	themePreference: TThemePreference;
 	tokens: TThemeTokens;
-	toggleTheme: () => void;
+	setThemePreference: (pref: TThemePreference) => void;
 }
+
+export type TThemePreference = 'light' | 'dark' | 'system';
 
 export const ThemeProvider: React.FC<TThemeProviderProps> = (props) => {
 	const { children } = props;
 	const systemTheme = useColorScheme();
-	const [theme, setTheme] = React.useState<TThemeMode>(resolveSystemTheme(systemTheme));
-	const [hasManualOverride, setHasManualOverride] = React.useState(false);
+	const [themePreference, setPreference] = React.useState<TThemePreference>('system');
+
+	const theme = React.useMemo<TThemeMode>(
+		() => (themePreference === 'system' ? resolveSystemTheme(systemTheme) : themePreference),
+		[themePreference, systemTheme]
+	);
 
 	const { tokens, cssVariables } = React.useMemo(() => {
 		const tokens = themeTokens[theme];
@@ -25,32 +32,20 @@ export const ThemeProvider: React.FC<TThemeProviderProps> = (props) => {
 
 	// MARK: - Actions
 
-	const toggleTheme = React.useCallback(() => {
-		setHasManualOverride(true);
-		setTheme((currentTheme) => (currentTheme === 'dark' ? 'light' : 'dark'));
+	const setThemePreference = React.useCallback((pref: TThemePreference) => {
+		setPreference(pref);
+		// Sync to React Native's Appearance API so useColorScheme() and all
+		// native views (UIKit, SwiftUI) receive the correct color scheme.
+		Appearance.setColorScheme((pref === 'system' ? null : pref) as ColorSchemeName);
 	}, []);
-
-	// MARK: - Effects
-
-	React.useEffect(() => {
-		if (hasManualOverride) {
-			return;
-		}
-
-		setTheme(resolveSystemTheme(systemTheme));
-	}, [systemTheme, hasManualOverride]);
 
 	// MARK: - UI
 
 	return (
 		<ThemeCx.Provider
 			value={React.useMemo(
-				() => ({
-					theme,
-					tokens,
-					toggleTheme
-				}),
-				[theme, tokens, toggleTheme]
+				() => ({ theme, themePreference, tokens, setThemePreference }),
+				[theme, themePreference, tokens, setThemePreference]
 			)}
 		>
 			<VariableContextProvider value={cssVariables}>

@@ -9,7 +9,7 @@ const Screen: React.FC = () => {
 
 	return (
 		<ScrollView
-			className="bg-base-0 flex-1"
+			className="dark:bg-base-0 bg-base-50 flex-1"
 			contentInsetAdjustmentBehavior="automatic"
 			showsVerticalScrollIndicator={false}
 		>

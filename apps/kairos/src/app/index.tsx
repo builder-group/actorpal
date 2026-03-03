@@ -1,5 +1,7 @@
 import { Redirect } from 'expo-router';
 
-export default function Index() {
+const Screen: React.FC = () => {
 	return <Redirect href="/timer" />;
-}
+};
+
+export default Screen;

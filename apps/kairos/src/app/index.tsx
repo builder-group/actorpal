@@ -1,85 +1,17 @@
 import React from 'react';
-import { ScrollView, Switch, Text, View } from 'react-native';
-import {
-	SettingsRow,
-	WheelSelectRow,
-	type TWheelPickerItem,
-	type TWheelSelectColumn
-} from '@/components';
-import { DurationPickerView } from '../../modules/duration-picker';
+import { ScrollView, Switch, View } from 'react-native';
+import { DurationSelectRow, SettingsRow } from '@/components';
 
 const Screen: React.FC = () => {
-	const [expandedRowId, setExpandedRowId] = React.useState<string | null>('start-time');
-	const [startHour, setStartHour] = React.useState(8);
-	const [startMinute, setStartMinute] = React.useState(45);
-	const [endHour, setEndHour] = React.useState(10);
-	const [endMinute, setEndMinute] = React.useState(0);
-	const [repeatDaily, setRepeatDaily] = React.useState(true);
-	const [previewHours, setPreviewHours] = React.useState(8);
-	const [previewMinutes, setPreviewMinutes] = React.useState(30);
-	const [previewSeconds, setPreviewSeconds] = React.useState(0);
-
-	const hourItems = React.useMemo<TWheelPickerItem<number>[]>(
-		() =>
-			Array.from({ length: 24 }, (_, index) => ({
-				label: `${index}`.padStart(2, '0'),
-				value: index
-			})),
-		[]
-	);
-
-	const minuteItems = React.useMemo<TWheelPickerItem<number>[]>(
-		() =>
-			Array.from({ length: 12 }, (_, index) => {
-				const value = index * 5;
-				return { label: `${value}`.padStart(2, '0'), value };
-			}),
-		[]
-	);
-
-	const startColumns = React.useMemo<[TWheelSelectColumn, TWheelSelectColumn]>(
-		() => [
-			{
-				id: 'start-hour',
-				items: hourItems,
-				value: startHour,
-				onChange: (value) => setStartHour(Number(value)),
-				width: 92,
-				suffix: 'h'
-			},
-			{
-				id: 'start-minute',
-				items: minuteItems,
-				value: startMinute,
-				onChange: (value) => setStartMinute(Number(value)),
-				width: 92,
-				suffix: 'm'
-			}
-		],
-		[hourItems, minuteItems, startHour, startMinute]
-	);
-
-	const endColumns = React.useMemo<[TWheelSelectColumn, TWheelSelectColumn]>(
-		() => [
-			{
-				id: 'end-hour',
-				items: hourItems,
-				value: endHour,
-				onChange: (value) => setEndHour(Number(value)),
-				width: 92,
-				suffix: 'h'
-			},
-			{
-				id: 'end-minute',
-				items: minuteItems,
-				value: endMinute,
-				onChange: (value) => setEndMinute(Number(value)),
-				width: 92,
-				suffix: 'm'
-			}
-		],
-		[hourItems, minuteItems, endHour, endMinute]
-	);
+	const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
+	const [minHours, setMinHours] = React.useState(0);
+	const [minMinutes, setMinMinutes] = React.useState(1);
+	const [minSeconds, setMinSeconds] = React.useState(0);
+	const [maxHours, setMaxHours] = React.useState(0);
+	const [maxMinutes, setMaxMinutes] = React.useState(5);
+	const [maxSeconds, setMaxSeconds] = React.useState(0);
+	const [hideTimer, setHideTimer] = React.useState(false);
+	const [loop, setLoop] = React.useState(false);
 
 	// MARK: - Actions
 
@@ -87,63 +19,65 @@ const Screen: React.FC = () => {
 		setExpandedRowId((current) => (current === id ? null : id));
 	}, []);
 
+	// MARK: - UI
+
 	return (
 		<ScrollView
 			className="bg-base-0 flex-1"
 			contentContainerClassName="px-5 py-10"
 			showsVerticalScrollIndicator={false}
 		>
-			{/* Existing timer-settings card */}
 			<View className="border-base-200 bg-base-50 overflow-hidden rounded-[32px] border p-4">
-				<WheelSelectRow
-					title="Start time"
-					subtitle="Alarm begins"
-					columns={startColumns}
-					separator=""
-					compactSeparator=":"
-					expanded={expandedRowId === 'start-time'}
-					onToggle={() => toggleRow('start-time')}
+				<DurationSelectRow
+					title="Minimum"
+					subtitle="Earliest the timer can fire"
+					hours={minHours}
+					minutes={minMinutes}
+					seconds={minSeconds}
+					onDurationChange={({ nativeEvent }) => {
+						setMinHours(nativeEvent.hours);
+						setMinMinutes(nativeEvent.minutes);
+						setMinSeconds(nativeEvent.seconds);
+					}}
+					expanded={expandedRowId === 'min'}
+					onToggle={() => toggleRow('min')}
 				/>
 
 				<View className="bg-base-200 my-4 h-px" />
 
-				<WheelSelectRow
-					title="End time"
-					subtitle="Alarm snoozes"
-					columns={endColumns}
-					separator=""
-					compactSeparator=":"
-					expanded={expandedRowId === 'end-time'}
-					onToggle={() => toggleRow('end-time')}
+				<DurationSelectRow
+					title="Maximum"
+					subtitle="Latest the timer can fire"
+					hours={maxHours}
+					minutes={maxMinutes}
+					seconds={maxSeconds}
+					onDurationChange={({ nativeEvent }) => {
+						setMaxHours(nativeEvent.hours);
+						setMaxMinutes(nativeEvent.minutes);
+						setMaxSeconds(nativeEvent.seconds);
+					}}
+					expanded={expandedRowId === 'max'}
+					onToggle={() => toggleRow('max')}
 				/>
 
 				<View className="bg-base-200 my-4 h-px" />
 
 				<SettingsRow
-					title="Repeat"
-					subtitle="Repeat alarm every day"
-					rightAccessory={<Switch value={repeatDaily} onValueChange={setRepeatDaily} />}
+					title="Hide timer"
+					subtitle="Show a pulse instead of the countdown"
+					rightAccessory={<Switch value={hideTimer} onValueChange={setHideTimer} />}
 					className="px-1"
 				/>
-			</View>
 
-			<View className="mt-4">
-				<DurationPickerView
-					style={{ height: 216 }}
-					hours={previewHours}
-					minutes={previewMinutes}
-					seconds={previewSeconds}
-					onDurationChange={({ nativeEvent }) => {
-						setPreviewHours(nativeEvent.hours);
-						setPreviewMinutes(nativeEvent.minutes);
-						setPreviewSeconds(nativeEvent.seconds);
-					}}
+				<View className="bg-base-200 my-4 h-px" />
+
+				<SettingsRow
+					title="Loop"
+					subtitle="Restart automatically after each round"
+					rightAccessory={<Switch value={loop} onValueChange={setLoop} disabled />}
+					className="px-1"
+					disabled
 				/>
-				<Text className="text-base-500 mt-2 text-sm">
-					{`${previewHours.toString().padStart(2, '0')}:${previewMinutes
-						.toString()
-						.padStart(2, '0')}:${previewSeconds.toString().padStart(2, '0')}`}
-				</Text>
 			</View>
 		</ScrollView>
 	);

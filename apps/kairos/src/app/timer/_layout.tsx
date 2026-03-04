@@ -1,10 +1,8 @@
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import { themeTokens } from '@/environment';
+import { useTheme } from '@/components';
 
 export default function TimerLayout() {
-	const colorScheme = useColorScheme();
-	const tokens = themeTokens[colorScheme === 'dark' ? 'dark' : 'light'];
+	const { tokens } = useTheme();
 
 	return (
 		<Stack>
@@ -13,10 +11,7 @@ export default function TimerLayout() {
 				options={{
 					title: 'Timers',
 					headerLargeTitle: true,
-					headerTransparent: true,
-					headerBlurEffect: 'systemChromeMaterial',
-					headerTintColor: tokens.base900,
-					headerLargeStyle: { backgroundColor: 'transparent' }
+					headerTintColor: tokens.base900
 				}}
 			/>
 		</Stack>

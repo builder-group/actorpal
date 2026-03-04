@@ -17,13 +17,15 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { useCompute } from 'feature-react/state';
 import React from 'react';
-import { useTimerCx } from '../TimerCx';
+import { TimerCx, type TTimerEndMode } from '../TimerCx';
 
-export const TimerConfiguration: React.FC = () => {
-	const cx = useTimerCx();
+export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) => {
+	const { cx } = props;
 	const label = useCompute(cx.$config, ({ value }) => value.label);
 	const sound = useCompute(cx.$config, ({ value }) => value.sound);
 	const hideTimer = useCompute(cx.$config, ({ value }) => value.hideTimer);
+	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
+	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
 
 	return (
 		<Host matchContents useViewportSizeMeasurement>
@@ -45,7 +47,7 @@ export const TimerConfiguration: React.FC = () => {
 					</LabeledContent>
 
 					<Picker
-						label="When Timer Ends"
+						label="Alarm Sound"
 						selection={sound}
 						onSelectionChange={(v) => {
 							cx.$config.set((c) => ({ ...c, sound: v as 'radar' | 'bell' }));
@@ -55,9 +57,41 @@ export const TimerConfiguration: React.FC = () => {
 						<Text modifiers={[tag('bell')]}>Bell</Text>
 					</Picker>
 
+					<Picker
+						label="After Timer Ends"
+						selection={endMode}
+						onSelectionChange={(v) => {
+							cx.$config.set((c) => ({ ...c, endMode: v as TTimerEndMode }));
+						}}
+					>
+						<Text modifiers={[tag('overtime')]}>Overtime</Text>
+						<Text modifiers={[tag('stop')]}>Auto Stop</Text>
+						<Text modifiers={[tag('loop')]}>Auto Repeat</Text>
+					</Picker>
+
+					{(endMode === 'loop' || endMode === 'stop') && (
+						<LabeledContent label={endMode === 'loop' ? 'Repeat after (s)' : 'Stop after (s)'}>
+							<TextField
+								defaultValue={String(endAfterSeconds)}
+								placeholder="5"
+								onChangeText={(v) => {
+									const n = parseInt(v, 10);
+									if (!isNaN(n) && n >= 0) {
+										cx.$config.set((c) => ({ ...c, endAfterSeconds: n }));
+									}
+								}}
+								modifiers={[
+									textFieldStyle('plain'),
+									frame({ width: 60, alignment: 'trailing' }),
+									multilineTextAlignment('trailing')
+								]}
+							/>
+						</LabeledContent>
+					)}
+
 					<Toggle
 						isOn={hideTimer}
-						label="Hide Timers"
+						label="Hide Timer"
 						onIsOnChange={(v) => {
 							cx.$config.set((c) => ({ ...c, hideTimer: v }));
 						}}
@@ -67,3 +101,7 @@ export const TimerConfiguration: React.FC = () => {
 		</Host>
 	);
 };
+
+interface TTimerConfigurationProps {
+	cx: TimerCx;
+}

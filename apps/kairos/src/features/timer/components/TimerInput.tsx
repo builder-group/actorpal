@@ -6,12 +6,10 @@ import {
 	DurationPickerView,
 	TDurationPickerChangeEvent
 } from '../../../../modules/duration-picker';
-import { useTimerCx } from '../TimerCx';
+import { TimerCx } from '../TimerCx';
 
-type TActiveTimer = 'min' | 'max';
-
-export const TimerInput: React.FC = () => {
-	const cx = useTimerCx();
+export const TimerInput: React.FC<TTimerInputProps> = (props) => {
+	const { cx } = props;
 	const min = useCompute(cx.$config, ({ value }) => value.min);
 	const max = useCompute(cx.$config, ({ value }) => value.max);
 	const [activeTimer, setActiveTimer] = React.useState<TActiveTimer>('min');
@@ -111,6 +109,12 @@ export const TimerInput: React.FC = () => {
 		</>
 	);
 };
+
+interface TTimerInputProps {
+	cx: TimerCx;
+}
+
+type TActiveTimer = 'min' | 'max';
 
 // MARK: - Helpers
 

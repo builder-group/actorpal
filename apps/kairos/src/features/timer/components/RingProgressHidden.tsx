@@ -16,6 +16,7 @@ export const RingProgressHidden: React.FC<TRingProgressHiddenProps> = (props) =>
 		animated = true,
 		activeColor = tokens.primary,
 		inactiveColor = tokens.base300,
+		children,
 		className
 	} = props;
 	const [headIndex, setHeadIndex] = React.useState(0);
@@ -26,7 +27,9 @@ export const RingProgressHidden: React.FC<TRingProgressHiddenProps> = (props) =>
 	// MARK: - Effects
 
 	React.useEffect(() => {
-		if (!animated) return;
+		if (!animated) {
+			return;
+		}
 
 		const timer = setInterval(() => {
 			setHeadIndex((current) => (current + 1) % dashCount);
@@ -67,6 +70,10 @@ export const RingProgressHidden: React.FC<TRingProgressHiddenProps> = (props) =>
 					/>
 				))}
 			</Svg>
+
+			{children != null ? (
+				<View className="absolute inset-0 items-center justify-center">{children}</View>
+			) : null}
 		</View>
 	);
 };
@@ -82,6 +89,7 @@ interface TRingProgressHiddenProps {
 	activeColor?: string;
 	inactiveColor?: string;
 	className?: string;
+	children?: React.ReactNode;
 }
 
 // MARK: - Helpers

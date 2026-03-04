@@ -1,7 +1,13 @@
 import { useCompute } from 'feature-react/state';
 import React from 'react';
 import { ScrollView } from 'react-native';
-import { TimerActive, TimerConfiguration, TimerInput, useTimerCx } from '@/features/timer';
+import {
+	TimerConfiguration,
+	TimerControls,
+	TimerInput,
+	TimerProgress,
+	useTimerCx
+} from '@/features/timer';
 
 const Screen: React.FC = () => {
 	const cx = useTimerCx();
@@ -13,7 +19,14 @@ const Screen: React.FC = () => {
 			contentInsetAdjustmentBehavior="automatic"
 			showsVerticalScrollIndicator={false}
 		>
-			{isActive ? <TimerActive /> : <TimerInput />}
+			{isActive ? (
+				<>
+					<TimerProgress cx={cx} />
+					<TimerControls cx={cx} />
+				</>
+			) : (
+				<TimerInput cx={cx} />
+			)}
 			<TimerConfiguration />
 		</ScrollView>
 	);

@@ -18,7 +18,7 @@ export const RingProgress: React.FC<TRingProgressProps> = (props) => {
 		progress,
 		size = 260,
 		thickness = 10,
-		trackColor = tokens.base200,
+		trackColor = tokens.base300,
 		progressColor = tokens.primary,
 		animationDuration = 220,
 		className,
@@ -41,11 +41,11 @@ export const RingProgress: React.FC<TRingProgressProps> = (props) => {
 		});
 	}, [animationDuration, clampedProgress, circumference, strokeDashoffset]);
 
+	// MARK: - UI
+
 	const animatedProps = useAnimatedProps(() => ({
 		strokeDashoffset: strokeDashoffset.value
 	}));
-
-	// MARK: - UI
 
 	return (
 		<View className={cn(className)} style={{ width: size, height: size }}>

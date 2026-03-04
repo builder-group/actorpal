@@ -6,13 +6,14 @@ export class TimerCx {
 	private _interval: ReturnType<typeof setInterval> | null = null;
 
 	public readonly $config: TState<TTimerConfig, [TPersistFeature]>;
-
 	public readonly $status: TState<TTimerStatus, [TPersistFeature]>;
-	public readonly $drawnSeconds: TState<number | null, [TPersistFeature]>;
+
+	public readonly $totalSeconds: TState<number | null, [TPersistFeature]>;
 	public readonly $remainingSeconds: TState<number, []>;
 	public readonly $overtimeSeconds: TState<number, []>;
-	public readonly $endTime: TState<number | null, [TPersistFeature]>;
-	public readonly $pausedRemainingMs: TState<number | null, [TPersistFeature]>;
+
+	public readonly $remainingAtStart: TState<number, [TPersistFeature]>;
+	public readonly $startedAt: TState<number | null, [TPersistFeature]>;
 
 	constructor() {
 		this.$config = withAsyncStorage(
@@ -29,17 +30,17 @@ export class TimerCx {
 		);
 
 		this.$status = withAsyncStorage(createState<TTimerStatus>('idle'), 'kairos:timer:status');
-		this.$drawnSeconds = withAsyncStorage(
+		this.$totalSeconds = withAsyncStorage(
 			createState<number | null>(null),
-			'kairos:timer:drawnSeconds'
+			'kairos:timer:totalSeconds'
 		);
-		this.$endTime = withAsyncStorage(createState<number | null>(null), 'kairos:timer:endTime');
+		this.$startedAt = withAsyncStorage(createState<number | null>(null), 'kairos:timer:startedAt');
+		this.$remainingAtStart = withAsyncStorage(
+			createState<number>(0),
+			'kairos:timer:remainingAtStart'
+		);
 		this.$remainingSeconds = createState<number>(0);
 		this.$overtimeSeconds = createState<number>(0);
-		this.$pausedRemainingMs = withAsyncStorage(
-			createState<number | null>(null),
-			'kairos:timer:pausedRemainingMs'
-		);
 	}
 
 	// MARK: - Lifecycle
@@ -48,34 +49,36 @@ export class TimerCx {
 		await Promise.all([
 			this.$config.persist(),
 			this.$status.persist(),
-			this.$drawnSeconds.persist(),
-			this.$endTime.persist(),
-			this.$pausedRemainingMs.persist()
+			this.$totalSeconds.persist(),
+			this.$startedAt.persist(),
+			this.$remainingAtStart.persist()
 		]);
 
 		const status = this.$status.get();
-		const endTime = this.$endTime.get();
-		const pausedMs = this.$pausedRemainingMs.get();
+		const startedAt = this.$startedAt.get();
+		const remainingAtStart = this.$remainingAtStart.get();
 		const now = Date.now();
 
 		if (status === 'running') {
-			if (endTime != null && endTime > now) {
-				this.$remainingSeconds.set((endTime - now) / 1000);
-				this._startLoop();
-			} else if (endTime != null) {
-				this._resumeOrCompleteOvertime(endTime, now);
+			if (startedAt != null) {
+				const elapsed = (now - startedAt) / 1000;
+				if (elapsed < remainingAtStart) {
+					this.$remainingSeconds.set(remainingAtStart - elapsed);
+					this._startLoop();
+				} else {
+					this._recoverOvertime(startedAt, remainingAtStart, now);
+				}
 			} else {
-				this.$remainingSeconds.set(0);
-				this.$status.set('done');
+				this.$status.set('idle');
 			}
 		} else if (status === 'overtime') {
-			if (endTime != null) {
-				this._resumeOrCompleteOvertime(endTime, now);
+			if (startedAt != null) {
+				this._recoverOvertime(startedAt, remainingAtStart, now);
 			} else {
 				this.$status.set('idle');
 			}
 		} else if (status === 'paused') {
-			this.$remainingSeconds.set(pausedMs != null ? pausedMs / 1000 : 0);
+			this.$remainingSeconds.set(remainingAtStart);
 		}
 	}
 
@@ -89,46 +92,56 @@ export class TimerCx {
 		const { min, max } = this.$config.get();
 		const lo = Math.min(this._toSeconds(min), this._toSeconds(max));
 		const hi = Math.max(this._toSeconds(min), this._toSeconds(max));
-		const drawnSeconds = lo === hi ? lo : Math.round(lo + Math.random() * (hi - lo));
-		const endTime = Date.now() + drawnSeconds * 1000;
+		const totalSeconds = lo === hi ? lo : Math.round(lo + Math.random() * (hi - lo));
+		const now = Date.now();
 
-		this.$drawnSeconds.set(drawnSeconds);
-		this.$endTime.set(endTime);
-		this.$pausedRemainingMs.set(null);
+		this.$totalSeconds.set(totalSeconds);
+		this.$startedAt.set(now);
+		this.$remainingAtStart.set(totalSeconds);
 		this.$overtimeSeconds.set(0);
 		this.$status.set('running');
-		this.$remainingSeconds.set(drawnSeconds);
+		this.$remainingSeconds.set(totalSeconds);
 		this._startLoop();
 	}
 
 	public pause(): void {
-		const endTime = this.$endTime.get();
-		if (endTime == null) return;
+		if (this.$status.get() !== 'running') {
+			return;
+		}
+
+		const startedAt = this.$startedAt.get();
+		const remainingAtStart = this.$remainingAtStart.get();
+		if (startedAt == null) {
+			return;
+		}
+
+		const remaining = Math.max(0, remainingAtStart - (Date.now() - startedAt) / 1000);
 
 		this._stopLoop();
-		const pausedMs = Math.max(0, endTime - Date.now());
-		this.$pausedRemainingMs.set(pausedMs);
+		this.$startedAt.set(null);
+		this.$remainingAtStart.set(remaining);
 		this.$status.set('paused');
-		this.$remainingSeconds.set(pausedMs / 1000);
+		this.$remainingSeconds.set(remaining);
 	}
 
 	public resume(): void {
-		const pausedMs = this.$pausedRemainingMs.get();
-		if (pausedMs == null) return;
+		if (this.$status.get() !== 'paused') {
+			return;
+		}
 
-		const newEndTime = Date.now() + pausedMs;
-		this.$endTime.set(newEndTime);
+		const now = Date.now();
+		this.$startedAt.set(now);
 		this.$status.set('running');
-		this.$remainingSeconds.set(pausedMs / 1000);
+		this.$remainingSeconds.set(this.$remainingAtStart.get());
 		this._startLoop();
 	}
 
 	public cancel(): void {
 		this._stopLoop();
 		this.$status.set('idle');
-		this.$drawnSeconds.set(null);
-		this.$endTime.set(null);
-		this.$pausedRemainingMs.set(null);
+		this.$totalSeconds.set(null);
+		this.$startedAt.set(null);
+		this.$remainingAtStart.set(0);
 		this.$remainingSeconds.set(0);
 		this.$overtimeSeconds.set(0);
 	}
@@ -148,38 +161,31 @@ export class TimerCx {
 	}
 
 	private _tick(): void {
-		const endTime = this.$endTime.get();
-		if (endTime == null) return;
+		const startedAt = this.$startedAt.get();
+		const remainingAtStart = this.$remainingAtStart.get();
+		if (startedAt == null) {
+			return;
+		}
 
-		const now = Date.now();
+		const elapsed = (Date.now() - startedAt) / 1000;
+		const remaining = Math.max(0, remainingAtStart - elapsed);
+		const overtime = Math.max(0, elapsed - remainingAtStart);
 		const status = this.$status.get();
 
 		if (status === 'overtime') {
-			const overtimeSeconds = Math.max(0, (now - endTime) / 1000);
-			this.$overtimeSeconds.set(overtimeSeconds);
-
+			this.$overtimeSeconds.set(overtime);
 			const { endMode, endAfterSeconds } = this.$config.get();
-			if (endMode !== 'overtime' && overtimeSeconds >= endAfterSeconds) {
+			if (endMode !== 'overtime' && overtime >= endAfterSeconds) {
 				this._onAutoEnd();
 			}
 			return;
 		}
 
-		const remaining = Math.max(0, (endTime - now) / 1000);
 		this.$remainingSeconds.set(remaining);
-
 		if (remaining === 0) {
-			this._onAlarmFired();
+			this.$overtimeSeconds.set(0);
+			this.$status.set('overtime');
 		}
-	}
-
-	// All modes enter overtime first; stop/loop fire after endAfterSeconds
-	private _onAlarmFired(): void {
-		this._stopLoop();
-		this.$remainingSeconds.set(0);
-		this.$overtimeSeconds.set(0);
-		this.$status.set('overtime');
-		this._startLoop();
 	}
 
 	private _onAutoEnd(): void {
@@ -193,20 +199,20 @@ export class TimerCx {
 
 	// MARK: - Helpers
 
-	private _resumeOrCompleteOvertime(endTime: number, now: number): void {
-		const elapsed = Math.max(0, (now - endTime) / 1000);
+	private _recoverOvertime(startedAt: number, remainingAtStart: number, now: number): void {
+		const elapsed = (now - startedAt) / 1000;
+		const overtimeSeconds = Math.max(0, elapsed - remainingAtStart);
 		const { endMode, endAfterSeconds } = this.$config.get();
 
-		if (endMode === 'overtime' || elapsed < endAfterSeconds) {
+		if (endMode === 'overtime' || overtimeSeconds < endAfterSeconds) {
 			this.$remainingSeconds.set(0);
-			this.$overtimeSeconds.set(elapsed);
+			this.$overtimeSeconds.set(overtimeSeconds);
 			this.$status.set('overtime');
 			this._startLoop();
 		} else if (endMode === 'loop') {
 			this.start();
 		} else {
-			this.$remainingSeconds.set(0);
-			this.$status.set('done');
+			this.cancel();
 		}
 	}
 
@@ -215,7 +221,7 @@ export class TimerCx {
 	}
 }
 
-export type TTimerStatus = 'idle' | 'running' | 'paused' | 'done' | 'overtime';
+export type TTimerStatus = 'idle' | 'running' | 'paused' | 'overtime';
 export type TTimerSound = 'radar' | 'bell';
 export type TTimerEndMode = 'overtime' | 'stop' | 'loop';
 

@@ -15,16 +15,20 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 	const status = useCompute(cx.$status, ({ value }) => value);
 	const hideTimer = useCompute(cx.$config, ({ value }) => value.hideTimer);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
-	const drawnSeconds = useCompute(cx.$drawnSeconds, ({ value }) => value);
+	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
 	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
 
 	const isOvertime = status === 'overtime';
 
 	const progress = React.useMemo(() => {
-		if (isOvertime) return 1;
-		if (drawnSeconds == null || drawnSeconds <= 0) return 0;
-		return Math.min(Math.max(1 - Math.max(0, remainingSeconds) / drawnSeconds, 0), 1);
-	}, [isOvertime, drawnSeconds, remainingSeconds]);
+		if (isOvertime) {
+			return 1;
+		}
+		if (totalSeconds == null || totalSeconds <= 0) {
+			return 0;
+		}
+		return Math.min(Math.max(1 - Math.max(0, remainingSeconds) / totalSeconds, 0), 1);
+	}, [isOvertime, totalSeconds, remainingSeconds]);
 
 	// MARK: - UI
 
@@ -70,8 +74,10 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 	const status = useCompute(cx.$status, ({ value }) => value);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
-	const drawnSeconds = useCompute(cx.$drawnSeconds, ({ value }) => value);
-	const endTime = useCompute(cx.$endTime, ({ value }) => value);
+	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
+	const startedAt = useCompute(cx.$startedAt, ({ value }) => value);
+	const remainingAtStart = useCompute(cx.$remainingAtStart, ({ value }) => value);
+	const endTime = startedAt != null ? startedAt + remainingAtStart * 1000 : null;
 	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
 	const overtimeSeconds = useFeatureState(cx.$overtimeSeconds);
 
@@ -103,7 +109,7 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 				numberOfLines={1}
 			>
 				{isOvertime
-					? formatTime(Math.max(0, (drawnSeconds ?? 0) + overtimeSeconds))
+					? formatTime(Math.max(0, (totalSeconds ?? 0) + overtimeSeconds))
 					: formatTime(Math.max(0, remainingSeconds))}
 			</Text>
 

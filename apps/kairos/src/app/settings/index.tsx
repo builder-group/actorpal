@@ -1,11 +1,13 @@
 import { Form, Host, Picker, Section, Text } from '@expo/ui/swift-ui';
 import { tag } from '@expo/ui/swift-ui/modifiers';
+import { useFeatureState } from 'feature-react/state';
 import React from 'react';
 import { ScrollView } from 'react-native';
-import { useTheme, type TThemePreference } from '@/components';
+import { useSettingsCx, type TThemePreference } from '@/features/settings';
 
 const Screen: React.FC = () => {
-	const { themePreference, setThemePreference } = useTheme();
+	const settingsCx = useSettingsCx();
+	const themePreference = useFeatureState(settingsCx.$settings).appearance.theme;
 
 	return (
 		<ScrollView
@@ -19,7 +21,9 @@ const Screen: React.FC = () => {
 						<Picker
 							label="Theme"
 							selection={themePreference}
-							onSelectionChange={(value) => setThemePreference(value as TThemePreference)}
+							onSelectionChange={(value) =>
+								settingsCx.update({ appearance: { theme: value as TThemePreference } })
+							}
 						>
 							<Text modifiers={[tag('system')]}>System</Text>
 							<Text modifiers={[tag('light')]}>Light</Text>

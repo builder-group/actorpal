@@ -1,28 +1,28 @@
 import { StatusBar } from 'expo-status-bar';
+import { useCompute, useListener } from 'feature-react/state';
 import { VariableContextProvider } from 'nativewind';
 import React from 'react';
 import { Appearance, ColorSchemeName, useColorScheme } from 'react-native';
 import { themeTokens, toCssVariables, TThemeMode, TThemeTokens } from '@/environment';
+import { useSettingsCx } from '@/features/settings';
 
 const ThemeCx = React.createContext<TThemeCx | null>(null);
 
 interface TThemeCx {
 	theme: TThemeMode;
-	themePreference: TThemePreference;
 	tokens: TThemeTokens;
-	setThemePreference: (pref: TThemePreference) => void;
 }
 
-export type TThemePreference = 'light' | 'dark' | 'system';
-
-export const ThemeProvider: React.FC<TThemeProviderProps> = (props) => {
-	const { children } = props;
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+	const settingsCx = useSettingsCx();
 	const systemTheme = useColorScheme();
-	const [themePreference, setPreference] = React.useState<TThemePreference>('system');
-
-	const theme = React.useMemo<TThemeMode>(
-		() => (themePreference === 'system' ? resolveSystemTheme(systemTheme) : themePreference),
-		[themePreference, systemTheme]
+	const theme = useCompute(
+		settingsCx.$settings,
+		({ value }) => {
+			const pref = value.appearance.theme;
+			return pref === 'system' ? resolveSystemTheme(systemTheme) : pref;
+		},
+		[systemTheme]
 	);
 
 	const { tokens, cssVariables } = React.useMemo(() => {
@@ -30,24 +30,18 @@ export const ThemeProvider: React.FC<TThemeProviderProps> = (props) => {
 		return { tokens, cssVariables: toCssVariables(tokens) };
 	}, [theme]);
 
-	// MARK: - Actions
+	// MARK: - Effects
 
-	const setThemePreference = React.useCallback((pref: TThemePreference) => {
-		setPreference(pref);
-		// Sync to React Native's Appearance API so useColorScheme() and all
-		// native views (UIKit, SwiftUI) receive the correct color scheme.
+	// Sync native color scheme whenever the setting changes
+	useListener(settingsCx.$settings, ({ value }) => {
+		const pref = value.appearance.theme;
 		Appearance.setColorScheme((pref === 'system' ? null : pref) as ColorSchemeName);
-	}, []);
+	});
 
 	// MARK: - UI
 
 	return (
-		<ThemeCx.Provider
-			value={React.useMemo(
-				() => ({ theme, themePreference, tokens, setThemePreference }),
-				[theme, themePreference, tokens, setThemePreference]
-			)}
-		>
+		<ThemeCx.Provider value={React.useMemo(() => ({ theme, tokens }), [theme, tokens])}>
 			<VariableContextProvider value={cssVariables}>
 				<StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
 				{children}
@@ -55,10 +49,6 @@ export const ThemeProvider: React.FC<TThemeProviderProps> = (props) => {
 		</ThemeCx.Provider>
 	);
 };
-
-interface TThemeProviderProps {
-	children: React.ReactNode;
-}
 
 export function useTheme(): TThemeCx {
 	const cx = React.useContext(ThemeCx);

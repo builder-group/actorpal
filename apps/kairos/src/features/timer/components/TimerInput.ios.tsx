@@ -1,39 +1,33 @@
+import { useCompute } from 'feature-react/state';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { SegmentControl } from '@/components';
+import { SegmentControl, TSegmentControlItem } from '@/components';
 import {
 	DurationPickerView,
 	TDurationPickerChangeEvent
 } from '../../../../modules/duration-picker';
+import { useTimerCx } from '../TimerCx';
 
 type TActiveTimer = 'min' | 'max';
 
 export const TimerInput: React.FC = () => {
+	const cx = useTimerCx();
+	const min = useCompute(cx.$config, ({ value }) => value.min);
+	const max = useCompute(cx.$config, ({ value }) => value.max);
 	const [activeTimer, setActiveTimer] = React.useState<TActiveTimer>('min');
-	const [minHours, setMinHours] = React.useState(0);
-	const [minMinutes, setMinMinutes] = React.useState(1);
-	const [minSeconds, setMinSeconds] = React.useState(0);
-	const [maxHours, setMaxHours] = React.useState(0);
-	const [maxMinutes, setMaxMinutes] = React.useState(5);
-	const [maxSeconds, setMaxSeconds] = React.useState(0);
 
-	const hours = activeTimer === 'min' ? minHours : maxHours;
-	const minutes = activeTimer === 'min' ? minMinutes : maxMinutes;
-	const seconds = activeTimer === 'min' ? minSeconds : maxSeconds;
+	const hours = activeTimer === 'min' ? min.h : max.h;
+	const minutes = activeTimer === 'min' ? min.m : max.m;
+	const seconds = activeTimer === 'min' ? min.s : max.s;
+
+	// MARK: - Actions
 
 	const handleDurationChange = React.useCallback(
 		({ nativeEvent }: { nativeEvent: TDurationPickerChangeEvent }) => {
-			if (activeTimer === 'min') {
-				setMinHours(nativeEvent.hours);
-				setMinMinutes(nativeEvent.minutes);
-				setMinSeconds(nativeEvent.seconds);
-			} else {
-				setMaxHours(nativeEvent.hours);
-				setMaxMinutes(nativeEvent.minutes);
-				setMaxSeconds(nativeEvent.seconds);
-			}
+			const next = { h: nativeEvent.hours, m: nativeEvent.minutes, s: nativeEvent.seconds };
+			cx.$config.set((c) => ({ ...c, [activeTimer]: next }));
 		},
-		[activeTimer]
+		[activeTimer, cx]
 	);
 
 	const handleActiveTimerChange = React.useCallback((nextValue: string) => {
@@ -42,11 +36,21 @@ export const TimerInput: React.FC = () => {
 		}
 	}, []);
 
-	const timerItems = React.useMemo(
+	const formatDuration = React.useCallback((h: number, m: number, s: number): string => {
+		if (h > 0) return `${h}h ${m}m ${s}s`;
+		if (m > 0 && s === 0) return `${m}m`;
+		if (m > 0) return `${m}m ${s}s`;
+		if (s > 0) return `${s}s`;
+		return '0s';
+	}, []);
+
+	// MARK: - UI
+
+	const timerItems = React.useMemo<TSegmentControlItem[]>(
 		() => [
 			{
 				key: 'min' as const,
-				render: ({ isSelected }: { isSelected: boolean }) => (
+				render: ({ isSelected }) => (
 					<>
 						<Text
 							className={`text-[11px] font-semibold tracking-[0.6px] ${isSelected ? 'text-primary' : 'text-base-500'}`}
@@ -58,14 +62,14 @@ export const TimerInput: React.FC = () => {
 							adjustsFontSizeToFit
 							numberOfLines={1}
 						>
-							{formatDuration(minHours, minMinutes, minSeconds)}
+							{formatDuration(min.h, min.m, min.s)}
 						</Text>
 					</>
 				)
 			},
 			{
 				key: 'max' as const,
-				render: ({ isSelected }: { isSelected: boolean }) => (
+				render: ({ isSelected }) => (
 					<>
 						<Text
 							className={`text-[11px] font-semibold tracking-[0.6px] ${isSelected ? 'text-primary' : 'text-base-500'}`}
@@ -77,13 +81,13 @@ export const TimerInput: React.FC = () => {
 							adjustsFontSizeToFit
 							numberOfLines={1}
 						>
-							{formatDuration(maxHours, maxMinutes, maxSeconds)}
+							{formatDuration(max.h, max.m, max.s)}
 						</Text>
 					</>
 				)
 			}
 		],
-		[minHours, minMinutes, minSeconds, maxHours, maxMinutes, maxSeconds]
+		[min, max, formatDuration]
 	);
 
 	return (
@@ -105,18 +109,13 @@ export const TimerInput: React.FC = () => {
 					className="flex-1"
 				/>
 
-				<Pressable className="h-24 w-24 items-center justify-center rounded-full bg-[#E3F5E9] dark:bg-[#1C3620]">
+				<Pressable
+					className="h-24 w-24 items-center justify-center rounded-full bg-[#E3F5E9] dark:bg-[#1C3620]"
+					onPress={() => cx.start()}
+				>
 					<Text className="text-[18px] text-[#248A3D] dark:text-[#30D158]">Start</Text>
 				</Pressable>
 			</View>
 		</>
 	);
 };
-
-function formatDuration(h: number, m: number, s: number): string {
-	if (h > 0) return `${h}h ${m}m ${s}s`;
-	if (m > 0 && s === 0) return `${m}m`;
-	if (m > 0) return `${m}m ${s}s`;
-	if (s > 0) return `${s}s`;
-	return '0s';
-}

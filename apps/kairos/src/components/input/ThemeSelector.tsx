@@ -1,11 +1,15 @@
 import Feather from '@expo/vector-icons/Feather';
+import { useCompute } from 'feature-react/state';
 import React from 'react';
 import { Pressable, View } from 'react-native';
+import { useSettingsCx, type TThemePreference } from '@/features/settings';
 import { cn } from '@/lib';
-import { useTheme, type TThemePreference } from '../provider';
+import { useTheme } from '../provider';
 
 export const ThemeSelector: React.FC = () => {
-	const { themePreference, tokens, setThemePreference } = useTheme();
+	const settingsCx = useSettingsCx();
+	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
+	const { tokens } = useTheme();
 
 	const options = React.useMemo<
 		{ value: TThemePreference; icon: React.ComponentProps<typeof Feather>['name'] }[]
@@ -25,7 +29,7 @@ export const ThemeSelector: React.FC = () => {
 			{options.map(({ value, icon }) => (
 				<Pressable
 					key={value}
-					onPress={() => setThemePreference(value)}
+					onPress={() => settingsCx.update({ appearance: { theme: value } })}
 					accessibilityRole="radio"
 					accessibilityState={{ checked: themePreference === value }}
 					className={cn(

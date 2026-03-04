@@ -88,18 +88,18 @@ export const SegmentControl: React.FC<TSegmentControlProps> = (props) => {
 	);
 };
 
-interface TSegmentControlItem {
-	key: string;
-	render: (params: { isSelected: boolean }) => React.ReactNode;
-	disabled?: boolean;
-	testID?: string;
-}
-
-interface TSegmentControlProps {
+export interface TSegmentControlProps {
 	value: string;
 	onValueChange: (value: string) => void;
 	items: readonly TSegmentControlItem[];
 	className?: string;
 	style?: StyleProp<ViewStyle>;
 	thumbInset?: number;
+}
+
+export interface TSegmentControlItem {
+	key: string;
+	render: (params: { isSelected: boolean }) => React.ReactNode;
+	disabled?: boolean;
+	testID?: string;
 }

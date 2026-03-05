@@ -12,7 +12,7 @@ export const themeTokens = {
 		base800: '#3A3A3C',
 		base900: '#1C1C1E',
 		base950: '#000000',
-		primary: '#226FF6'
+		primary: '#4A92FF'
 	},
 	dark: {
 		base0: '#000000',
@@ -27,7 +27,7 @@ export const themeTokens = {
 		base800: '#D1D1D6',
 		base900: '#E5E5EA',
 		base950: '#F2F2F7',
-		primary: '#4A92FF'
+		primary: '#226FF6'
 	}
 } as const;
 

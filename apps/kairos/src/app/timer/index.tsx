@@ -27,7 +27,7 @@ const Screen: React.FC = () => {
 			) : (
 				<TimerInput cx={cx} />
 			)}
-			<TimerConfiguration />
+			<TimerConfiguration cx={cx} />
 		</ScrollView>
 	);
 };

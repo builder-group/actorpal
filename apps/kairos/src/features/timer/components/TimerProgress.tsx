@@ -101,7 +101,7 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 			)}
 
 			<Text
-				className="text-base-900 min-w-[190px] text-center text-[72px] leading-[80px] font-light"
+				className="text-base-900 min-w-[190px] text-center text-[72px] leading-[80px] font-extralight"
 				adjustsFontSizeToFit
 				numberOfLines={1}
 			>

@@ -1,6 +1,6 @@
 import { useCompute } from 'feature-react/state';
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SegmentControl, TSegmentControlItem } from '@/components';
 import {
 	DurationPickerView,
@@ -8,6 +8,7 @@ import {
 } from '../../../../modules/duration-picker';
 import { formatDurationCompact } from '../format';
 import { TimerCx } from '../TimerCx';
+import { TimerActionButton } from './TimerActionButton';
 
 export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 	const { cx } = props;
@@ -34,6 +35,10 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 			setActiveTimer(nextValue);
 		}
 	}, []);
+
+	const handleStart = React.useCallback(() => {
+		cx.start();
+	}, [cx]);
 
 	// MARK: - UI
 
@@ -100,12 +105,7 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 					className="flex-1"
 				/>
 
-				<Pressable
-					className="h-24 w-24 items-center justify-center rounded-full bg-[#E3F5E9] dark:bg-[#1C3620]"
-					onPress={() => cx.start()}
-				>
-					<Text className="text-[18px] text-[#248A3D] dark:text-[#30D158]">Start</Text>
-				</Pressable>
+				<TimerActionButton label="Start" tone="start" onPress={handleStart} />
 			</View>
 		</>
 	);

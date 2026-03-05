@@ -1,12 +1,16 @@
 import { useCompute } from 'feature-react/state';
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 import { TimerCx } from '../TimerCx';
+import { TimerActionButton } from './TimerActionButton';
 
 export const TimerControls: React.FC<TTimerControlsProps> = ({ cx }) => {
 	const status = useCompute(cx.$status, ({ value }) => value);
 
-	const canPause = status === 'running' || status === 'paused';
+	const canRightAction = status === 'running' || status === 'paused' || status === 'overtime';
+	const rightActionLabel =
+		status === 'overtime' ? 'Repeat' : status === 'paused' ? 'Resume' : 'Pause';
+	const rightActionTone = status === 'running' ? 'pause' : 'action';
 
 	// MARK: - Actions
 
@@ -15,6 +19,10 @@ export const TimerControls: React.FC<TTimerControlsProps> = ({ cx }) => {
 	}, [cx]);
 
 	const handlePrimaryAction = React.useCallback(() => {
+		if (status === 'overtime') {
+			cx.start();
+			return;
+		}
 		if (status === 'paused') {
 			cx.resume();
 			return;
@@ -26,22 +34,14 @@ export const TimerControls: React.FC<TTimerControlsProps> = ({ cx }) => {
 
 	return (
 		<View className="w-full flex-row items-center justify-between px-4">
-			<Pressable
-				className="h-24 w-24 items-center justify-center rounded-full bg-[#ECECF2] dark:bg-[#171723]"
-				onPress={handleCancel}
-			>
-				<Text className="text-base-900 text-[18px]">Cancel</Text>
-			</Pressable>
+			<TimerActionButton label="Cancel" tone="cancel" onPress={handleCancel} />
 
-			{canPause && (
-				<Pressable
-					className="h-24 w-24 items-center justify-center rounded-full bg-[#DDEBFF] dark:bg-[#0A2A57]"
+			{canRightAction && (
+				<TimerActionButton
+					label={rightActionLabel}
+					tone={rightActionTone}
 					onPress={handlePrimaryAction}
-				>
-					<Text className="text-[18px] text-[#0A66D6] dark:text-[#69AEFF]">
-						{status === 'paused' ? 'Resume' : 'Pause'}
-					</Text>
-				</Pressable>
+				/>
 			)}
 		</View>
 	);

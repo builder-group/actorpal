@@ -7,10 +7,7 @@ import { useSettingsCx, type TThemePreference } from '@/features/settings';
 
 const Screen: React.FC = () => {
 	const settingsCx = useSettingsCx();
-	const themePreference = useCompute(
-		settingsCx.$settings,
-		({ value }) => value.appearance.theme
-	);
+	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
 
 	return (
 		<ScrollView

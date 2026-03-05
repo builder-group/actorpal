@@ -1,13 +1,16 @@
 import { Form, Host, Picker, Section, Text } from '@expo/ui/swift-ui';
 import { tag } from '@expo/ui/swift-ui/modifiers';
-import { useFeatureState } from 'feature-react/state';
+import { useCompute } from 'feature-react/state';
 import React from 'react';
 import { ScrollView } from 'react-native';
 import { useSettingsCx, type TThemePreference } from '@/features/settings';
 
 const Screen: React.FC = () => {
 	const settingsCx = useSettingsCx();
-	const themePreference = useFeatureState(settingsCx.$settings).appearance.theme;
+	const themePreference = useCompute(
+		settingsCx.$settings,
+		({ value }) => value.appearance.theme
+	);
 
 	return (
 		<ScrollView

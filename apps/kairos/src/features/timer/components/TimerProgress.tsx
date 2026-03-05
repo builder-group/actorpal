@@ -15,24 +15,22 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 	const status = useCompute(cx.$status, ({ value }) => value);
 	const hideTimer = useCompute(cx.$config, ({ value }) => value.hideTimer);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
-	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
-	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
-
 	const isOvertime = status === 'overtime';
-
-	const progress = React.useMemo(() => {
-		if (isOvertime) {
-			return 1;
+	const progress = useCombinedCompute(
+		[cx.$status, cx.$totalSeconds, cx.$remainingSeconds],
+		([{ value: status }, { value: totalSeconds }, { value: remainingSeconds }]) => {
+			if (status === 'overtime') {
+				return 1;
+			}
+			if (totalSeconds == null || totalSeconds <= 0) {
+				return 0;
+			}
+			return Math.min(Math.max(1 - Math.max(0, remainingSeconds) / totalSeconds, 0), 1);
 		}
-		if (totalSeconds == null || totalSeconds <= 0) {
-			return 0;
-		}
-		return Math.min(Math.max(1 - Math.max(0, remainingSeconds) / totalSeconds, 0), 1);
-	}, [isOvertime, totalSeconds, remainingSeconds]);
+	);
+	const activeRingColor = isOvertime && endMode === 'overtime' ? '#FF9500' : tokens.primary;
 
 	// MARK: - UI
-
-	const activeRingColor = isOvertime && endMode === 'overtime' ? '#FF9500' : tokens.primary;
 
 	return (
 		<View className={cn('relative h-[256px] w-full', className)}>
@@ -75,14 +73,13 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
 	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
+	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
+	const overtimeSeconds = useFeatureState(cx.$overtimeSeconds);
 	const endTime = useCombinedCompute(
 		[cx.$startedAt, cx.$remainingAtStart],
 		([{ value: startedAt }, { value: remainingAtStart }]) =>
 			startedAt != null ? startedAt + remainingAtStart * 1000 : null
 	);
-	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
-	const overtimeSeconds = useFeatureState(cx.$overtimeSeconds);
-
 	const autoEndCountdown = React.useMemo(() => {
 		if (status === 'overtime' && endMode !== 'overtime') {
 			return Math.max(0, endAfterSeconds - overtimeSeconds);

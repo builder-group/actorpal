@@ -28,7 +28,7 @@ export class TimerCx {
 				min: { h: 0, m: 1, s: 0 },
 				max: { h: 0, m: 5, s: 0 },
 				label: 'Timer',
-				hideTimer: false,
+				hideTimeDisplay: false,
 				sound: 'Radar',
 				endMode: 'overtime',
 				endAfterSeconds: 5
@@ -60,6 +60,11 @@ export class TimerCx {
 			this.$startedAt.persist(),
 			this.$remainingAtStart.persist()
 		]);
+		this.$config.set((config) => ({
+			...config,
+			hideTimeDisplay:
+				config.hideTimeDisplay ?? (config as { hideTimer?: boolean }).hideTimer ?? false
+		}));
 
 		const status = this.$status.get();
 		const startedAt = this.$startedAt.get();
@@ -236,7 +241,7 @@ export interface TTimerConfig {
 	min: TDuration;
 	max: TDuration;
 	label: string;
-	hideTimer: boolean;
+	hideTimeDisplay: boolean;
 	sound: TTimerSound;
 	endMode: TTimerEndMode;
 	/** Seconds of overtime before auto-stop or auto-loop triggers. Ignored when endMode is 'overtime'. */

@@ -4,7 +4,7 @@ import Svg, { Line } from 'react-native-svg';
 import { useTheme } from '@/components';
 import { cn } from '@/lib';
 
-export const RingProgressHidden: React.FC<TRingProgressHiddenProps> = (props) => {
+export const PulsingDashRing: React.FC<TPulsingDashRingProps> = (props) => {
 	const { tokens } = useTheme();
 	const {
 		size = 250,
@@ -78,7 +78,7 @@ export const RingProgressHidden: React.FC<TRingProgressHiddenProps> = (props) =>
 	);
 };
 
-interface TRingProgressHiddenProps {
+interface TPulsingDashRingProps {
 	size?: number;
 	dashCount?: number;
 	dashLength?: number;

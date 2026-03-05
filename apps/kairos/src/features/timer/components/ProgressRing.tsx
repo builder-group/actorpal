@@ -12,7 +12,7 @@ import { cn } from '@/lib';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-export const RingProgress: React.FC<TRingProgressProps> = (props) => {
+export const ProgressRing: React.FC<TProgressRingProps> = (props) => {
 	const { tokens } = useTheme();
 	const {
 		progress,
@@ -80,7 +80,7 @@ export const RingProgress: React.FC<TRingProgressProps> = (props) => {
 	);
 };
 
-interface TRingProgressProps {
+interface TProgressRingProps {
 	progress: number;
 	size?: number;
 	thickness?: number;

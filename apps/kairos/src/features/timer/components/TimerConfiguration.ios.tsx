@@ -26,7 +26,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 	const label = useCompute(cx.$config, ({ value }) => value.label);
 	const sound = useCompute(cx.$config, ({ value }) => value.sound);
-	const hideTimer = useCompute(cx.$config, ({ value }) => value.hideTimer);
+	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
 	const availableSounds = useCompute(audioCx.$sounds, ({ value }) => value);
@@ -99,10 +99,10 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 					)}
 
 					<Toggle
-						isOn={hideTimer}
-						label="Hide Timer"
+						isOn={hideTimeDisplay}
+						label="Hide Time Display"
 						onIsOnChange={(v) => {
-							cx.$config.set((c) => ({ ...c, hideTimer: v }));
+							cx.$config.set((c) => ({ ...c, hideTimeDisplay: v }));
 						}}
 					/>
 				</Section>

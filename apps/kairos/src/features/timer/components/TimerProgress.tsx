@@ -5,15 +5,15 @@ import { BellIcon, ClockIcon, useTheme } from '@/components';
 import { cn } from '@/lib';
 import { formatClockTime, formatTimerClock } from '../format';
 import { TimerCx } from '../TimerCx';
-import { RingProgress } from './RingProgress';
-import { RingProgressHidden } from './RingProgressHidden';
+import { ProgressRing } from './ProgressRing';
+import { PulsingDashRing } from './PulsingDashRing';
 
 export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 	const { cx, className } = props;
 	const { tokens } = useTheme();
 
 	const status = useCompute(cx.$status, ({ value }) => value);
-	const hideTimer = useCompute(cx.$config, ({ value }) => value.hideTimer);
+	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const isOvertime = status === 'overtime';
 	const progress = useCombinedCompute(
@@ -34,25 +34,25 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 
 	return (
 		<View className={cn('relative h-[256px] w-full', className)}>
-			{hideTimer ? (
-				<RingProgressHidden
+			{hideTimeDisplay ? (
+				<PulsingDashRing
 					className="absolute inset-0 top-4 left-1/2 -translate-x-1/2"
-					size={272}
+					size={272 + 12}
 					animated={status === 'running' || isOvertime}
 					activeColor={activeRingColor}
 					inactiveColor={tokens.base300}
 				>
 					{isOvertime ? <TimerProgressContent cx={cx} /> : null}
-				</RingProgressHidden>
+				</PulsingDashRing>
 			) : (
-				<RingProgress
+				<ProgressRing
 					className="absolute inset-0 top-4 left-1/2 -translate-x-1/2"
 					progress={progress}
 					size={272}
 					progressColor={activeRingColor}
 				>
 					<TimerProgressContent cx={cx} />
-				</RingProgress>
+				</ProgressRing>
 			)}
 		</View>
 	);

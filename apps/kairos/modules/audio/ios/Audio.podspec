@@ -1,7 +1,7 @@
 Pod::Spec.new do |s|
-  s.name           = 'DurationPicker'
+  s.name           = 'Audio'
   s.version        = '1.0.0'
-  s.summary        = 'Native iOS duration picker view for Expo/React Native.'
+  s.summary        = 'Native iOS audio module for Expo/React Native.'
   s.description    = ''
   s.homepage       = 'https://docs.expo.dev/modules/'
   s.platforms      = {
@@ -13,10 +13,10 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
 
-  # Swift/Objective-C compatibility
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',
   }
 
   s.source_files = "**/*.{h,m,mm,swift,hpp,cpp}"
+  s.frameworks = 'AVFoundation'
 end

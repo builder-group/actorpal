@@ -1,8 +1,12 @@
+import * as Haptics from 'expo-haptics';
 import { createState, type TPersistFeature, type TState } from 'feature-state';
 import React from 'react';
+import { useMemoCleanup } from '@/hooks';
 import { withAsyncStorage } from '@/lib';
+import { AudioCx, useAudioCx } from '../audio';
 
 export class TimerCx {
+	private readonly _audioCx: AudioCx;
 	private _interval: ReturnType<typeof setInterval> | null = null;
 
 	public readonly $config: TState<TTimerConfig, [TPersistFeature]>;
@@ -15,14 +19,15 @@ export class TimerCx {
 	public readonly $remainingAtStart: TState<number, [TPersistFeature]>;
 	public readonly $startedAt: TState<number | null, [TPersistFeature]>;
 
-	constructor() {
+	constructor(audioCx: AudioCx) {
+		this._audioCx = audioCx;
 		this.$config = withAsyncStorage(
 			createState<TTimerConfig>({
 				min: { h: 0, m: 1, s: 0 },
 				max: { h: 0, m: 5, s: 0 },
 				label: 'Timer',
 				hideTimer: false,
-				sound: 'radar',
+				sound: 'Radar',
 				endMode: 'overtime',
 				endAfterSeconds: 5
 			}),
@@ -89,6 +94,7 @@ export class TimerCx {
 	// MARK: - Actions
 
 	public start(): void {
+		this._audioCx.stop();
 		const { min, max } = this.$config.get();
 		const lo = Math.min(this._toSeconds(min), this._toSeconds(max));
 		const hi = Math.max(this._toSeconds(min), this._toSeconds(max));
@@ -137,6 +143,7 @@ export class TimerCx {
 	}
 
 	public cancel(): void {
+		this._audioCx.stop();
 		this._stopLoop();
 		this.$status.set('idle');
 		this.$totalSeconds.set(null);
@@ -185,6 +192,8 @@ export class TimerCx {
 		if (remaining === 0) {
 			this.$overtimeSeconds.set(0);
 			this.$status.set('overtime');
+			this._audioCx.play(this.$config.get().sound);
+			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
 		}
 	}
 
@@ -222,7 +231,7 @@ export class TimerCx {
 }
 
 export type TTimerStatus = 'idle' | 'running' | 'paused' | 'overtime';
-export type TTimerSound = 'radar' | 'bell';
+export type TTimerSound = string;
 export type TTimerEndMode = 'overtime' | 'stop' | 'loop';
 
 export interface TDuration {
@@ -247,11 +256,14 @@ export interface TTimerConfig {
 const TimerCxContext = React.createContext<TimerCx | null>(null);
 
 export const TimerCxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	const [cx] = React.useState(() => new TimerCx());
+	const audioCx = useAudioCx();
+	const cx = useMemoCleanup(() => {
+		const instance = new TimerCx(audioCx);
+		return [instance, () => instance.unmount()];
+	}, [audioCx]);
 
 	React.useEffect(() => {
 		cx.mount();
-		return () => cx.unmount();
 	}, [cx]);
 
 	return <TimerCxContext.Provider value={cx}>{children}</TimerCxContext.Provider>;

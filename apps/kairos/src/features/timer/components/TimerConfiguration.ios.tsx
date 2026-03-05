@@ -17,15 +17,19 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { useCompute } from 'feature-react/state';
 import React from 'react';
+import { useAudioCx } from '@/features/audio';
 import { TimerCx, type TTimerEndMode } from '../TimerCx';
 
 export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) => {
 	const { cx } = props;
+	const audioCx = useAudioCx();
+
 	const label = useCompute(cx.$config, ({ value }) => value.label);
 	const sound = useCompute(cx.$config, ({ value }) => value.sound);
 	const hideTimer = useCompute(cx.$config, ({ value }) => value.hideTimer);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
+	const availableSounds = useCompute(audioCx.$sounds, ({ value }) => value);
 
 	return (
 		<Host matchContents useViewportSizeMeasurement>
@@ -50,11 +54,16 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 						label="Alarm Sound"
 						selection={sound}
 						onSelectionChange={(v) => {
-							cx.$config.set((c) => ({ ...c, sound: v as 'radar' | 'bell' }));
+							const name = v as string;
+							cx.$config.set((c) => ({ ...c, sound: name }));
+							audioCx.play(name);
 						}}
 					>
-						<Text modifiers={[tag('radar')]}>Radar</Text>
-						<Text modifiers={[tag('bell')]}>Bell</Text>
+						{availableSounds.map((name) => (
+							<Text key={name} modifiers={[tag(name)]}>
+								{name}
+							</Text>
+						))}
 					</Picker>
 
 					<Picker

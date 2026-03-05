@@ -10,9 +10,9 @@ export const TimerActionButton: React.FC<TTimerActionButtonProps> = (props) => {
 	const { backgroundColor, textColor } = React.useMemo(() => {
 		switch (tone) {
 			case 'start':
-				return { backgroundColor: hexToRgba('#30D158', 0.14), textColor: '#248A3D' };
+				return { backgroundColor: hexToRgba('#00D042', 0.14), textColor: '#00D042' };
 			case 'pause':
-				return { backgroundColor: hexToRgba('#FF9F0A', 0.14), textColor: '#B35A00' };
+				return { backgroundColor: hexToRgba('#FF8B00', 0.14), textColor: '#FF8B00' };
 			case 'cancel':
 				return {
 					backgroundColor: hexToRgba(tokens.base700, 0.1),

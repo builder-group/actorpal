@@ -12,7 +12,9 @@ export const themeTokens = {
 		base800: '#3A3A3C',
 		base900: '#1C1C1E',
 		base950: '#000000',
-		primary: '#4A92FF'
+		primary: '#4A92FF',
+		warning: '#FF9F0A',
+		danger: '#FF3B30'
 	},
 	dark: {
 		base0: '#000000',
@@ -27,7 +29,9 @@ export const themeTokens = {
 		base800: '#D1D1D6',
 		base900: '#E5E5EA',
 		base950: '#F2F2F7',
-		primary: '#226FF6'
+		primary: '#226FF6',
+		warning: '#FF9F0A',
+		danger: '#FF453A'
 	}
 } as const;
 
@@ -48,7 +52,9 @@ export function toCssVariables(tokens: TThemeTokens): TCssVariables {
 		'--base-800': tokens.base800,
 		'--base-900': tokens.base900,
 		'--base-950': tokens.base950,
-		'--primary': tokens.primary
+		'--primary': tokens.primary,
+		'--warning': tokens.warning,
+		'--danger': tokens.danger
 	};
 }
 

@@ -4,6 +4,8 @@ import React from 'react';
 import { useMemoCleanup } from '@/hooks';
 import { withAsyncStorage } from '@/lib';
 import { AudioCx, useAudioCx } from '../audio';
+import { durationToSeconds } from './format';
+import { TDuration } from './types';
 
 export class TimerCx {
 	private readonly _audioCx: AudioCx;
@@ -96,8 +98,8 @@ export class TimerCx {
 	public start(): void {
 		this._audioCx.stop();
 		const { min, max } = this.$config.get();
-		const lo = Math.min(this._toSeconds(min), this._toSeconds(max));
-		const hi = Math.max(this._toSeconds(min), this._toSeconds(max));
+		const lo = Math.min(durationToSeconds(min), durationToSeconds(max));
+		const hi = Math.max(durationToSeconds(min), durationToSeconds(max));
 		const totalSeconds = lo === hi ? lo : Math.round(lo + Math.random() * (hi - lo));
 		const now = Date.now();
 
@@ -224,21 +226,11 @@ export class TimerCx {
 			this.cancel();
 		}
 	}
-
-	private _toSeconds(d: TDuration): number {
-		return d.h * 3600 + d.m * 60 + d.s;
-	}
 }
 
 export type TTimerStatus = 'idle' | 'running' | 'paused' | 'overtime';
 export type TTimerSound = string;
 export type TTimerEndMode = 'overtime' | 'stop' | 'loop';
-
-export interface TDuration {
-	h: number;
-	m: number;
-	s: number;
-}
 
 export interface TTimerConfig {
 	min: TDuration;

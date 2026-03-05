@@ -7,7 +7,7 @@ import { cn } from '@/lib';
 export const RingProgressHidden: React.FC<TRingProgressHiddenProps> = (props) => {
 	const { tokens } = useTheme();
 	const {
-		size = 235,
+		size = 250,
 		dashCount = 60,
 		dashLength = 12,
 		dashThickness = 3,

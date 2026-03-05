@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
+import React from 'react';
 import { useTheme } from '@/components';
 
-export default function SettingsLayout() {
+const Layout: React.FC = () => {
 	const { tokens } = useTheme();
 
 	return (
@@ -16,4 +17,6 @@ export default function SettingsLayout() {
 			/>
 		</Stack>
 	);
-}
+};
+
+export default Layout;

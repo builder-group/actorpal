@@ -16,8 +16,8 @@ export const RingProgress: React.FC<TRingProgressProps> = (props) => {
 	const { tokens } = useTheme();
 	const {
 		progress,
-		size = 260,
-		thickness = 10,
+		size = 250,
+		thickness = 8,
 		trackColor = tokens.base300,
 		progressColor = tokens.primary,
 		animationDuration = 220,

@@ -1,9 +1,9 @@
-import Feather from '@expo/vector-icons/Feather';
-import { useCompute, useFeatureState } from 'feature-react/state';
+import { useCombinedCompute, useCompute, useFeatureState } from 'feature-react/state';
 import React from 'react';
 import { Text, View } from 'react-native';
-import { useTheme } from '@/components';
+import { BellIcon, ClockIcon, useTheme } from '@/components';
 import { cn } from '@/lib';
+import { formatClockTime, formatTimerClock } from '../format';
 import { TimerCx } from '../TimerCx';
 import { RingProgress } from './RingProgress';
 import { RingProgressHidden } from './RingProgressHidden';
@@ -35,11 +35,11 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 	const activeRingColor = isOvertime && endMode === 'overtime' ? '#FF9500' : tokens.primary;
 
 	return (
-		<View className={cn('relative h-[216px] w-full', className)}>
+		<View className={cn('relative h-[256px] w-full', className)}>
 			{hideTimer ? (
 				<RingProgressHidden
-					className="absolute inset-0 top-0 left-1/2 -translate-x-1/2"
-					size={235}
+					className="absolute inset-0 top-4 left-1/2 -translate-x-1/2"
+					size={272}
 					animated={status === 'running' || isOvertime}
 					activeColor={activeRingColor}
 					inactiveColor={tokens.base300}
@@ -48,9 +48,9 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 				</RingProgressHidden>
 			) : (
 				<RingProgress
-					className="absolute inset-0 top-0 left-1/2 -translate-x-1/2"
+					className="absolute inset-0 top-4 left-1/2 -translate-x-1/2"
 					progress={progress}
-					size={235}
+					size={272}
 					progressColor={activeRingColor}
 				>
 					<TimerProgressContent cx={cx} />
@@ -75,51 +75,59 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
 	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
-	const startedAt = useCompute(cx.$startedAt, ({ value }) => value);
-	const remainingAtStart = useCompute(cx.$remainingAtStart, ({ value }) => value);
-	const endTime = startedAt != null ? startedAt + remainingAtStart * 1000 : null;
+	const endTime = useCombinedCompute(
+		[cx.$startedAt, cx.$remainingAtStart],
+		([{ value: startedAt }, { value: remainingAtStart }]) =>
+			startedAt != null ? startedAt + remainingAtStart * 1000 : null
+	);
 	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
 	const overtimeSeconds = useFeatureState(cx.$overtimeSeconds);
 
-	const isOvertime = status === 'overtime';
-
-	const autoEndCountdown =
-		isOvertime && endMode !== 'overtime' ? Math.max(0, endAfterSeconds - overtimeSeconds) : null;
-
-	const labelColor = isOvertime && endMode === 'overtime' ? '#FF9500' : tokens.base500;
-	const timeColor = isOvertime && endMode === 'overtime' ? '#FF9500' : tokens.base900;
+	const autoEndCountdown = React.useMemo(() => {
+		if (status === 'overtime' && endMode !== 'overtime') {
+			return Math.max(0, endAfterSeconds - overtimeSeconds);
+		}
+		return null;
+	}, [status, endMode, endAfterSeconds, overtimeSeconds]);
 
 	// MARK: - UI
 
 	return (
 		<View className="relative items-center">
-			{!isOvertime && (
+			{status !== 'overtime' && (
 				<View className="absolute bottom-full flex-row items-center gap-1 pb-1.5">
-					<Feather name="bell" size={14} color={tokens.base500} />
-					<Text className="text-sm" style={{ color: tokens.base500 }}>
-						{endTime != null ? formatEndTime(endTime) : '--:--'}
+					<BellIcon size={18} color={tokens.base500} />
+					<Text className="text-base-500 text-xl">
+						{endTime != null ? formatClockTime(endTime) : '--:--'}
 					</Text>
 				</View>
 			)}
 
 			<Text
-				className="min-w-[190px] text-center text-[72px] leading-[80px] font-light"
-				style={{ color: timeColor }}
+				className="text-base-900 min-w-[190px] text-center text-[72px] leading-[80px] font-light"
 				adjustsFontSizeToFit
 				numberOfLines={1}
 			>
-				{isOvertime
-					? formatTime(Math.max(0, (totalSeconds ?? 0) + overtimeSeconds))
-					: formatTime(Math.max(0, remainingSeconds))}
+				{status === 'overtime'
+					? formatTimerClock(Math.max(0, (totalSeconds ?? 0) + overtimeSeconds))
+					: formatTimerClock(Math.max(0, remainingSeconds))}
 			</Text>
 
-			{isOvertime && (
+			{status === 'overtime' && (
 				<View className="absolute top-full flex-row items-center gap-1 pt-1.5">
-					<Feather name="clock" size={14} color={labelColor} />
-					<Text className="text-sm" style={{ color: labelColor }}>
+					<ClockIcon
+						size={18}
+						color={status === 'overtime' && endMode === 'overtime' ? '#FF9500' : tokens.base500}
+					/>
+					<Text
+						className={cn(
+							'text-xl',
+							status === 'overtime' && endMode === 'overtime' ? 'text-[#FF9500]' : 'text-base-500'
+						)}
+					>
 						{autoEndCountdown != null
-							? `${endMode === 'loop' ? 'Repeat' : 'Stop'} in ${formatTime(autoEndCountdown)}`
-							: `+${formatTime(Math.max(0, overtimeSeconds))}`}
+							? `${endMode === 'loop' ? 'Repeat' : 'Stop'} in ${formatTimerClock(autoEndCountdown)}`
+							: `+${formatTimerClock(Math.max(0, overtimeSeconds))}`}
 					</Text>
 				</View>
 			)}
@@ -129,27 +137,4 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 
 interface TTimerProgressContentProps {
 	cx: TimerCx;
-}
-
-// MARK: - Helpers
-
-function formatTime(seconds: number): string {
-	const total = Math.ceil(seconds);
-	const h = Math.floor(total / 3600);
-	const m = Math.floor((total % 3600) / 60);
-	const s = total % 60;
-
-	if (h > 0) {
-		return `${h}:${pad(m)}:${pad(s)}`;
-	}
-	return `${m}:${pad(s)}`;
-}
-
-function formatEndTime(epochMs: number): string {
-	const date = new Date(epochMs);
-	return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function pad(value: number): string {
-	return value.toString().padStart(2, '0');
 }

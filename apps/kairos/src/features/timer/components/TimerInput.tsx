@@ -6,6 +6,7 @@ import {
 	DurationPickerView,
 	TDurationPickerChangeEvent
 } from '../../../../modules/duration-picker';
+import { formatDurationCompact } from '../format';
 import { TimerCx } from '../TimerCx';
 
 export const TimerInput: React.FC<TTimerInputProps> = (props) => {
@@ -52,7 +53,7 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 							adjustsFontSizeToFit
 							numberOfLines={1}
 						>
-							{formatDuration(min.h, min.m, min.s)}
+							{formatDurationCompact(min)}
 						</Text>
 					</>
 				)
@@ -71,7 +72,7 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 							adjustsFontSizeToFit
 							numberOfLines={1}
 						>
-							{formatDuration(max.h, max.m, max.s)}
+							{formatDurationCompact(max)}
 						</Text>
 					</>
 				)
@@ -84,7 +85,7 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 		<>
 			<DurationPickerView
 				key={activeTimer}
-				style={{ height: 216, backgroundColor: 'transparent' }}
+				style={{ height: 256, backgroundColor: 'transparent' }}
 				hours={hours}
 				minutes={minutes}
 				seconds={seconds}
@@ -115,13 +116,3 @@ interface TTimerInputProps {
 }
 
 type TActiveTimer = 'min' | 'max';
-
-// MARK: - Helpers
-
-function formatDuration(h: number, m: number, s: number): string {
-	if (h > 0) return `${h}h ${m}m ${s}s`;
-	if (m > 0 && s === 0) return `${m}m`;
-	if (m > 0) return `${m}m ${s}s`;
-	if (s > 0) return `${s}s`;
-	return '0s';
-}

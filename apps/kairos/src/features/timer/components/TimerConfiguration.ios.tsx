@@ -1,26 +1,33 @@
 import {
-	Form,
+	Divider,
 	Host,
 	HStack,
 	Image,
 	LabeledContent,
 	Picker,
-	Section,
 	Text,
 	TextField,
 	Toggle,
+	VStack,
 	type TextFieldRef
 } from '@expo/ui/swift-ui';
 import {
+	background,
+	clipShape,
+	foregroundStyle,
 	frame,
-	listSectionSpacing,
 	multilineTextAlignment,
+	padding,
+	pickerStyle,
+	shapes,
 	submitLabel,
 	tag,
-	textFieldStyle
+	textFieldStyle,
+	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { useCompute } from 'feature-react/state';
 import React from 'react';
+import { View } from 'react-native';
 import { useTheme } from '@/components';
 import { useAudioCx } from '@/features/audio';
 import { TimerCx, type TTimerEndMode } from '../TimerCx';
@@ -43,6 +50,11 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
 	const availableSounds = useCompute(audioCx.$sounds, ({ value }) => value);
 	const canClearLabel = label.length > 0 && isLabelFocused;
+
+	const rowHeight = frame({ minHeight: 52 });
+	const baseRowPadding = padding({ leading: 16, trailing: 20 });
+	const pickerRowPadding = padding({ leading: 16, trailing: 8 });
+	const dividerInsets = padding({ leading: 16, trailing: 20 });
 
 	// MARK: - Actions
 
@@ -125,10 +137,22 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	// MARK: - UI
 
 	return (
-		<Host matchContents useViewportSizeMeasurement>
-			<Form modifiers={[listSectionSpacing('compact')]}>
-				<Section>
-					<LabeledContent label="Label">
+		<View className="px-4 py-8">
+			<Host matchContents>
+				{/* We intentionally avoid Form here.
+				    Form is list-backed and expands/collapses based on container constraints, which makes
+				    embedding between TimerInput and Recents brittle. We considered:
+				    1) fixed-height Form (works but rigid),
+				    2) dynamic Form sizing (not reliable with list-backed layout),
+				    3) custom grouped card rows (chosen: predictable sizing + form-like look). */}
+				<VStack
+					spacing={0}
+					modifiers={[
+						background(tokens.base0, shapes.roundedRectangle({ cornerRadius: 24 })),
+						clipShape('roundedRectangle', 24)
+					]}
+				>
+					<LabeledContent label="Label" modifiers={[baseRowPadding, rowHeight]}>
 						<HStack spacing={8} alignment="center">
 							<TextField
 								ref={labelRef}
@@ -159,53 +183,79 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 						</HStack>
 					</LabeledContent>
 
-					<Picker
-						label="Alarm Sound"
-						selection={sound}
-						onSelectionChange={(v) => {
-							const name = v as string;
-							cx.$config.set((c) => ({ ...c, sound: name }));
-							audioCx.play(name);
-						}}
-					>
-						{availableSounds.map((name) => (
-							<Text key={name} modifiers={[tag(name)]}>
-								{name}
-							</Text>
-						))}
-					</Picker>
+					<Divider modifiers={[dividerInsets]} />
 
-					<Picker
-						label="After Timer Ends"
-						selection={endMode}
-						onSelectionChange={(v) => {
-							cx.$config.set((c) => ({ ...c, endMode: v as TTimerEndMode }));
-						}}
-					>
-						<Text modifiers={[tag('overtime')]}>Overtime</Text>
-						<Text modifiers={[tag('stop')]}>Auto Stop</Text>
-						<Text modifiers={[tag('loop')]}>Auto Repeat</Text>
-					</Picker>
+					<LabeledContent label="Alarm Sound" modifiers={[pickerRowPadding, rowHeight]}>
+						<Picker
+							selection={sound}
+							onSelectionChange={(v) => {
+								const name = v as string;
+								cx.$config.set((c) => ({ ...c, sound: name }));
+								audioCx.play(name);
+							}}
+							modifiers={[
+								pickerStyle('menu'),
+								multilineTextAlignment('trailing'),
+								foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+								tint(tokens.base500)
+							]}
+						>
+							{availableSounds.map((name) => (
+								<Text key={name} modifiers={[tag(name)]}>
+									{name}
+								</Text>
+							))}
+						</Picker>
+					</LabeledContent>
+
+					<Divider modifiers={[dividerInsets]} />
+
+					<LabeledContent label="After Timer Ends" modifiers={[pickerRowPadding, rowHeight]}>
+						<Picker
+							selection={endMode}
+							onSelectionChange={(v) => {
+								cx.$config.set((c) => ({ ...c, endMode: v as TTimerEndMode }));
+							}}
+							modifiers={[
+								pickerStyle('menu'),
+								multilineTextAlignment('trailing'),
+								foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+								tint(tokens.base500)
+							]}
+						>
+							<Text modifiers={[tag('overtime')]}>Overtime</Text>
+							<Text modifiers={[tag('stop')]}>Auto Stop</Text>
+							<Text modifiers={[tag('loop')]}>Auto Repeat</Text>
+						</Picker>
+					</LabeledContent>
 
 					{(endMode === 'loop' || endMode === 'stop') && (
-						<LabeledContent label={endMode === 'loop' ? 'Repeat after (s)' : 'Stop after (s)'}>
-							<TextField
-								ref={endAfterRef}
-								defaultValue={String(endAfterSeconds)}
-								placeholder="5"
-								onChangeText={handleEndAfterChange}
-								onChangeFocus={handleEndAfterFocusChange}
-								onSubmit={handleEndAfterSubmit}
-								keyboardType="numbers-and-punctuation"
-								modifiers={[
-									textFieldStyle('plain'),
-									submitLabel('done'),
-									frame({ width: 60, alignment: 'trailing' }),
-									multilineTextAlignment('trailing')
-								]}
-							/>
-						</LabeledContent>
+						<>
+							<Divider modifiers={[dividerInsets]} />
+							<LabeledContent
+								label={endMode === 'loop' ? 'Repeat after (s)' : 'Stop after (s)'}
+								modifiers={[baseRowPadding, rowHeight]}
+							>
+								<TextField
+									ref={endAfterRef}
+									defaultValue={String(endAfterSeconds)}
+									placeholder="5"
+									onChangeText={handleEndAfterChange}
+									onChangeFocus={handleEndAfterFocusChange}
+									onSubmit={handleEndAfterSubmit}
+									keyboardType="numbers-and-punctuation"
+									modifiers={[
+										textFieldStyle('plain'),
+										submitLabel('done'),
+										frame({ width: 60, alignment: 'trailing' }),
+										multilineTextAlignment('trailing')
+									]}
+								/>
+							</LabeledContent>
+						</>
 					)}
+
+					<Divider modifiers={[dividerInsets]} />
 
 					<Toggle
 						isOn={hideTimeDisplay}
@@ -213,10 +263,11 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 						onIsOnChange={(v) => {
 							cx.$config.set((c) => ({ ...c, hideTimeDisplay: v }));
 						}}
+						modifiers={[baseRowPadding, rowHeight]}
 					/>
-				</Section>
-			</Form>
-		</Host>
+				</VStack>
+			</Host>
+		</View>
 	);
 };
 

@@ -113,15 +113,16 @@ export class TimerCx {
 			this.$config.set(configOverride);
 		}
 		const config = configOverride ?? this.$config.get();
-		if (recordRecent) {
-			this._upsertRecent(config);
-		}
 
 		const { min, max } = config;
 		const lo = Math.min(durationToSeconds(min), durationToSeconds(max));
 		const hi = Math.max(durationToSeconds(min), durationToSeconds(max));
 		const totalSeconds = lo === hi ? lo : Math.round(lo + Math.random() * (hi - lo));
 		const now = Date.now();
+
+		if (recordRecent) {
+			this._upsertRecent(config, totalSeconds);
+		}
 
 		this.$totalSeconds.set(totalSeconds);
 		this.$startedAt.set(now);
@@ -230,7 +231,7 @@ export class TimerCx {
 
 	// MARK: - Helpers
 
-	private _upsertRecent(config: TTimerConfig): void {
+	private _upsertRecent(config: TTimerConfig, lastUsedTotalSeconds: number): void {
 		const hash = this._recentHash(config);
 		this.$recents.set((current) => {
 			const existing = current.find((entry) => entry.hash === hash);
@@ -238,6 +239,7 @@ export class TimerCx {
 			const next: TTimerRecent = {
 				hash,
 				config,
+				lastUsedTotalSeconds,
 				createdAt: existing?.createdAt ?? now,
 				lastUsedAt: now
 			};
@@ -306,6 +308,7 @@ interface TTimerStartOptions {
 export interface TTimerRecent {
 	hash: string;
 	config: TTimerConfig;
+	lastUsedTotalSeconds: number;
 	createdAt: number;
 	lastUsedAt: number;
 }

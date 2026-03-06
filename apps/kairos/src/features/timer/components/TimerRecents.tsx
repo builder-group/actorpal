@@ -3,7 +3,7 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { PlayIcon } from '@/components';
 import { hexToRgba } from '@/lib';
-import { formatDurationRange, formatTimerClockRange } from '../format';
+import { formatDurationRange, formatTimerClock } from '../format';
 import { TimerCx, type TTimerRecent } from '../TimerCx';
 
 export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
@@ -23,43 +23,48 @@ export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
 
 	return (
 		<View className="pt-2">
-			<Text className="text-base-900 px-4 text-4xl font-medium">Recents</Text>
-			<View className="border-base-200 mt-1.5 border-y">
-				{recents.map((recent) => {
+			<Text className="text-base-900 px-4 text-2xl font-medium">Recents</Text>
+			<View className="mt-2">
+				<View className="border-base-300 mx-4 border-t" />
+				{recents.map((recent, index) => {
 					const { config } = recent;
+					const title = formatTimerClock(recent.lastUsedTotalSeconds);
 					const subtitle =
 						config.label.trim().length > 0
 							? config.label.trim()
 							: formatDurationRange(config.min, config.max);
 					return (
-						<View
-							key={recent.hash}
-							className="border-base-200 flex-row items-center justify-between gap-4 border-b px-4 py-5 last:border-b-0"
-						>
-							<View className="flex-1">
-								<Text
-									className="text-base-900 text-[64px] leading-[66px] font-thin"
-									numberOfLines={1}
-								>
-									{formatTimerClockRange(config.min, config.max)}
-								</Text>
-								<Text className="text-base-500 mt-1 text-xl" numberOfLines={1}>
-									{subtitle}
-								</Text>
-							</View>
+						<React.Fragment key={recent.hash}>
+							<View className="flex-row items-center justify-between gap-4 px-4 py-2">
+								<View className="flex-1">
+									<Text
+										className="text-base-900 text-[58px] leading-[64px] font-extralight"
+										numberOfLines={1}
+									>
+										{title}
+									</Text>
+									<Text className="text-base-500 text-xl" numberOfLines={1}>
+										{subtitle}
+									</Text>
+								</View>
 
-							<Pressable
-								className="h-20 w-20 items-center justify-center rounded-full"
-								style={{ backgroundColor: hexToRgba('#00D042', 0.2) }}
-								onPress={() => {
-									handleStartRecent(recent);
-								}}
-							>
-								<PlayIcon size={34} color="#00D042" />
-							</Pressable>
-						</View>
+								<Pressable
+									className="h-20 w-20 items-center justify-center rounded-full"
+									style={{ backgroundColor: hexToRgba('#00D042', 0.14) }}
+									onPress={() => {
+										handleStartRecent(recent);
+									}}
+								>
+									<PlayIcon size={24} color="#00D042" />
+								</Pressable>
+							</View>
+							{index < recents.length - 1 ? (
+								<View className="border-base-300 mx-4 border-t" />
+							) : null}
+						</React.Fragment>
 					);
 				})}
+				<View className="border-base-300 mx-4 border-t" />
 			</View>
 		</View>
 	);

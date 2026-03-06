@@ -17,8 +17,10 @@ import {
 	contentShape,
 	foregroundStyle,
 	frame,
+	pickerStyle,
 	shapes,
-	tag
+	tag,
+	tint
 } from '@expo/ui/swift-ui/modifiers';
 import { Link } from 'expo-router';
 import { useCompute } from 'feature-react/state';
@@ -85,7 +87,7 @@ const Screen: React.FC = () => {
 										About
 									</Text>
 									<Spacer />
-									<Image systemName="chevron.right" size={14} color="#C7C7CC" />
+									<Image systemName="chevron.right" size={14} color={tokens.base500} />
 								</HStack>
 							</Button>
 						</Link>
@@ -93,17 +95,33 @@ const Screen: React.FC = () => {
 				</Section>
 
 				<Section title="APPEARANCE">
-					<Picker
-						label="Theme"
-						selection={themePreference}
-						onSelectionChange={(value) =>
-							settingsCx.update({ appearance: { theme: value as TThemePreference } })
-						}
-					>
-						<Text modifiers={[tag('system')]}>System</Text>
-						<Text modifiers={[tag('light')]}>Light</Text>
-						<Text modifiers={[tag('dark')]}>Dark</Text>
-					</Picker>
+					<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+						<Image
+							systemName="circle.lefthalf.filled"
+							color="white"
+							size={18}
+							modifiers={[
+								frame({ width: 28, height: 28 }),
+								background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
+								clipShape('roundedRectangle', 8)
+							]}
+						/>
+						<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+							Theme
+						</Text>
+						<Spacer />
+						<Picker
+							selection={themePreference}
+							onSelectionChange={(value) =>
+								settingsCx.update({ appearance: { theme: value as TThemePreference } })
+							}
+							modifiers={[pickerStyle('menu'), tint(tokens.base500)]}
+						>
+							<Text modifiers={[tag('system')]}>System</Text>
+							<Text modifiers={[tag('light')]}>Light</Text>
+							<Text modifiers={[tag('dark')]}>Dark</Text>
+						</Picker>
+					</HStack>
 				</Section>
 
 				<Section title="DATA">
@@ -123,7 +141,7 @@ const Screen: React.FC = () => {
 								Clear Recents
 							</Text>
 							<Spacer />
-							<Image systemName="chevron.right" size={14} color="#C7C7CC" />
+							<Image systemName="chevron.right" size={14} color={tokens.base500} />
 						</HStack>
 					</Button>
 
@@ -143,7 +161,7 @@ const Screen: React.FC = () => {
 								Reset App
 							</Text>
 							<Spacer />
-							<Image systemName="chevron.right" size={14} color="#C7C7CC" />
+							<Image systemName="chevron.right" size={14} color={tokens.base500} />
 						</HStack>
 					</Button>
 				</Section>

@@ -157,7 +157,7 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 
 				<TimerActionButton
 					label="Start"
-					tone="start"
+					tone="positive"
 					onPress={handleStart}
 					disabled={isInvalidRange}
 				/>

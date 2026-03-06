@@ -4,21 +4,21 @@ import { useTheme } from '@/components';
 import { hexToRgba } from '@/lib';
 
 export const TimerActionButton: React.FC<TTimerActionButtonProps> = (props) => {
-	const { label, tone = 'action', onPress, disabled = false } = props;
+	const { label, tone, onPress, disabled = false } = props;
 	const { tokens } = useTheme();
 
 	const { backgroundColor, textColor } = React.useMemo(() => {
 		switch (tone) {
-			case 'start':
+			case 'positive':
 				return { backgroundColor: hexToRgba('#00D042', 0.14), textColor: '#00D042' };
-			case 'pause':
+			case 'warning':
 				return { backgroundColor: hexToRgba('#FF8B00', 0.14), textColor: '#FF8B00' };
-			case 'cancel':
+			case 'neutral':
 				return {
 					backgroundColor: hexToRgba(tokens.base700, 0.1),
 					textColor: tokens.base800
 				};
-			case 'action':
+			case 'primary':
 			default:
 				return {
 					backgroundColor: hexToRgba(tokens.primary, 0.12),
@@ -48,4 +48,4 @@ interface TTimerActionButtonProps {
 	disabled?: boolean;
 }
 
-type TTimerActionButtonTone = 'start' | 'action' | 'pause' | 'cancel';
+type TTimerActionButtonTone = 'primary' | 'positive' | 'warning' | 'neutral';

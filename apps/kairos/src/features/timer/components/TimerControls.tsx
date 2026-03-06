@@ -10,7 +10,7 @@ export const TimerControls: React.FC<TTimerControlsProps> = ({ cx }) => {
 	const canRightAction = status === 'running' || status === 'paused' || status === 'overtime';
 	const rightActionLabel =
 		status === 'overtime' ? 'Repeat' : status === 'paused' ? 'Resume' : 'Pause';
-	const rightActionTone = status === 'running' ? 'pause' : 'action';
+	const rightActionTone = status === 'running' ? 'warning' : 'positive';
 
 	// MARK: - Actions
 
@@ -34,7 +34,7 @@ export const TimerControls: React.FC<TTimerControlsProps> = ({ cx }) => {
 
 	return (
 		<View className="w-full flex-row items-center justify-between px-4">
-			<TimerActionButton label="Cancel" tone="cancel" onPress={handleCancel} />
+			<TimerActionButton label="Cancel" tone="neutral" onPress={handleCancel} />
 
 			{canRightAction && (
 				<TimerActionButton

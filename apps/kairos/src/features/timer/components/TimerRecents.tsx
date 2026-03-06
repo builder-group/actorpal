@@ -10,12 +10,23 @@ export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
 	const { cx } = props;
 	const recents = useCompute(cx.$recents, ({ value }) => value);
 
+	// MARK: - Actions
+
+	const handleSelectRecent = React.useCallback(
+		(recent: TTimerRecent) => {
+			cx.$config.set(recent.config);
+		},
+		[cx]
+	);
+
 	const handleStartRecent = React.useCallback(
 		(recent: TTimerRecent) => {
 			cx.start({ config: recent.config });
 		},
 		[cx]
 	);
+
+	// MARK: - UI
 
 	if (!recents.length) {
 		return null;
@@ -35,7 +46,12 @@ export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
 							: formatDurationRange(config.min, config.max);
 					return (
 						<React.Fragment key={recent.hash}>
-							<View className="flex-row items-center justify-between gap-4 px-4 py-2">
+							<Pressable
+								className="flex-row items-center justify-between gap-4 px-4 py-2"
+								onPress={() => {
+									handleSelectRecent(recent);
+								}}
+							>
 								<View className="flex-1">
 									<Text
 										className="text-base-900 text-[58px] leading-[64px] font-extralight"
@@ -51,13 +67,14 @@ export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
 								<Pressable
 									className="h-20 w-20 items-center justify-center rounded-full"
 									style={{ backgroundColor: hexToRgba('#00D042', 0.14) }}
-									onPress={() => {
+									onPress={(e) => {
+										e.stopPropagation();
 										handleStartRecent(recent);
 									}}
 								>
 									<PlayIcon size={24} color="#00D042" />
 								</Pressable>
-							</View>
+							</Pressable>
 							{index < recents.length - 1 ? (
 								<View className="border-base-300 mx-4 border-t" />
 							) : null}

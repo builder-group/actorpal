@@ -27,7 +27,7 @@ export class TimerCx {
 			createState<TTimerConfig>({
 				min: { h: 0, m: 1, s: 0 },
 				max: { h: 0, m: 5, s: 0 },
-				label: 'Timer',
+				label: '',
 				hideTimeDisplay: false,
 				sound: 'Radar',
 				endMode: 'overtime',

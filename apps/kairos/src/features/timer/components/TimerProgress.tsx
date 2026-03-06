@@ -93,8 +93,8 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 		<View className="relative items-center">
 			{status !== 'overtime' && (
 				<View className="absolute bottom-full flex-row items-center gap-1 pb-1.5">
-					<BellIcon size={18} color={tokens.base500} />
-					<Text className="text-base-500 text-xl">
+					<BellIcon size={18} color={endTime != null ? tokens.base500 : tokens.base300} />
+					<Text className={cn('text-xl', endTime != null ? 'text-base-500' : 'text-base-300')}>
 						{endTime != null ? formatClockTime(endTime) : '--:--'}
 					</Text>
 				</View>

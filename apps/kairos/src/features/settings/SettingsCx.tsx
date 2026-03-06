@@ -29,6 +29,10 @@ export class SettingsCx {
 			appearance: { ...current.appearance, ...updates.appearance }
 		}));
 	}
+
+	public reset(): void {
+		this.$settings.set({ appearance: { theme: 'system' } });
+	}
 }
 
 export interface TSettings {

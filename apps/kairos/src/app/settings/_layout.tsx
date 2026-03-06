@@ -15,6 +15,16 @@ const Layout: React.FC = () => {
 					headerTintColor: tokens.base900
 				}}
 			/>
+			<Stack.Screen
+				name="about/index"
+				options={{
+					title: 'About',
+					headerTransparent: true,
+					headerBackButtonDisplayMode: 'minimal',
+					headerBackTitle: 'Settings',
+					headerTintColor: tokens.base900
+				}}
+			/>
 		</Stack>
 	);
 };

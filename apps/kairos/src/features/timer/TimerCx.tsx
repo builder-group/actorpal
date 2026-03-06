@@ -176,6 +176,24 @@ export class TimerCx {
 		this.$overtimeSeconds.set(0);
 	}
 
+	public clearRecents(): void {
+		this.$recents.set([]);
+	}
+
+	public reset(): void {
+		this.cancel();
+		this.$config.set({
+			min: { h: 0, m: 1, s: 0 },
+			max: { h: 0, m: 5, s: 0 },
+			label: '',
+			hideTimeDisplay: false,
+			sound: 'Radar',
+			endMode: 'overtime',
+			endAfterSeconds: 5
+		});
+		this.$recents.set([]);
+	}
+
 	// MARK: - Tick loop
 
 	private _startLoop(): void {

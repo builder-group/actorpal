@@ -4,6 +4,10 @@ export function durationToSeconds(duration: TDuration): number {
 	return duration.h * 3600 + duration.m * 60 + duration.s;
 }
 
+export function isSameDuration(a: TDuration, b: TDuration): boolean {
+	return a.h === b.h && a.m === b.m && a.s === b.s;
+}
+
 export function formatTimerClock(seconds: number): string {
 	const total = Math.ceil(seconds);
 	const h = Math.floor(total / 3600);

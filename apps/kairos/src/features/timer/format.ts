@@ -20,6 +20,10 @@ export function formatTimerClock(seconds: number): string {
 	return `${pad2(m)}:${pad2(s)}`;
 }
 
+export function hasTimerHours(seconds: number): boolean {
+	return Math.floor(Math.ceil(seconds) / 3600) > 0;
+}
+
 export function formatClockTime(epochMs: number): string {
 	const date = new Date(epochMs);
 	return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;

@@ -3,7 +3,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { BellIcon, ClockIcon, useTheme } from '@/components';
 import { cn } from '@/lib';
-import { formatClockTime, formatTimerClock } from '../format';
+import { formatClockTime, formatTimerClock, hasTimerHours } from '../format';
 import { TimerCx } from '../TimerCx';
 import { ProgressRing } from './ProgressRing';
 import { PulsingDashRing } from './PulsingDashRing';
@@ -80,12 +80,20 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 		([{ value: startedAt }, { value: remainingAtStart }]) =>
 			startedAt != null ? startedAt + remainingAtStart * 1000 : null
 	);
+
 	const autoEndCountdown = React.useMemo(() => {
 		if (status === 'overtime' && endMode !== 'overtime') {
 			return Math.max(0, endAfterSeconds - overtimeSeconds);
 		}
 		return null;
 	}, [status, endMode, endAfterSeconds, overtimeSeconds]);
+	const timerDisplaySeconds = React.useMemo(
+		() =>
+			status === 'overtime'
+				? Math.max(0, (totalSeconds ?? 0) + overtimeSeconds)
+				: Math.max(0, remainingSeconds),
+		[status, totalSeconds, overtimeSeconds, remainingSeconds]
+	);
 
 	// MARK: - UI
 
@@ -101,13 +109,16 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 			)}
 
 			<Text
-				className="text-base-900 min-w-[190px] text-center text-[72px] leading-[80px] font-extralight"
+				className={cn(
+					'text-base-900 min-w-[190px] text-center font-extralight',
+					hasTimerHours(timerDisplaySeconds)
+						? 'text-[58px] leading-[64px]'
+						: 'text-[72px] leading-[80px]'
+				)}
 				adjustsFontSizeToFit
 				numberOfLines={1}
 			>
-				{status === 'overtime'
-					? formatTimerClock(Math.max(0, (totalSeconds ?? 0) + overtimeSeconds))
-					: formatTimerClock(Math.max(0, remainingSeconds))}
+				{formatTimerClock(timerDisplaySeconds)}
 			</Text>
 
 			{status === 'overtime' && (

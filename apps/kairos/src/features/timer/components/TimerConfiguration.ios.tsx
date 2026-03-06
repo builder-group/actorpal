@@ -41,7 +41,6 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const endAfterRef = React.useRef<TextFieldRef | null>(null);
 	const [isLabelFocused, setIsLabelFocused] = React.useState(false);
 	const [isEndAfterFocused, setIsEndAfterFocused] = React.useState(false);
-	const [endAfterText, setEndAfterText] = React.useState('');
 
 	const label = useCompute(cx.$config, ({ value }) => value.label);
 	const sound = useCompute(cx.$config, ({ value }) => value.sound);
@@ -58,10 +57,18 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 	// MARK: - Actions
 
+	const setLabelInputText = React.useCallback((value: string) => {
+		void labelRef.current?.setText(value).catch(() => undefined);
+	}, []);
+
+	const setEndAfterInputText = React.useCallback((value: string) => {
+		void endAfterRef.current?.setText(value).catch(() => undefined);
+	}, []);
+
 	const handleClearLabel = React.useCallback(() => {
 		cx.$config.set((c) => ({ ...c, label: '' }));
-		void labelRef.current?.setText('');
-	}, [cx]);
+		setLabelInputText('');
+	}, [cx, setLabelInputText]);
 
 	const handleLabelFocusChange = React.useCallback(
 		(focused: boolean) => {
@@ -81,9 +88,8 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 		(value: string) => {
 			const digitsOnly = value.replace(/\D+/g, '');
 			if (digitsOnly !== value) {
-				void endAfterRef.current?.setText(digitsOnly);
+				setEndAfterInputText(digitsOnly);
 			}
-			setEndAfterText(digitsOnly);
 			if (!digitsOnly.length) {
 				return;
 			}
@@ -92,47 +98,41 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 				cx.$config.set((c) => ({ ...c, endAfterSeconds: n }));
 			}
 		},
-		[cx]
+		[cx, setEndAfterInputText]
 	);
-
-	const restoreEndAfterFallback = React.useCallback(() => {
-		const fallback = String(endAfterSeconds);
-		setEndAfterText(fallback);
-		void endAfterRef.current?.setText(fallback);
-	}, [endAfterSeconds]);
 
 	const handleEndAfterFocusChange = React.useCallback(
 		(focused: boolean) => {
 			setIsEndAfterFocused(focused);
 			if (focused) {
-				const cursorIndex = (endAfterText.length > 0 ? endAfterText : String(endAfterSeconds))
-					.length;
+				const cursorIndex = String(endAfterSeconds).length;
 				requestAnimationFrame(() => {
 					void endAfterRef.current?.setSelection(cursorIndex, cursorIndex).catch(() => undefined);
 				});
 				return;
 			}
-			if (!endAfterText.length) {
-				restoreEndAfterFallback();
-			}
+			setEndAfterInputText(String(endAfterSeconds));
 		},
-		[endAfterSeconds, endAfterText, restoreEndAfterFallback]
+		[endAfterSeconds, setEndAfterInputText]
 	);
 
 	const handleEndAfterSubmit = React.useCallback(() => {
-		if (!endAfterText.length) {
-			restoreEndAfterFallback();
-		}
 		void endAfterRef.current?.blur();
-	}, [endAfterText.length, restoreEndAfterFallback]);
+	}, []);
 
 	// MARK: - Effects
 
 	React.useEffect(() => {
 		if (!isEndAfterFocused) {
-			setEndAfterText(String(endAfterSeconds));
+			setEndAfterInputText(String(endAfterSeconds));
 		}
-	}, [endAfterSeconds, isEndAfterFocused]);
+	}, [endAfterSeconds, isEndAfterFocused, setEndAfterInputText]);
+
+	React.useEffect(() => {
+		if (!isLabelFocused) {
+			setLabelInputText(label);
+		}
+	}, [label, isLabelFocused, setLabelInputText]);
 
 	// MARK: - UI
 

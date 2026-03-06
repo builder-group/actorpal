@@ -8,6 +8,8 @@ import { durationToSeconds } from './format';
 import { TDuration } from './types';
 
 export class TimerCx {
+	private static readonly RECENTS_MAX_SIZE = 20;
+
 	private readonly _audioCx: AudioCx;
 	private _interval: ReturnType<typeof setInterval> | null = null;
 
@@ -20,6 +22,7 @@ export class TimerCx {
 
 	public readonly $remainingAtStart: TState<number, [TPersistFeature]>;
 	public readonly $startedAt: TState<number | null, [TPersistFeature]>;
+	public readonly $recents: TState<TTimerRecent[], [TPersistFeature]>;
 
 	constructor(audioCx: AudioCx) {
 		this._audioCx = audioCx;
@@ -46,6 +49,7 @@ export class TimerCx {
 			createState<number>(0),
 			'kairos:timer:remainingAtStart'
 		);
+		this.$recents = withAsyncStorage(createState<TTimerRecent[]>([]), 'kairos:timer:recents');
 		this.$remainingSeconds = createState<number>(0);
 		this.$overtimeSeconds = createState<number>(0);
 	}
@@ -58,7 +62,8 @@ export class TimerCx {
 			this.$status.persist(),
 			this.$totalSeconds.persist(),
 			this.$startedAt.persist(),
-			this.$remainingAtStart.persist()
+			this.$remainingAtStart.persist(),
+			this.$recents.persist()
 		]);
 		this.$config.set((config) => ({
 			...config,
@@ -100,9 +105,19 @@ export class TimerCx {
 
 	// MARK: - Actions
 
-	public start(): void {
+	public start(options: TTimerStartOptions = {}): void {
 		this._audioCx.stop();
-		const { min, max } = this.$config.get();
+
+		const { config: configOverride, recordRecent = true } = options;
+		if (configOverride != null) {
+			this.$config.set(configOverride);
+		}
+		const config = configOverride ?? this.$config.get();
+		if (recordRecent) {
+			this._upsertRecent(config);
+		}
+
+		const { min, max } = config;
 		const lo = Math.min(durationToSeconds(min), durationToSeconds(max));
 		const hi = Math.max(durationToSeconds(min), durationToSeconds(max));
 		const totalSeconds = lo === hi ? lo : Math.round(lo + Math.random() * (hi - lo));
@@ -207,13 +222,48 @@ export class TimerCx {
 	private _onAutoEnd(): void {
 		const { endMode } = this.$config.get();
 		if (endMode === 'loop') {
-			this.start();
+			this.start({ recordRecent: false });
 			return;
 		}
 		this.cancel();
 	}
 
 	// MARK: - Helpers
+
+	private _upsertRecent(config: TTimerConfig): void {
+		const hash = this._recentHash(config);
+		this.$recents.set((current) => {
+			const existing = current.find((entry) => entry.hash === hash);
+			const now = Date.now();
+			const next: TTimerRecent = {
+				hash,
+				config,
+				createdAt: existing?.createdAt ?? now,
+				lastUsedAt: now
+			};
+			const filtered = current.filter((entry) => entry.hash !== hash);
+			return [next, ...filtered].slice(0, TimerCx.RECENTS_MAX_SIZE);
+		});
+	}
+
+	private _recentHash(config: TTimerConfig): string {
+		const key = JSON.stringify({
+			min: config.min,
+			max: config.max,
+			label: config.label.trim(),
+			hideTimeDisplay: config.hideTimeDisplay,
+			sound: config.sound,
+			endMode: config.endMode,
+			endAfterSeconds: config.endAfterSeconds
+		});
+
+		// Simple stable hash for recent dedupe/list keys.
+		let hash = 5381;
+		for (let i = 0; i < key.length; i += 1) {
+			hash = (hash * 33) ^ key.charCodeAt(i);
+		}
+		return `timer_${(hash >>> 0).toString(36)}`;
+	}
 
 	private _recoverOvertime(startedAt: number, remainingAtStart: number, now: number): void {
 		const elapsed = (now - startedAt) / 1000;
@@ -226,7 +276,7 @@ export class TimerCx {
 			this.$status.set('overtime');
 			this._startLoop();
 		} else if (endMode === 'loop') {
-			this.start();
+			this.start({ recordRecent: false });
 		} else {
 			this.cancel();
 		}
@@ -246,6 +296,18 @@ export interface TTimerConfig {
 	endMode: TTimerEndMode;
 	/** Seconds of overtime before auto-stop or auto-loop triggers. Ignored when endMode is 'overtime'. */
 	endAfterSeconds: number;
+}
+
+interface TTimerStartOptions {
+	config?: TTimerConfig;
+	recordRecent?: boolean;
+}
+
+export interface TTimerRecent {
+	hash: string;
+	config: TTimerConfig;
+	createdAt: number;
+	lastUsedAt: number;
 }
 
 // MARK: - React Context

@@ -69,6 +69,19 @@ export function formatDurationRange(min: TDuration, max: TDuration): string {
 	return `${formatDurationLabel(low)} - ${formatDurationLabel(high)}`;
 }
 
+export function formatTimerClockRange(min: TDuration, max: TDuration): string {
+	const minSeconds = durationToSeconds(min);
+	const maxSeconds = durationToSeconds(max);
+	const low = Math.min(minSeconds, maxSeconds);
+	const high = Math.max(minSeconds, maxSeconds);
+
+	if (low === high) {
+		return formatTimerClock(low);
+	}
+
+	return `${formatTimerClock(low)} - ${formatTimerClock(high)}`;
+}
+
 function pad2(value: number): string {
 	return value.toString().padStart(2, '0');
 }

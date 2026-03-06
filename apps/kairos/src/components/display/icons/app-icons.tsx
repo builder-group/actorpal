@@ -20,3 +20,7 @@ export const SunIcon: React.FC<TNamedAppIconProps> = (props) => {
 export const MoonIcon: React.FC<TNamedAppIconProps> = (props) => {
 	return <AppIcon ios="moon.fill" fallback="dark-mode" {...props} />;
 };
+
+export const PlayIcon: React.FC<TNamedAppIconProps> = (props) => {
+	return <AppIcon ios="play.fill" fallback="play-arrow" {...props} />;
+};

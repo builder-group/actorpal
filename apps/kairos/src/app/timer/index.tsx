@@ -6,6 +6,7 @@ import {
 	TimerControls,
 	TimerInput,
 	TimerProgress,
+	TimerRecents,
 	useTimerCx
 } from '@/features/timer';
 
@@ -28,6 +29,7 @@ const Screen: React.FC = () => {
 				<TimerInput cx={cx} />
 			)}
 			<TimerConfiguration cx={cx} />
+			<TimerRecents cx={cx} />
 		</ScrollView>
 	);
 };

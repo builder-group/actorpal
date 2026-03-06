@@ -125,12 +125,12 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 				<View className="absolute top-full flex-row items-center gap-1 pt-1.5">
 					<ClockIcon
 						size={18}
-						color={status === 'overtime' && endMode === 'overtime' ? '#FF9500' : tokens.base500}
+						color={status === 'overtime' && endMode === 'overtime' ? '#FF9500' : '#8b5cf6'}
 					/>
 					<Text
 						className={cn(
 							'text-xl',
-							status === 'overtime' && endMode === 'overtime' ? 'text-[#FF9500]' : 'text-base-500'
+							status === 'overtime' && endMode === 'overtime' ? 'text-[#FF9500]' : 'text-[#8b5cf6]'
 						)}
 					>
 						{autoEndCountdown != null

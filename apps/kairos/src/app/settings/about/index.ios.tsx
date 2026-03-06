@@ -6,6 +6,7 @@ import {
 	contentShape,
 	foregroundStyle,
 	frame,
+	scrollDisabled,
 	shapes
 } from '@expo/ui/swift-ui/modifiers';
 import { Image as ExpoImage } from 'expo-image';
@@ -23,11 +24,10 @@ const FeedbackSubject = {
 
 const Screen: React.FC = () => {
 	const { tokens } = useTheme();
-	const appStoreURL = appConfig.links.appStore;
 
 	return (
 		<ScrollView
-			className="dark:bg-base-0 bg-base-50 flex-1"
+			className="bg-base-50 flex-1"
 			contentInsetAdjustmentBehavior="automatic"
 			showsVerticalScrollIndicator={false}
 		>
@@ -46,7 +46,7 @@ const Screen: React.FC = () => {
 			</View>
 
 			<Host matchContents useViewportSizeMeasurement style={{ width: '100%' }}>
-				<Form>
+				<Form modifiers={[frame({ height: 480 }), scrollDisabled()]}>
 					<Section>
 						<Link href={appConfig.support.mailto(FeedbackSubject.general) as any} asChild>
 							<Button modifiers={[buttonStyle('plain')]}>
@@ -128,34 +128,6 @@ const Screen: React.FC = () => {
 					</Section>
 
 					<Section>
-						{appStoreURL != null ? (
-							<Link href={appStoreURL as any} asChild>
-								<Button modifiers={[buttonStyle('plain')]}>
-									<HStack
-										spacing={8}
-										alignment="center"
-										modifiers={[contentShape(shapes.rectangle())]}
-									>
-										<Image
-											systemName="apple.logo"
-											color="white"
-											size={18}
-											modifiers={[
-												frame({ width: 28, height: 28 }),
-												background(tokens.base800, shapes.roundedRectangle({ cornerRadius: 8 })),
-												clipShape('roundedRectangle', 8)
-											]}
-										/>
-										<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-											App Store
-										</Text>
-										<Spacer />
-										<Image systemName="arrow.up.forward" size={14} color={tokens.base500} />
-									</HStack>
-								</Button>
-							</Link>
-						) : null}
-
 						<Link href={appConfig.links.website as any} asChild>
 							<Button modifiers={[buttonStyle('plain')]}>
 								<HStack

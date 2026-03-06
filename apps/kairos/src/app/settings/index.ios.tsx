@@ -36,6 +36,8 @@ const Screen: React.FC = () => {
 	const timerCx = useTimerCx();
 	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
 
+	// MARK: - Actions
+
 	const handleClearRecents = (): void => {
 		Alert.alert('Clear Recents', 'Remove all recent timer configurations?', [
 			{ text: 'Cancel', style: 'cancel' },
@@ -60,6 +62,8 @@ const Screen: React.FC = () => {
 			]
 		);
 	};
+
+	// MARK: - UI
 
 	return (
 		<Host style={{ flex: 1 }}>

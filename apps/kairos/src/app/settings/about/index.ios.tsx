@@ -36,22 +36,11 @@ const Screen: React.FC = () => {
 					source={require('@/assets/images/icon.png')}
 					style={{ width: 96, height: 96, borderRadius: 22 }}
 				/>
-				<RNText
-					className="mt-5 text-center text-3xl font-semibold"
-					style={{ color: tokens.base900 }}
-				>
+				<RNText className="text-base-900 mt-5 text-center text-3xl font-semibold">
 					{appConfig.name}
 				</RNText>
-				<RNText
-					className="mt-3 text-center"
-					style={{ color: tokens.base900, fontSize: 16, lineHeight: 22 }}
-				>
-					Random Interval Timer
-				</RNText>
-				<RNText
-					className="mt-1 text-center"
-					style={{ color: tokens.base500, fontSize: 16, lineHeight: 22 }}
-				>
+				<RNText className="text-base-900 mt-3 text-center text-base">Random Interval Timer</RNText>
+				<RNText className="text-base-500 mt-1 text-center text-base">
 					We&apos;d love to hear your feedback!
 				</RNText>
 			</View>
@@ -251,12 +240,8 @@ const Screen: React.FC = () => {
 			</Host>
 
 			<View className="items-center px-6 pt-2 pb-6">
-				<RNText className="text-base-400 dark:text-base-500 text-base">
-					Version {appConfig.version}
-				</RNText>
-				<RNText className="text-base-300 dark:text-base-600 mt-1 text-base">
-					© 2025 builder.group
-				</RNText>
+				<RNText className="text-base-400 text-base">Version {appConfig.version}</RNText>
+				<RNText className="text-base-300 mt-1 text-base">© 2025 builder.group</RNText>
 			</View>
 		</ScrollView>
 	);

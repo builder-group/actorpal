@@ -53,7 +53,9 @@ const Screen: React.FC = () => {
 
 			<Section title="Appearance">
 				<View className="px-4 py-4">
-					<Text className="text-base-500 dark:text-base-400 mb-3 text-sm">Theme: {themePreference}</Text>
+					<Text className="text-base-500 dark:text-base-400 mb-3 text-sm">
+						Theme: {themePreference}
+					</Text>
 					<ThemeSelector />
 				</View>
 			</Section>

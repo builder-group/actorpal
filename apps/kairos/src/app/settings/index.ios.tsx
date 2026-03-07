@@ -4,7 +4,6 @@ import {
 	Host,
 	HStack,
 	Image,
-	List,
 	Picker,
 	Section,
 	Spacer,
@@ -22,7 +21,7 @@ import {
 	tag,
 	tint
 } from '@expo/ui/swift-ui/modifiers';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCompute } from 'feature-react/state';
 import React from 'react';
 import { Alert } from 'react-native';
@@ -32,6 +31,7 @@ import { useTimerCx } from '@/features/timer';
 
 const Screen: React.FC = () => {
 	const { tokens } = useTheme();
+	const router = useRouter();
 	const settingsCx = useSettingsCx();
 	const timerCx = useTimerCx();
 	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
@@ -69,33 +69,25 @@ const Screen: React.FC = () => {
 		<Host style={{ flex: 1 }}>
 			<Form>
 				<Section title="APP">
-					<List>
-						<Link href="/settings/about" asChild>
-							<Button modifiers={[buttonStyle('plain')]}>
-								<HStack
-									spacing={8}
-									alignment="center"
-									modifiers={[contentShape(shapes.rectangle())]}
-								>
-									<Image
-										systemName="info.circle"
-										color="white"
-										size={18}
-										modifiers={[
-											frame({ width: 28, height: 28 }),
-											background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
-											clipShape('roundedRectangle', 8)
-										]}
-									/>
-									<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-										About
-									</Text>
-									<Spacer />
-									<Image systemName="chevron.right" size={14} color={tokens.base500} />
-								</HStack>
-							</Button>
-						</Link>
-					</List>
+					<Button onPress={() => router.push('/settings/about')} modifiers={[buttonStyle('plain')]}>
+						<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+							<Image
+								systemName="info.circle"
+								color="white"
+								size={18}
+								modifiers={[
+									frame({ width: 28, height: 28 }),
+									background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
+									clipShape('roundedRectangle', 8)
+								]}
+							/>
+							<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+								About
+							</Text>
+							<Spacer />
+							<Image systemName="chevron.right" size={14} color={tokens.base500} />
+						</HStack>
+					</Button>
 				</Section>
 
 				<Section title="APPEARANCE">
@@ -119,7 +111,7 @@ const Screen: React.FC = () => {
 							onSelectionChange={(value) =>
 								settingsCx.update({ appearance: { theme: value as TThemePreference } })
 							}
-							modifiers={[pickerStyle('menu'), tint(tokens.base500)]}
+							modifiers={[pickerStyle('menu'), frame({ height: 22 }), tint(tokens.base500)]}
 						>
 							<Text modifiers={[tag('system')]}>System</Text>
 							<Text modifiers={[tag('light')]}>Light</Text>

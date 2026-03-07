@@ -33,14 +33,18 @@ const Screen: React.FC = () => {
 			</Section>
 
 			<Section title="Links">
-				{appStoreURL != null ? <Row label="App Store" onPress={() => openURL(appStoreURL)} /> : null}
+				{appStoreURL != null ? (
+					<Row label="App Store" onPress={() => openURL(appStoreURL)} />
+				) : null}
 				<Row label="Website" onPress={() => openURL(appConfig.links.website)} />
 				<Row label="GitHub" onPress={() => openURL(appConfig.links.github)} />
 				<Row label="Privacy Policy" onPress={() => openURL(appConfig.links.privacyPolicy)} />
 			</Section>
 
 			<View className="items-center px-6 pt-6 pb-10">
-				<Text className="text-base-400 dark:text-base-500 text-xs">Version {appConfig.version}</Text>
+				<Text className="text-base-400 dark:text-base-500 text-xs">
+					Version {appConfig.version}
+				</Text>
 				<Text className="text-base-300 dark:text-base-600 mt-1 text-xs">© 2025 builder.group</Text>
 			</View>
 		</ScrollView>

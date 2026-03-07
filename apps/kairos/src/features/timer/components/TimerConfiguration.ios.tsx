@@ -34,7 +34,7 @@ import { TimerCx, type TTimerEndMode } from '../TimerCx';
 
 export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) => {
 	const { cx } = props;
-	const { tokens } = useTheme();
+	const { theme, tokens } = useTheme();
 	const audioCx = useAudioCx();
 
 	const labelRef = React.useRef<TextFieldRef | null>(null);
@@ -148,7 +148,10 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 				<VStack
 					spacing={0}
 					modifiers={[
-						background(tokens.base0, shapes.roundedRectangle({ cornerRadius: 24 })),
+						background(
+							theme === 'dark' ? tokens.base50 : tokens.base0,
+							shapes.roundedRectangle({ cornerRadius: 24 })
+						),
 						clipShape('roundedRectangle', 24)
 					]}
 				>

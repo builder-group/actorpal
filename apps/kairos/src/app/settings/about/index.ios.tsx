@@ -6,13 +6,11 @@ import {
 	contentShape,
 	foregroundStyle,
 	frame,
-	scrollDisabled,
 	shapes
 } from '@expo/ui/swift-ui/modifiers';
 import { Image as ExpoImage } from 'expo-image';
-import { Link } from 'expo-router';
 import React from 'react';
-import { Text as RNText, ScrollView, View } from 'react-native';
+import { Linking, Text as RNText, ScrollView, View } from 'react-native';
 import { useTheme } from '@/components';
 import { appConfig } from '@/environment';
 
@@ -25,9 +23,41 @@ const FeedbackSubject = {
 const Screen: React.FC = () => {
 	const { tokens } = useTheme();
 
+	// MARK: - Actions
+
+	const openExternal = React.useCallback((url: string): void => {
+		void Linking.openURL(url);
+	}, []);
+
+	const handleFeedbackPress = React.useCallback((): void => {
+		openExternal(appConfig.support.mailto(FeedbackSubject.general));
+	}, [openExternal]);
+
+	const handleFeaturePress = React.useCallback((): void => {
+		openExternal(appConfig.support.mailto(FeedbackSubject.feature));
+	}, [openExternal]);
+
+	const handleBugPress = React.useCallback((): void => {
+		openExternal(appConfig.support.mailto(FeedbackSubject.bug));
+	}, [openExternal]);
+
+	const handleWebsitePress = React.useCallback((): void => {
+		openExternal(appConfig.links.website);
+	}, [openExternal]);
+
+	const handleGithubPress = React.useCallback((): void => {
+		openExternal(appConfig.links.github);
+	}, [openExternal]);
+
+	const handlePrivacyPress = React.useCallback((): void => {
+		openExternal(appConfig.links.privacyPolicy);
+	}, [openExternal]);
+
+	// MARK: - UI
+
 	return (
 		<ScrollView
-			className="bg-base-50 flex-1"
+			className="dark:bg-base-0 bg-base-50 flex-1"
 			contentInsetAdjustmentBehavior="automatic"
 			showsVerticalScrollIndicator={false}
 		>
@@ -46,167 +76,131 @@ const Screen: React.FC = () => {
 			</View>
 
 			<Host matchContents useViewportSizeMeasurement style={{ width: '100%' }}>
-				<Form modifiers={[frame({ height: 480 }), scrollDisabled()]}>
+				<Form modifiers={[frame({ height: 480 })]}>
 					<Section>
-						<Link href={appConfig.support.mailto(FeedbackSubject.general) as any} asChild>
-							<Button modifiers={[buttonStyle('plain')]}>
-								<HStack
-									spacing={8}
-									alignment="center"
-									modifiers={[contentShape(shapes.rectangle())]}
-								>
-									<Image
-										systemName="envelope.fill"
-										color="white"
-										size={18}
-										modifiers={[
-											frame({ width: 28, height: 28 }),
-											background(tokens.primary, shapes.roundedRectangle({ cornerRadius: 8 })),
-											clipShape('roundedRectangle', 8)
-										]}
-									/>
-									<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-										Feedback
-									</Text>
-									<Spacer />
-									<Image systemName="chevron.right" size={14} color={tokens.base500} />
-								</HStack>
-							</Button>
-						</Link>
+						<Button onPress={handleFeedbackPress} modifiers={[buttonStyle('plain')]}>
+							<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+								<Image
+									systemName="envelope.fill"
+									color="white"
+									size={18}
+									modifiers={[
+										frame({ width: 28, height: 28 }),
+										background(tokens.primary, shapes.roundedRectangle({ cornerRadius: 8 })),
+										clipShape('roundedRectangle', 8)
+									]}
+								/>
+								<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+									Feedback
+								</Text>
+								<Spacer />
+								<Image systemName="chevron.right" size={14} color={tokens.base500} />
+							</HStack>
+						</Button>
 
-						<Link href={appConfig.support.mailto(FeedbackSubject.feature) as any} asChild>
-							<Button modifiers={[buttonStyle('plain')]}>
-								<HStack
-									spacing={8}
-									alignment="center"
-									modifiers={[contentShape(shapes.rectangle())]}
-								>
-									<Image
-										systemName="gift.fill"
-										color="white"
-										size={18}
-										modifiers={[
-											frame({ width: 28, height: 28 }),
-											background('#FF2D55', shapes.roundedRectangle({ cornerRadius: 8 })),
-											clipShape('roundedRectangle', 8)
-										]}
-									/>
-									<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-										Request a Feature
-									</Text>
-									<Spacer />
-									<Image systemName="chevron.right" size={14} color={tokens.base500} />
-								</HStack>
-							</Button>
-						</Link>
+						<Button onPress={handleFeaturePress} modifiers={[buttonStyle('plain')]}>
+							<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+								<Image
+									systemName="gift.fill"
+									color="white"
+									size={18}
+									modifiers={[
+										frame({ width: 28, height: 28 }),
+										background('#FF2D55', shapes.roundedRectangle({ cornerRadius: 8 })),
+										clipShape('roundedRectangle', 8)
+									]}
+								/>
+								<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+									Request a Feature
+								</Text>
+								<Spacer />
+								<Image systemName="chevron.right" size={14} color={tokens.base500} />
+							</HStack>
+						</Button>
 
-						<Link href={appConfig.support.mailto(FeedbackSubject.bug) as any} asChild>
-							<Button modifiers={[buttonStyle('plain')]}>
-								<HStack
-									spacing={8}
-									alignment="center"
-									modifiers={[contentShape(shapes.rectangle())]}
-								>
-									<Image
-										systemName="ladybug.fill"
-										color="white"
-										size={18}
-										modifiers={[
-											frame({ width: 28, height: 28 }),
-											background(tokens.danger, shapes.roundedRectangle({ cornerRadius: 8 })),
-											clipShape('roundedRectangle', 8)
-										]}
-									/>
-									<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-										Report a Bug
-									</Text>
-									<Spacer />
-									<Image systemName="chevron.right" size={14} color={tokens.base500} />
-								</HStack>
-							</Button>
-						</Link>
+						<Button onPress={handleBugPress} modifiers={[buttonStyle('plain')]}>
+							<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+								<Image
+									systemName="ladybug.fill"
+									color="white"
+									size={18}
+									modifiers={[
+										frame({ width: 28, height: 28 }),
+										background(tokens.danger, shapes.roundedRectangle({ cornerRadius: 8 })),
+										clipShape('roundedRectangle', 8)
+									]}
+								/>
+								<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+									Report a Bug
+								</Text>
+								<Spacer />
+								<Image systemName="chevron.right" size={14} color={tokens.base500} />
+							</HStack>
+						</Button>
 					</Section>
 
 					<Section>
-						<Link href={appConfig.links.website as any} asChild>
-							<Button modifiers={[buttonStyle('plain')]}>
-								<HStack
-									spacing={8}
-									alignment="center"
-									modifiers={[contentShape(shapes.rectangle())]}
-								>
-									<Image
-										systemName="safari.fill"
-										color="white"
-										size={18}
-										modifiers={[
-											frame({ width: 28, height: 28 }),
-											background(tokens.primary, shapes.roundedRectangle({ cornerRadius: 8 })),
-											clipShape('roundedRectangle', 8)
-										]}
-									/>
-									<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-										Website
-									</Text>
-									<Spacer />
-									<Image systemName="arrow.up.forward" size={14} color={tokens.base500} />
-								</HStack>
-							</Button>
-						</Link>
+						<Button onPress={handleWebsitePress} modifiers={[buttonStyle('plain')]}>
+							<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+								<Image
+									systemName="safari.fill"
+									color="white"
+									size={18}
+									modifiers={[
+										frame({ width: 28, height: 28 }),
+										background(tokens.primary, shapes.roundedRectangle({ cornerRadius: 8 })),
+										clipShape('roundedRectangle', 8)
+									]}
+								/>
+								<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+									Website
+								</Text>
+								<Spacer />
+								<Image systemName="arrow.up.forward" size={14} color={tokens.base500} />
+							</HStack>
+						</Button>
 
-						<Link href={appConfig.links.github as any} asChild>
-							<Button modifiers={[buttonStyle('plain')]}>
-								<HStack
-									spacing={8}
-									alignment="center"
-									modifiers={[contentShape(shapes.rectangle())]}
-								>
-									<Image
-										systemName="chevron.left.slash.chevron.right"
-										color="white"
-										size={14}
-										modifiers={[
-											frame({ width: 28, height: 28 }),
-											background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
-											clipShape('roundedRectangle', 8)
-										]}
-									/>
-									<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-										GitHub
-									</Text>
-									<Spacer />
-									<Image systemName="arrow.up.forward" size={14} color={tokens.base500} />
-								</HStack>
-							</Button>
-						</Link>
+						<Button onPress={handleGithubPress} modifiers={[buttonStyle('plain')]}>
+							<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+								<Image
+									systemName="chevron.left.slash.chevron.right"
+									color="white"
+									size={14}
+									modifiers={[
+										frame({ width: 28, height: 28 }),
+										background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
+										clipShape('roundedRectangle', 8)
+									]}
+								/>
+								<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+									GitHub
+								</Text>
+								<Spacer />
+								<Image systemName="arrow.up.forward" size={14} color={tokens.base500} />
+							</HStack>
+						</Button>
 					</Section>
 
 					<Section>
-						<Link href={appConfig.links.privacyPolicy as any} asChild>
-							<Button modifiers={[buttonStyle('plain')]}>
-								<HStack
-									spacing={8}
-									alignment="center"
-									modifiers={[contentShape(shapes.rectangle())]}
-								>
-									<Image
-										systemName="hand.raised.fill"
-										color="white"
-										size={18}
-										modifiers={[
-											frame({ width: 28, height: 28 }),
-											background(tokens.primary, shapes.roundedRectangle({ cornerRadius: 8 })),
-											clipShape('roundedRectangle', 8)
-										]}
-									/>
-									<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-										Privacy Policy
-									</Text>
-									<Spacer />
-									<Image systemName="arrow.up.forward" size={14} color={tokens.base500} />
-								</HStack>
-							</Button>
-						</Link>
+						<Button onPress={handlePrivacyPress} modifiers={[buttonStyle('plain')]}>
+							<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+								<Image
+									systemName="hand.raised.fill"
+									color="white"
+									size={18}
+									modifiers={[
+										frame({ width: 28, height: 28 }),
+										background(tokens.primary, shapes.roundedRectangle({ cornerRadius: 8 })),
+										clipShape('roundedRectangle', 8)
+									]}
+								/>
+								<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+									Privacy Policy
+								</Text>
+								<Spacer />
+								<Image systemName="arrow.up.forward" size={14} color={tokens.base500} />
+							</HStack>
+						</Button>
 					</Section>
 				</Form>
 			</Host>

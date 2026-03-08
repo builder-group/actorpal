@@ -49,7 +49,7 @@ FEATURES
 Kairos is built for the moments when exact timing gets in the way and a little uncertainty makes the experience better.
 ```
 
-**Keywords (94 chars):**
+**Keywords:**
 
 ```text
 meditation,study,exercise,hot potato,musical chairs,focus,plank,hiit,party,game,fitness,repeat

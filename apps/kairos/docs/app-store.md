@@ -60,8 +60,8 @@ meditation,study,exercise,hot potato,musical chairs,focus,plank,hiit,party,game,
 **Screenshot 1**
 
 ```text
-Headline: Random timer for focus, fitness, and games
-Subhead: Set a range and let Kairos pick the finish
+Headline: Random Timer
+Subhead: for focus, fitness, games
 Screen: Timer setup
 Show: Duration picker, MIN/MAX selector, Start button
 Suggested state: MIN 0:45, MAX 1:15
@@ -70,8 +70,8 @@ Suggested state: MIN 0:45, MAX 1:15
 **Screenshot 2**
 
 ```text
-Headline: A random timer that feels native
-Subhead: Clear progress, clean controls, no clutter
+Headline: Set a Range
+Subhead: Kairos picks the finish
 Screen: Running timer
 Show: Progress ring, large countdown, cancel and pause controls
 Suggested state: In progress around 00:37 remaining
@@ -80,8 +80,8 @@ Suggested state: In progress around 00:37 remaining
 **Screenshot 3**
 
 ```text
-Headline: Hide the countdown
-Subhead: Stay present and keep the surprise
+Headline: Hide the Time
+Subhead: stay present
 Screen: Running timer with hidden time
 Show: Pulsing hidden-time state with Hide Time Display enabled
 Suggested state: Active session with the ring visible but the countdown hidden
@@ -90,8 +90,8 @@ Suggested state: Active session with the ring visible but the countdown hidden
 **Screenshot 4**
 
 ```text
-Headline: Reuse your favorite timers
-Subhead: Jump back into study, workouts, or games
+Headline: Recent Timers
+Subhead: start again fast
 Screen: Recents
 Show: Recents list with labeled examples
 Suggested state: Add recents like Plank, Study, and Hot Potato
@@ -100,8 +100,8 @@ Suggested state: Add recents like Plank, Study, and Hot Potato
 **Screenshot 5**
 
 ```text
-Headline: Tune the timer to your use case
-Subhead: Sound, behavior, and hidden-time mode
+Headline: Timer Options
+Subhead: sound and repeat
 Screen: Timer configuration
 Show: Alarm Sound, After Timer Ends, and Hide Time Display
 Suggested state: Show Auto Repeat or Auto Stop only if that ships in the submitted build

@@ -1,0 +1,9 @@
+# Generated native projects must not be uploaded for managed prebuild builds.
+ios
+android
+
+# Local/generated artifacts
+node_modules
+.expo
+dist
+build

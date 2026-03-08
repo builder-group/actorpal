@@ -29,3 +29,10 @@ yarn-error.log*
 # Monorepo: ignore all apps, allow only kairos (and packages/ + root are allowed)
 /apps/*
 !/apps/kairos
+
+# kairos generates native projects locally; never upload them to EAS
+/apps/kairos/ios
+/apps/kairos/android
+/apps/kairos/.expo
+/apps/kairos/dist
+/apps/kairos/node_modules

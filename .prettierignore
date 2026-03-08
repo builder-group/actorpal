@@ -1,0 +1,6 @@
+# Xcode asset catalogs and app icon (Xcode owns these JSON files)
+**/*.xcassets/**
+**/AppIcon.icon/**
+
+# Deprecated apps
+apps/__deprecated/

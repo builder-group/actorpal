@@ -1,0 +1,38 @@
+# # Learn more https://docs.expo.dev/build-reference/easignore/
+
+# Copy everything from .gitignore (EAS uses this when present)
+node_modules
+.pnp
+.pnp.js
+.env
+.env.dev
+.env.prod
+.env.local
+.env.test
+coverage
+.turbo
+.vercel
+.next/
+out/
+build
+dist
+target
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.pem
+.todo
+.local
+**/migrations/local
+
+# Monorepo: ignore all apps, allow only kairos (and packages/ + root are allowed)
+/apps/*
+!/apps/kairos
+
+# kairos generates native projects locally; never upload them to EAS
+/apps/kairos/ios
+/apps/kairos/android
+/apps/kairos/.expo
+/apps/kairos/dist
+/apps/kairos/node_modules

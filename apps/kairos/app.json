@@ -1,0 +1,41 @@
+{
+	"expo": {
+		"name": "kairos",
+		"slug": "kairos",
+		"version": "0.0.1",
+		"orientation": "portrait",
+		"icon": "./assets/images/icon.png",
+		"scheme": "kairos",
+		"userInterfaceStyle": "automatic",
+		"ios": {
+			"icon": "./assets/ios-app-icon.icon",
+			"bundleIdentifier": "com.buildergroup.kairos",
+			"infoPlist": {
+				"ITSAppUsesNonExemptEncryption": false
+			}
+		},
+		"plugins": [
+			"expo-router",
+			[
+				"expo-splash-screen",
+				{
+					"backgroundColor": "#4A92FF",
+					"android": {
+						"image": "./assets/images/splash-icon.png",
+						"imageWidth": 76
+					}
+				}
+			]
+		],
+		"experiments": {
+			"typedRoutes": true,
+			"reactCompiler": true
+		},
+		"extra": {
+			"router": {},
+			"eas": {
+				"projectId": "2b00705a-3054-4eb0-8ada-c793d01adbc7"
+			}
+		}
+	}
+}

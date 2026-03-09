@@ -10,9 +10,9 @@ export const TimerActionButton: React.FC<TTimerActionButtonProps> = (props) => {
 	const { backgroundColor, textColor } = React.useMemo(() => {
 		switch (tone) {
 			case 'positive':
-				return { backgroundColor: hexToRgba('#00D042', 0.14), textColor: '#00D042' };
+				return { backgroundColor: hexToRgba(tokens.success, 0.14), textColor: tokens.success };
 			case 'warning':
-				return { backgroundColor: hexToRgba('#FF8B00', 0.14), textColor: '#FF8B00' };
+				return { backgroundColor: hexToRgba(tokens.warning, 0.14), textColor: tokens.warning };
 			case 'neutral':
 				return {
 					backgroundColor: hexToRgba(tokens.base700, 0.1),
@@ -25,7 +25,7 @@ export const TimerActionButton: React.FC<TTimerActionButtonProps> = (props) => {
 					textColor: tokens.primary
 				};
 		}
-	}, [tone, tokens.base700, tokens.base800, tokens.primary]);
+	}, [tone, tokens.base700, tokens.base800, tokens.primary, tokens.success, tokens.warning]);
 
 	return (
 		<Pressable

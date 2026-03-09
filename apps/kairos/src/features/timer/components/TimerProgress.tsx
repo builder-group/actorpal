@@ -34,7 +34,11 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 		}
 	);
 	const activeRingColor =
-		status === 'overtime' && endMode === 'overtime' ? '#FF9500' : tokens.primary;
+		status !== 'overtime'
+			? tokens.primary
+			: endMode === 'overtime'
+				? tokens.warning
+				: tokens.secondary;
 
 	// MARK: - UI
 
@@ -139,9 +143,9 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 
 			{status === 'overtime' && (
 				<View className="absolute top-full flex-row items-center gap-1 pt-1.5">
-					<ClockIcon size={18} color={endMode === 'overtime' ? '#FF9500' : '#8b5cf6'} />
+					<ClockIcon size={18} color={endMode === 'overtime' ? tokens.warning : tokens.secondary} />
 					<Text
-						className={cn('text-xl', endMode === 'overtime' ? 'text-[#FF9500]' : 'text-[#8b5cf6]')}
+						className={cn('text-xl', endMode === 'overtime' ? 'text-warning' : 'text-secondary')}
 					>
 						{autoEndCountdown != null
 							? `${endMode === 'loop' ? 'Repeat' : 'Stop'} in ${formatTimerClock(autoEndCountdown)}`

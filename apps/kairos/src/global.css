@@ -18,6 +18,8 @@
 	--color-base-900: var(--base-900);
 	--color-base-950: var(--base-950);
 	--color-primary: var(--primary);
+	--color-secondary: var(--secondary);
+	--color-success: var(--success);
 	--color-warning: var(--warning);
 	--color-danger: var(--danger);
 }

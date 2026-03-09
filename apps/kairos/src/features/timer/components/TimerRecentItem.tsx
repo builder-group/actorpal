@@ -9,7 +9,7 @@ import Animated, {
 	useSharedValue,
 	type SharedValue
 } from 'react-native-reanimated';
-import { PlayIcon, TrashIcon } from '@/components';
+import { PlayIcon, TrashIcon, useTheme } from '@/components';
 import { hexToRgba } from '@/lib';
 import {
 	durationToSeconds,
@@ -102,6 +102,7 @@ interface TTimerRecentItemProps {
 
 const RecentDeleteAction: React.FC<TRecentDeleteActionProps> = (props) => {
 	const { progress, swipeProgress, onPress } = props;
+	const { tokens } = useTheme();
 
 	useAnimatedReaction(
 		() => progress.value,
@@ -124,10 +125,10 @@ const RecentDeleteAction: React.FC<TRecentDeleteActionProps> = (props) => {
 		<Animated.View style={animatedStyle}>
 			<Pressable
 				className="h-20 w-20 items-center justify-center rounded-full"
-				style={{ backgroundColor: hexToRgba('#FF3B30', 0.14) }}
+				style={{ backgroundColor: hexToRgba(tokens.danger, 0.14) }}
 				onPress={onPress}
 			>
-				<TrashIcon size={26} color="#FF3B30" />
+				<TrashIcon size={26} color={tokens.danger} />
 			</Pressable>
 		</Animated.View>
 	);
@@ -141,6 +142,7 @@ interface TRecentDeleteActionProps {
 
 const RecentPlayButton: React.FC<TRecentPlayButtonProps> = (props) => {
 	const { progress, onPress } = props;
+	const { tokens } = useTheme();
 
 	const animatedStyle = useAnimatedStyle(() => {
 		const opacity = interpolate(progress.value, [0, 0.15, 0.35], [1, 0.82, 0], Extrapolation.CLAMP);
@@ -155,7 +157,7 @@ const RecentPlayButton: React.FC<TRecentPlayButtonProps> = (props) => {
 		<Animated.View style={animatedStyle}>
 			<Pressable
 				className="h-20 w-20 items-center justify-center rounded-full"
-				style={{ backgroundColor: hexToRgba('#00D042', 0.14) }}
+				style={{ backgroundColor: hexToRgba(tokens.success, 0.14) }}
 				onPress={(e) => {
 					if (progress.value > 0.15) {
 						return;
@@ -163,7 +165,7 @@ const RecentPlayButton: React.FC<TRecentPlayButtonProps> = (props) => {
 					onPress(e);
 				}}
 			>
-				<PlayIcon size={24} color="#00D042" />
+				<PlayIcon size={24} color={tokens.success} />
 			</Pressable>
 		</Animated.View>
 	);

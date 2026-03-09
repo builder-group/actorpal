@@ -3,7 +3,13 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { BellIcon, ClockIcon, useTheme } from '@/components';
 import { cn } from '@/lib';
-import { formatClockTime, formatTimerClock, hasTimerHours } from '../format';
+import {
+	durationToSeconds,
+	formatClockTime,
+	formatTimerClock,
+	formatTimerClockRedacted,
+	hasTimerHours
+} from '../format';
 import { TimerCx } from '../TimerCx';
 import { ProgressRing } from './ProgressRing';
 import { PulsingDashRing } from './PulsingDashRing';
@@ -15,7 +21,6 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 	const status = useCompute(cx.$status, ({ value }) => value);
 	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
-	const isOvertime = status === 'overtime';
 	const progress = useCombinedCompute(
 		[cx.$status, cx.$totalSeconds, cx.$remainingSeconds],
 		([{ value: status }, { value: totalSeconds }, { value: remainingSeconds }]) => {
@@ -28,7 +33,8 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 			return Math.min(Math.max(1 - Math.max(0, remainingSeconds) / totalSeconds, 0), 1);
 		}
 	);
-	const activeRingColor = isOvertime && endMode === 'overtime' ? '#FF9500' : tokens.primary;
+	const activeRingColor =
+		status === 'overtime' && endMode === 'overtime' ? '#FF9500' : tokens.primary;
 
 	// MARK: - UI
 
@@ -38,11 +44,11 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 				<PulsingDashRing
 					className="absolute inset-0 top-4 left-1/2 -translate-x-1/2"
 					size={272 + 12}
-					animated={status === 'running' || isOvertime}
+					animated={status === 'running' || status === 'overtime'}
 					activeColor={activeRingColor}
 					inactiveColor={tokens.base300}
 				>
-					{isOvertime ? <TimerProgressContent cx={cx} /> : null}
+					<TimerProgressContent cx={cx} />
 				</PulsingDashRing>
 			) : (
 				<ProgressRing
@@ -70,7 +76,9 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 	const { tokens } = useTheme();
 
 	const status = useCompute(cx.$status, ({ value }) => value);
+	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
+	const maxSeconds = useCompute(cx.$config, ({ value }) => durationToSeconds(value.max));
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
 	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
 	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
@@ -94,12 +102,22 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 				: Math.max(0, remainingSeconds),
 		[status, totalSeconds, overtimeSeconds, remainingSeconds]
 	);
+	const useHourClock = React.useMemo(
+		() => hasTimerHours(timerDisplaySeconds) || (hideTimeDisplay && hasTimerHours(maxSeconds)),
+		[timerDisplaySeconds, hideTimeDisplay, maxSeconds]
+	);
+	const timerText = React.useMemo(() => {
+		if (!hideTimeDisplay || status === 'overtime') {
+			return formatTimerClock(timerDisplaySeconds);
+		}
+		return formatTimerClockRedacted(maxSeconds);
+	}, [hideTimeDisplay, maxSeconds, status, timerDisplaySeconds]);
 
 	// MARK: - UI
 
 	return (
 		<View className="relative items-center">
-			{status !== 'overtime' && (
+			{status !== 'overtime' && !hideTimeDisplay && (
 				<View className="absolute bottom-full flex-row items-center gap-1 pb-1.5">
 					<BellIcon size={18} color={endTime != null ? tokens.base500 : tokens.base300} />
 					<Text className={cn('text-xl', endTime != null ? 'text-base-500' : 'text-base-300')}>
@@ -111,27 +129,19 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 			<Text
 				className={cn(
 					'text-base-900 min-w-[190px] text-center font-extralight',
-					hasTimerHours(timerDisplaySeconds)
-						? 'text-[58px] leading-[64px]'
-						: 'text-[72px] leading-[80px]'
+					useHourClock ? 'text-[58px] leading-[64px]' : 'text-[72px] leading-[80px]'
 				)}
 				adjustsFontSizeToFit
 				numberOfLines={1}
 			>
-				{formatTimerClock(timerDisplaySeconds)}
+				{timerText}
 			</Text>
 
 			{status === 'overtime' && (
 				<View className="absolute top-full flex-row items-center gap-1 pt-1.5">
-					<ClockIcon
-						size={18}
-						color={status === 'overtime' && endMode === 'overtime' ? '#FF9500' : '#8b5cf6'}
-					/>
+					<ClockIcon size={18} color={endMode === 'overtime' ? '#FF9500' : '#8b5cf6'} />
 					<Text
-						className={cn(
-							'text-xl',
-							status === 'overtime' && endMode === 'overtime' ? 'text-[#FF9500]' : 'text-[#8b5cf6]'
-						)}
+						className={cn('text-xl', endMode === 'overtime' ? 'text-[#FF9500]' : 'text-[#8b5cf6]')}
 					>
 						{autoEndCountdown != null
 							? `${endMode === 'loop' ? 'Repeat' : 'Stop'} in ${formatTimerClock(autoEndCountdown)}`

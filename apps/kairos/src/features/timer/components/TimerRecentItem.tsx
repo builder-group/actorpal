@@ -11,7 +11,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { PlayIcon, TrashIcon } from '@/components';
 import { hexToRgba } from '@/lib';
-import { formatDurationRange, formatTimerClock } from '../format';
+import {
+	durationToSeconds,
+	formatDurationRange,
+	formatTimerClock,
+	formatTimerClockRedacted
+} from '../format';
 import type { TimerCx, TTimerRecent } from '../TimerCx';
 
 export const TimerRecentItem = React.memo<TTimerRecentItemProps>((props) => {
@@ -19,8 +24,10 @@ export const TimerRecentItem = React.memo<TTimerRecentItemProps>((props) => {
 	const swipeProgress = useSharedValue(0);
 
 	const title = React.useMemo(() => {
-		return shouldMaskTitle ? '??:??:??' : formatTimerClock(recent.lastUsedTotalSeconds);
-	}, [recent.lastUsedTotalSeconds, shouldMaskTitle]);
+		return shouldMaskTitle
+			? formatTimerClockRedacted(durationToSeconds(recent.config.max))
+			: formatTimerClock(recent.lastUsedTotalSeconds);
+	}, [recent.config.max, recent.lastUsedTotalSeconds, shouldMaskTitle]);
 	const subtitle = React.useMemo(() => {
 		const label = recent.config.label.trim();
 		return label.length > 0 ? label : formatDurationRange(recent.config.min, recent.config.max);

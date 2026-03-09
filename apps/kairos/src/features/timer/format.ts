@@ -20,6 +20,10 @@ export function formatTimerClock(seconds: number): string {
 	return `${pad2(m)}:${pad2(s)}`;
 }
 
+export function formatTimerClockRedacted(seconds: number): string {
+	return hasTimerHours(seconds) ? '??:??:??' : '??:??';
+}
+
 export function hasTimerHours(seconds: number): boolean {
 	return Math.floor(Math.ceil(seconds) / 3600) > 0;
 }

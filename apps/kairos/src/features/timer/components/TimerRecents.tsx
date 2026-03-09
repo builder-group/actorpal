@@ -1,4 +1,4 @@
-import { useCompute } from 'feature-react/state';
+import { useCombinedCompute, useFeatureState } from 'feature-react/state';
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { PlayIcon } from '@/components';
@@ -8,7 +8,11 @@ import { TimerCx, type TTimerRecent } from '../TimerCx';
 
 export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
 	const { cx } = props;
-	const recents = useCompute(cx.$recents, ({ value }) => value);
+	const recents = useFeatureState(cx.$recents);
+	const shouldMaskLatestRecent = useCombinedCompute(
+		[cx.$config, cx.$status],
+		([{ value: config }, { value: status }]) => config.hideTimeDisplay && status !== 'idle'
+	);
 
 	// MARK: - Actions
 
@@ -39,7 +43,10 @@ export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
 				<View className="border-base-300 mx-4 border-t" />
 				{recents.map((recent, index) => {
 					const { config } = recent;
-					const title = formatTimerClock(recent.lastUsedTotalSeconds);
+					const shouldMaskTitle = shouldMaskLatestRecent && index === 0;
+					const title = shouldMaskTitle
+						? '??:??:??'
+						: formatTimerClock(recent.lastUsedTotalSeconds);
 					const subtitle =
 						config.label.trim().length > 0
 							? config.label.trim()

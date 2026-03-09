@@ -314,7 +314,6 @@ export interface TTimerConfig {
 	hideTimeDisplay: boolean;
 	sound: TTimerSound;
 	endMode: TTimerEndMode;
-	/** Seconds of overtime before auto-stop or auto-loop triggers. Ignored when endMode is 'overtime'. */
 	endAfterSeconds: number;
 }
 

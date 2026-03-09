@@ -24,3 +24,7 @@ export const MoonIcon: React.FC<TNamedAppIconProps> = (props) => {
 export const PlayIcon: React.FC<TNamedAppIconProps> = (props) => {
 	return <AppIcon ios="play.fill" fallback="play-arrow" {...props} />;
 };
+
+export const TrashIcon: React.FC<TNamedAppIconProps> = (props) => {
+	return <AppIcon ios="trash.fill" fallback="delete" {...props} />;
+};

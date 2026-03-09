@@ -180,6 +180,10 @@ export class TimerCx {
 		this.$recents.set([]);
 	}
 
+	public removeRecent(hash: string): void {
+		this.$recents.set((current) => current.filter((entry) => entry.hash !== hash));
+	}
+
 	public reset(): void {
 		this.cancel();
 		this.$config.set({

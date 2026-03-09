@@ -1,4 +1,5 @@
 import React from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppTabs, ThemeProvider } from '@/components';
 import { AudioCxProvider } from '@/features/audio';
 import { SettingsCxProvider } from '@/features/settings';
@@ -7,15 +8,17 @@ import '../global.css';
 
 const Layout: React.FC = () => {
 	return (
-		<SettingsCxProvider>
-			<ThemeProvider>
-				<AudioCxProvider>
-					<TimerCxProvider>
-						<AppTabs />
-					</TimerCxProvider>
-				</AudioCxProvider>
-			</ThemeProvider>
-		</SettingsCxProvider>
+		<GestureHandlerRootView>
+			<SettingsCxProvider>
+				<ThemeProvider>
+					<AudioCxProvider>
+						<TimerCxProvider>
+							<AppTabs />
+						</TimerCxProvider>
+					</AudioCxProvider>
+				</ThemeProvider>
+			</SettingsCxProvider>
+		</GestureHandlerRootView>
 	);
 };
 

@@ -46,8 +46,8 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 		<View className={cn('relative h-[256px] w-full', className)}>
 			{hideTimeDisplay ? (
 				<PulsingDashRing
-					className="absolute inset-0 top-4 left-1/2 -translate-x-1/2"
-					size={272 + 12}
+					className="absolute inset-0 top-0.5 left-1/2 -translate-x-1/2"
+					size={272 + 24}
 					animated={status === 'running' || status === 'overtime'}
 					activeColor={activeRingColor}
 					inactiveColor={tokens.base300}

@@ -30,13 +30,22 @@ export function formatClockTime(epochMs: number): string {
 }
 
 export function formatDurationCompact(duration: TDuration): string {
-	const { h, m, s } = duration;
+	return toDurationCompactParts(duration).join(' ');
+}
 
-	if (h > 0) return `${h}h ${m}m ${s}s`;
-	if (m > 0 && s === 0) return `${m}m`;
-	if (m > 0) return `${m}m ${s}s`;
-	if (s > 0) return `${s}s`;
-	return '0s';
+export function getDurationCompactPartCount(duration: TDuration): number {
+	return toDurationCompactParts(duration).length;
+}
+
+function toDurationCompactParts(duration: TDuration): string[] {
+	const parts: string[] = [];
+	if (duration.h > 0) parts.push(`${duration.h}h`);
+	if (duration.m > 0) parts.push(`${duration.m}m`);
+	if (duration.s > 0) parts.push(`${duration.s}s`);
+	if (!parts.length) {
+		parts.push('0s');
+	}
+	return parts;
 }
 
 export function formatDurationLabel(seconds: number): string {

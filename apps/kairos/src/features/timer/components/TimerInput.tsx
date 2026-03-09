@@ -7,7 +7,12 @@ import {
 	DurationPickerView,
 	TDurationPickerChangeEvent
 } from '../../../../modules/duration-picker';
-import { durationToSeconds, formatDurationCompact, isSameDuration } from '../format';
+import {
+	durationToSeconds,
+	formatDurationCompact,
+	getDurationCompactPartCount,
+	isSameDuration
+} from '../format';
 import { TimerCx } from '../TimerCx';
 import { TimerActionButton } from './TimerActionButton';
 
@@ -81,7 +86,8 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 						</Text>
 						<Text
 							className={cn(
-								'text-[20px] font-light',
+								'font-light',
+								getDurationCompactPartCount(min) === 3 ? 'text-[16px]' : 'text-[20px]',
 								isSelected ? 'text-base-900' : 'text-base-500',
 								isInvalidRange ? 'text-danger' : isFixedDuration ? 'text-warning' : null
 							)}
@@ -108,7 +114,8 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 						</Text>
 						<Text
 							className={cn(
-								'text-[20px] font-light',
+								'font-light',
+								getDurationCompactPartCount(max) === 3 ? 'text-[16px]' : 'text-[20px]',
 								isSelected ? 'text-base-900' : 'text-base-500',
 								isInvalidRange ? 'text-danger' : isFixedDuration ? 'text-warning' : null
 							)}

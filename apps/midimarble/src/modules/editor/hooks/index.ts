@@ -1,1 +1,1 @@
-export * from './use-cube-rotation';
+export * from './use-scene-summary';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
-import { useCubeRotation } from '../hooks';
+import { useSceneSummary } from '../hooks';
 
 export const Editor: React.FC = () => {
 	return (
@@ -12,7 +12,7 @@ export const Editor: React.FC = () => {
 
 const InnerEditor: React.FC = () => {
 	const cx = useEditorCx();
-	const cubeRotation = useCubeRotation();
+	const scene = useSceneSummary();
 
 	return (
 		<main className="bg-base-100 grid h-screen grid-cols-1 grid-rows-[1fr_auto] lg:grid-cols-[1fr_320px]">
@@ -27,15 +27,19 @@ const InnerEditor: React.FC = () => {
 				<h2 className="text-base-900 text-sm font-semibold">Inspector</h2>
 				<p className="text-base-700 mt-2 text-sm">React is currently used for UI panels only.</p>
 				<ul className="text-base-700 mt-4 list-disc space-y-1 pl-5 text-sm">
-					<li>ECS app with core and render modules</li>
-					<li>Core system updates rotation every frame</li>
-					<li>Render module draws a rotating cube</li>
+					<li>Entities render from `Position + Rotation + Scale + Mesh(ref)`</li>
+					<li>Three.js objects stay internal to the render plugin</li>
+					<li>Demo falling marbles use an explicit behavior component</li>
 				</ul>
-				<p className="text-base-700 mt-4 text-sm">
-					Cube rotation:{' '}
-					{cubeRotation == null
+				<p className="text-base-700 mt-4 text-sm">Scene entities: {scene.entityCount}</p>
+				<p className="text-base-700 mt-2 text-sm">
+					Pegboards: {scene.pegboardCount} | Marbles: {scene.marbleCount}
+				</p>
+				<p className="text-base-700 mt-2 text-sm">
+					Lead marble:{' '}
+					{scene.leadMarblePosition == null
 						? 'N/A'
-						: `${cubeRotation.x.toFixed(2)}, ${cubeRotation.y.toFixed(2)}, ${cubeRotation.z.toFixed(2)}`}
+						: `${scene.leadMarblePosition.x.toFixed(2)}, ${scene.leadMarblePosition.y.toFixed(2)}, ${scene.leadMarblePosition.z.toFixed(2)}`}
 				</p>
 			</aside>
 

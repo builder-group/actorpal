@@ -8,8 +8,10 @@ import {
 import {
 	createCorePlugin,
 	createRenderPlugin,
+	createScenePlugin,
 	type TCorePlugin,
-	type TRenderPlugin
+	type TRenderPlugin,
+	type TScenePlugin
 } from './plugins';
 
 export class Runtime {
@@ -20,7 +22,12 @@ export class Runtime {
 
 	constructor() {
 		this._app = createApp({
-			plugins: [createDefaultPlugin(), createCorePlugin(), createRenderPlugin()] as const,
+			plugins: [
+				createDefaultPlugin(),
+				createCorePlugin(),
+				createRenderPlugin(),
+				createScenePlugin()
+			] as const,
 			systemSets: ['First', 'Update', 'Last']
 		});
 	}
@@ -46,7 +53,7 @@ export class Runtime {
 	}
 
 	public setContainer(container: HTMLDivElement | null): void {
-		this._app.r.viewport.setContainer(container);
+		this._app.setRenderContainer(container);
 		if (container == null) {
 			this.stop();
 			return;
@@ -60,8 +67,8 @@ export class Runtime {
 		}
 		this._isMounted = false;
 		this.stop();
-		this._app.r.viewport.setContainer(null);
-		this._app.r.viewport.dispose();
+		this._app.setRenderContainer(null);
+		this._app.disposeRender();
 		this._app.flush();
 	}
 
@@ -76,4 +83,6 @@ export class Runtime {
 	};
 }
 
-export type TRuntimeApp = TApp<TAppContext<[TDefaultPlugin, TCorePlugin, TRenderPlugin]>>;
+export type TRuntimeApp = TApp<
+	TAppContext<[TDefaultPlugin, TCorePlugin, TRenderPlugin, TScenePlugin]>
+>;

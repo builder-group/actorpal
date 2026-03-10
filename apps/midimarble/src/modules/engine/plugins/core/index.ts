@@ -1,1 +1,2 @@
-export * from './create-core-plugin';
+export * from './core-plugin';
+export * from './types';

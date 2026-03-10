@@ -22,7 +22,7 @@ export function createScenePlugin(): TScenePlugin {
 				const eid = this.spawnRenderable({
 					meshRef: 'marble',
 					position: { x: options.x, y: options.startY, z: options.z },
-					scale: { x: 0.18, y: 0.18, z: 0.18 }
+					scale: { x: 0.7, y: 0.7, z: 0.7 }
 				});
 
 				this.addComponent(eid, this.c.FallingMarbleMixin, {
@@ -50,7 +50,7 @@ function seedScene(app: TSceneApp): void {
 	const marbleOffsets = [-12, -6, 0, 6, 12];
 	for (const [index, z] of marbleOffsets.entries()) {
 		app.spawnDemoMarble({
-			x: 1.1,
+			x: 0.9,
 			z,
 			startY: 40 + index * 10,
 			speed: 22 + index * 2.5,

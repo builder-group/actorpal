@@ -10,20 +10,20 @@ export function createRenderPlugin(): TRenderPlugin {
 		name: 'Render',
 		deps: ['Default', 'Core'],
 		components: {
+			PrimaryCube: {},
 			MeshRef: { value: [] }
 		},
 		resources: {
-			viewport,
-			cubeEid: null
+			viewport
 		},
 		setup(app: TRenderApp) {
 			const cube = viewport.createCube();
 			const cubeEid = app.createEntity();
 
+			app.addComponent(cubeEid, app.c.PrimaryCube);
 			app.addComponent(cubeEid, app.c.Rotation, { x: 0, y: 0, z: 0 });
 			app.addComponent(cubeEid, app.c.RotationSpeed, { x: 0.6, y: 1.1, z: 0.2 });
 			app.addComponent(cubeEid, app.c.MeshRef, { value: cube });
-			app.r.cubeEid = cubeEid;
 
 			app.addSystem(syncMeshTransformsSystem, { set: 'Update' });
 			app.addSystem(renderFrameSystem, { set: 'Last', after: syncMeshTransformsSystem });
@@ -35,17 +35,18 @@ export type TRenderPlugin = TPlugin<
 	{
 		name: 'Render';
 		components: {
+			PrimaryCube: TCPrimaryCube;
 			MeshRef: TCMeshRef;
 		};
 		resources: {
 			viewport: RenderViewportRuntime;
-			cubeEid: number | null;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
 	[TDefaultPlugin, TCorePlugin]
 >;
 
+type TCPrimaryCube = Record<string, never>;
 type TCMeshRef = { value: (THREE.Object3D | null)[] };
 type TRenderApp = TApp<TAppContext<[TDefaultPlugin, TCorePlugin, TRenderPlugin]>>;
 

@@ -23,7 +23,6 @@ export class Runtime {
 			plugins: [createDefaultPlugin(), createCorePlugin(), createRenderPlugin()] as const,
 			systemSets: ['First', 'Update', 'Last']
 		});
-		this.start();
 	}
 
 	public get app(): TRuntimeApp {
@@ -48,6 +47,11 @@ export class Runtime {
 
 	public setContainer(container: HTMLDivElement | null): void {
 		this._app.r.viewport.setContainer(container);
+		if (container == null) {
+			this.stop();
+			return;
+		}
+		this.start();
 	}
 
 	public unmount(): void {

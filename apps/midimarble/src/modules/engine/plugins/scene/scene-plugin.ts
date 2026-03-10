@@ -13,8 +13,9 @@ export function createScenePlugin(): TScenePlugin {
 			spawnPegboard(this: TSceneApp): number {
 				return this.spawnRenderable({
 					meshRef: 'pegboard',
-					position: { x: 0, y: 1.2, z: -1.4 },
-					scale: { x: 9.5, y: 14.5, z: 0.5 }
+					position: { x: 0, y: 0, z: 0 },
+					rotation: { x: 0, y: Math.PI / 2, z: 0 },
+					scale: { x: 1, y: 1, z: 1 }
 				});
 			},
 			spawnDemoMarble(this: TSceneApp, options: TSpawnDemoMarbleOptions): number {
@@ -46,14 +47,14 @@ export function createScenePlugin(): TScenePlugin {
 function seedScene(app: TSceneApp): void {
 	app.spawnPegboard();
 
-	const marbleOffsets = [-1.7, -0.85, 0, 0.85, 1.7];
-	for (const [index, x] of marbleOffsets.entries()) {
+	const marbleOffsets = [-12, -6, 0, 6, 12];
+	for (const [index, z] of marbleOffsets.entries()) {
 		app.spawnDemoMarble({
-			x,
-			z: -0.15 + index * 0.08,
-			startY: 3.8 + index * 1.15,
-			speed: 1.8 + index * 0.18,
-			resetY: -4.4,
+			x: 1.1,
+			z,
+			startY: 40 + index * 10,
+			speed: 22 + index * 2.5,
+			resetY: -96,
 			spin: {
 				x: 0.6 + index * 0.15,
 				y: 0.8 + index * 0.12,

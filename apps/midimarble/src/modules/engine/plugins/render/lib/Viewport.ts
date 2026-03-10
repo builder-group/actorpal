@@ -13,11 +13,11 @@ export class Viewport {
 
 	constructor() {
 		this._scene = new THREE.Scene();
-		this._scene.background = new THREE.Color('#e7ddd2');
-		this._scene.fog = new THREE.Fog('#e7ddd2', 10, 22);
+		this._scene.background = new THREE.Color(0xe1dbd5);
 
-		this._camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-		this._camera.position.set(0, 1.4, 8.5);
+		this._camera = new THREE.PerspectiveCamera(25, 1, 0.1, 1000);
+		this._camera.position.set(100, 0, 0);
+		this._camera.lookAt(0, 0, 0);
 
 		this._renderer = new THREE.WebGLRenderer({
 			antialias: true,
@@ -25,42 +25,38 @@ export class Viewport {
 		});
 		this._renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 		this._renderer.setSize(1, 1);
+		this._renderer.setClearColor(0xe1dbd5);
 		this._renderer.outputColorSpace = THREE.SRGBColorSpace;
 		this._renderer.shadowMap.enabled = true;
 		this._renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 		this._controls = new OrbitControls(this._camera, this._renderer.domElement);
 		this._controls.enableDamping = true;
-		this._controls.target.set(0, 0.5, 0);
-		this._controls.minDistance = 4;
-		this._controls.maxDistance = 18;
-		this._controls.maxPolarAngle = Math.PI * 0.48;
+		this._controls.target.set(0, 0, 0);
+		this._controls.minDistance = 10;
+		this._controls.maxDistance = 100;
+		this._controls.maxAzimuthAngle = Math.PI - 0.1;
+		this._controls.minAzimuthAngle = 0.1;
+		this._controls.minPolarAngle = 0.1;
+		this._controls.maxPolarAngle = Math.PI - 0.1;
+		this._controls.update();
 
-		const ambient = new THREE.HemisphereLight('#fff8f2', '#c8b8a6', 1.2);
-		const keyLight = new THREE.DirectionalLight('#fff4db', 2.8);
-		keyLight.position.set(5, 8, 6);
+		const ambient = new THREE.AmbientLight(0xffffff, 1);
+		const keyLight = new THREE.DirectionalLight(0xffffff, 2);
+		keyLight.position.set(100, 50, 50);
 		keyLight.castShadow = true;
-		keyLight.shadow.mapSize.set(2048, 2048);
-		keyLight.shadow.camera.near = 0.5;
-		keyLight.shadow.camera.far = 30;
-		keyLight.shadow.camera.left = -8;
-		keyLight.shadow.camera.right = 8;
-		keyLight.shadow.camera.top = 12;
-		keyLight.shadow.camera.bottom = -12;
+		keyLight.shadow.mapSize.set(4096, 4096);
+		keyLight.shadow.camera.left = -50;
+		keyLight.shadow.camera.right = 50;
+		keyLight.shadow.camera.top = 50;
+		keyLight.shadow.camera.bottom = -50;
+		keyLight.shadow.radius = 3;
+		keyLight.shadow.intensity = 0.6;
 
-		const fillLight = new THREE.DirectionalLight('#f4c47d', 0.8);
-		fillLight.position.set(-4, 3, 8);
+		const fillLight = new THREE.DirectionalLight('#3333ca', 0.5);
+		fillLight.position.set(0.2, -1, 0.05);
 
-		const floor = new THREE.Mesh(
-			new THREE.CircleGeometry(10, 64),
-			new THREE.ShadowMaterial({ color: '#6f5d4e', opacity: 0.12 })
-		);
-		floor.rotation.x = -Math.PI / 2;
-		floor.position.set(0, -4.2, 0.2);
-		floor.receiveShadow = true;
-
-		this._scene.add(ambient, keyLight, fillLight, floor);
-		this._trackedObjects.add(floor);
+		this._scene.add(ambient, keyLight, fillLight);
 	}
 
 	public get scene(): THREE.Scene {

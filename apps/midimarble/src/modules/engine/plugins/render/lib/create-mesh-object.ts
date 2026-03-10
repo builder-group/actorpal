@@ -33,15 +33,12 @@ function createPegboardMesh(app: TRenderApp): THREE.Object3D {
 	normalMap.repeat.set(5, 10);
 
 	const board = new THREE.Mesh(
-		new THREE.PlaneGeometry(1, 1),
+		new THREE.PlaneGeometry(100, 200),
 		new THREE.MeshStandardMaterial({
 			color: '#fff8f1',
 			dithering: true,
-			roughness: 0.92,
-			metalness: 0.02,
 			normalMap,
-			bumpMap: normalMap,
-			bumpScale: 0.08
+			bumpMap: normalMap
 		})
 	);
 	board.receiveShadow = true;

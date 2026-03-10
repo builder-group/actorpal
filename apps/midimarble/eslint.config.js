@@ -1,20 +1,12 @@
-//  @ts-check
+import reactInternal from '@blgc/config/eslint/react-internal';
 
-import { tanstackConfig } from '@tanstack/eslint-config'
-
+/**
+ * @see https://eslint.org/docs/latest/use/configure/configuration-files
+ * @type {import("eslint").Linter.Config}
+ */
 export default [
-  ...tanstackConfig,
-  {
-    rules: {
-      'import/no-cycle': 'off',
-      'import/order': 'off',
-      'sort-imports': 'off',
-      '@typescript-eslint/array-type': 'off',
-      '@typescript-eslint/require-await': 'off',
-      'pnpm/json-enforce-catalog': 'off',
-    },
-  },
-  {
-    ignores: ['eslint.config.js', 'prettier.config.js'],
-  },
-]
+	...reactInternal,
+	{
+		ignores: ['build/**', 'dist/**', 'node_modules/**']
+	}
+];

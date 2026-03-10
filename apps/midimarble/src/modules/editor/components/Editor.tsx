@@ -1,6 +1,6 @@
 import React from 'react';
-import { EditorCxProvider, useEditorCx } from './EditorCx';
-import { useCubeRotation } from './hooks';
+import { EditorCxProvider, useEditorCx } from '../EditorCx';
+import { useCubeRotation } from '../hooks';
 
 export const Editor: React.FC = () => {
 	return (
@@ -11,13 +11,13 @@ export const Editor: React.FC = () => {
 };
 
 const InnerEditor: React.FC = () => {
-	const editorCx = useEditorCx();
+	const cx = useEditorCx();
 	const cubeRotation = useCubeRotation();
 
 	return (
 		<main className="bg-base-100 grid h-screen grid-cols-1 grid-rows-[1fr_auto] lg:grid-cols-[1fr_320px]">
 			<section className="border-base-300 relative min-h-0 border-b lg:border-r lg:border-b-0">
-				<div ref={editorCx.setContainer} className="h-full w-full" />
+				<div ref={cx.setContainer} className="h-full w-full" />
 				<div className="bg-base-0/85 text-base-700 pointer-events-none absolute top-3 left-3 rounded-md px-3 py-1.5 text-xs">
 					ECSify + native Three.js viewport
 				</div>

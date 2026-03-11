@@ -1,6 +1,6 @@
+import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import { TVec3 } from '../../../types';
-import { bundleEntry, defineBundle } from '../../core';
 import type { TPhysicsColliderDescriptor } from '../../physics';
 import type { TSceneApp } from '../types';
 import type { TSceneBundle } from './types';

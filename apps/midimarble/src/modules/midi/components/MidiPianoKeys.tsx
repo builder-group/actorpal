@@ -21,7 +21,10 @@ MidiPianoKeys.displayName = 'MidiPianoKeys';
 const MidiPianoKeyRow: React.FC<TMidiPianoKeyRowProps> = ({ accentColor, noteNumber }) => {
 	if (isMidiBlackKey(noteNumber)) {
 		return (
-			<div className="relative" style={{ height: noteHeight, background: midiConfig.colors.pianoWhite }}>
+			<div
+				className="relative"
+				style={{ height: noteHeight, background: midiConfig.colors.pianoWhite }}
+			>
 				<div
 					className="absolute left-0"
 					style={{
@@ -57,10 +60,13 @@ const MidiPianoKeyRow: React.FC<TMidiPianoKeyRowProps> = ({ accentColor, noteNum
 		>
 			{isC && (
 				<>
-					<div className="absolute top-0 right-0 h-full" style={{ width: 4, background: accentColor }} />
+					<div
+						className="absolute top-0 right-0 h-full"
+						style={{ width: 4, background: accentColor }}
+					/>
 
 					<span
-						className="text-base-500 absolute select-none text-[9px] font-bold leading-none"
+						className="text-base-500 absolute text-[9px] leading-none font-bold select-none"
 						style={{
 							right: 8,
 							top: '50%',

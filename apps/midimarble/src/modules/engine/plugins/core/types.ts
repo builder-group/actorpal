@@ -1,6 +1,5 @@
-import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
+import type { TApp, TAppContext, TBundle, TDefaultPlugin, TPlugin } from 'ecsify';
 import type { TVec3 } from '../../types';
-import { TBundle } from './bundle';
 
 // MARK: - Plugin
 
@@ -16,7 +15,6 @@ export type TCorePlugin = TPlugin<
 			elapsedSeconds: number;
 		};
 		appExtensions: {
-			insertBundle(eid: number, bundle: TBundle): void;
 			spawnBundle(bundle: TBundle): number;
 		};
 		systemSets: 'First' | 'Update' | 'Last';

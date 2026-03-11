@@ -380,8 +380,8 @@ importers:
         specifier: ^1.166.7
         version: 1.166.7(crossws@0.4.4(srvx@0.11.9))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vite@7.3.1(@types/node@25.4.0)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
       ecsify:
-        specifier: ^0.0.16
-        version: 0.0.16
+        specifier: ^0.0.18
+        version: 0.0.18
       feature-react:
         specifier: ^0.0.67
         version: 0.0.67(react@19.2.4)
@@ -4180,8 +4180,8 @@ packages:
   ecsify@0.0.15:
     resolution: {integrity: sha512-LoHb3uumPjI4/gguGPJX8Wk+IHcdFS3JzGMcgReSWLlF7GKnCwqCkw9AHkGlVbV3MhI7xu+/NAomyX2XYJ7ntw==}
 
-  ecsify@0.0.16:
-    resolution: {integrity: sha512-XesPyaXmiVs/7iYiUhrKeIjgFErbBooGqCGt8ifdM8KDSJnjcvUj0fdbHkrBdvZx9JNvo71Ti+XDgSek0zRpFA==}
+  ecsify@0.0.18:
+    resolution: {integrity: sha512-SSfJ+90xvgcRdT06N/4A9yMcR6oyEhaxdswapW//vrJz+GTrxVTk8Sw0Y+MdZeRsT+jVMI01LGTAm9ib5mNp4g==}
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
@@ -12762,7 +12762,7 @@ snapshots:
     dependencies:
       '@blgc/utils': 0.0.61
 
-  ecsify@0.0.16:
+  ecsify@0.0.18:
     dependencies:
       '@blgc/utils': 0.0.61
 

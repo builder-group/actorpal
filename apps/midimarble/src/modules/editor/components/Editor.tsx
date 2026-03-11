@@ -1,6 +1,9 @@
 import React from 'react';
+import { MidiViewer } from '@/modules/midi';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
 import { useSceneSummary } from '../hooks';
+
+const MIDI_PANEL_HEIGHT = 280;
 
 export const Editor: React.FC = () => {
 	return (
@@ -15,25 +18,37 @@ const InnerEditor: React.FC = () => {
 	const scene = useSceneSummary();
 
 	return (
-		<main className="bg-base-100 grid h-screen grid-cols-1 grid-rows-[1fr_auto] lg:grid-cols-[1fr_320px]">
-			<section className="border-base-300 relative min-h-0 border-b lg:border-r lg:border-b-0">
+		<main
+			className="bg-base-100"
+			style={{
+				display: 'grid',
+				height: '100vh',
+				gridTemplateColumns: '1fr 320px',
+				gridTemplateRows: `1fr ${MIDI_PANEL_HEIGHT}px`
+			}}
+		>
+			<section className="border-base-300 relative min-h-0 border-r">
 				<div ref={cx.setContainer} className="h-full w-full" />
 				<div className="bg-base-0/85 text-base-700 pointer-events-none absolute top-3 left-3 rounded-md px-3 py-1.5 text-xs">
-					ECSify + native Three.js viewport
+					ECSify + Three.js + Rapier scene
 				</div>
 			</section>
 
-			<aside className="border-base-300 bg-base-50 hidden min-h-0 border-b p-4 lg:block">
+			<aside className="border-base-300 bg-base-50 min-h-0 overflow-y-auto border-b p-4">
 				<h2 className="text-base-900 text-sm font-semibold">Inspector</h2>
 				<p className="text-base-700 mt-2 text-sm">React is currently used for UI panels only.</p>
 				<ul className="text-base-700 mt-4 list-disc space-y-1 pl-5 text-sm">
-					<li>Entities render from `Position + Rotation + Scale + Mesh(ref)`</li>
-					<li>Three.js objects stay internal to the render plugin</li>
-					<li>Demo falling marbles use an explicit behavior component</li>
+					<li>Entities render from `Position + Rotation + Scale + Mesh(kind)`</li>
+					<li>Rapier rigid bodies sync into ECS transforms on a fixed timestep</li>
+					<li>Pegboard and track pieces are normal scene entities, not renderer refs</li>
 				</ul>
 				<p className="text-base-700 mt-4 text-sm">Scene entities: {scene.entityCount}</p>
 				<p className="text-base-700 mt-2 text-sm">
-					Pegboards: {scene.pegboardCount} | Marbles: {scene.marbleCount}
+					Pegboards: {scene.pegboardCount} | Straight tracks: {scene.straightTrackCount}
+				</p>
+				<p className="text-base-700 mt-2 text-sm">Marbles: {scene.marbleCount}</p>
+				<p className="text-base-700 mt-2 text-sm">
+					Physics: {scene.physicsReady ? 'ready' : 'loading Rapier...'}
 				</p>
 				<p className="text-base-700 mt-2 text-sm">
 					Lead marble:{' '}
@@ -43,14 +58,12 @@ const InnerEditor: React.FC = () => {
 				</p>
 			</aside>
 
-			<footer className="border-base-300 bg-base-0 col-span-1 border-t px-4 py-3 lg:col-span-2">
-				<div className="text-base-700 flex items-center gap-3 text-sm">
-					<span className="text-base-900 font-medium">Timeline</span>
-					<div className="bg-base-200 h-1 flex-1 rounded-full">
-						<div className="bg-primary h-1 w-16 rounded-full" />
-					</div>
-					<span>0:00 / 0:00</span>
-				</div>
+			{/* MIDI viewer — spans both columns */}
+			<footer
+				className="border-base-300 border-t"
+				style={{ gridColumn: '1 / -1', minHeight: 0, overflow: 'hidden' }}
+			>
+				<MidiViewer style={{ height: '100%' }} />
 			</footer>
 		</main>
 	);

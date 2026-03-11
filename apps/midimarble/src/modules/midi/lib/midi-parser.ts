@@ -15,13 +15,26 @@ interface ParsedTrackChunk {
 	notes: MidiNote[];
 }
 
+function readByte(data: Uint8Array, pos: number): number {
+	const value = data[pos];
+	if (value == null) {
+		throw new Error('Unexpected end of MIDI data.');
+	}
+
+	return value;
+}
+
 function readUint16(data: Uint8Array, pos: number): number {
-	return (data[pos]! << 8) | data[pos + 1]!;
+	return (readByte(data, pos) << 8) | readByte(data, pos + 1);
 }
 
 function readUint32(data: Uint8Array, pos: number): number {
 	return (
-		((data[pos]! << 24) | (data[pos + 1]! << 16) | (data[pos + 2]! << 8) | data[pos + 3]!) >>> 0
+		((readByte(data, pos) << 24) |
+			(readByte(data, pos + 1) << 16) |
+			(readByte(data, pos + 2) << 8) |
+			readByte(data, pos + 3)) >>>
+		0
 	);
 }
 
@@ -35,7 +48,7 @@ function readVarLength(data: Uint8Array, pos: number): [number, number] {
 	let next: number;
 
 	do {
-		next = data[pos + bytes]!;
+		next = readByte(data, pos + bytes);
 		value = (value << 7) | (next & 0x7f);
 		bytes++;
 	} while (next & 0x80);
@@ -82,8 +95,8 @@ function parseTrackChunk(data: Uint8Array, start: number, length: number): Parse
 		currentTick += delta;
 
 		let statusByte: number;
-		if (data[pos]! & 0x80) {
-			statusByte = data[pos]!;
+		if (readByte(data, pos) & 0x80) {
+			statusByte = readByte(data, pos);
 			pos++;
 			if (statusByte < 0xf0) {
 				runningStatus = statusByte;
@@ -96,8 +109,8 @@ function parseTrackChunk(data: Uint8Array, start: number, length: number): Parse
 		const channel = statusByte & 0x0f;
 
 		if (type === 0x90) {
-			const noteNumber = data[pos++]!;
-			const velocity = data[pos++]!;
+			const noteNumber = readByte(data, pos++);
+			const velocity = readByte(data, pos++);
 			if (velocity > 0) {
 				track.channels.add(channel);
 				pendingNotes.set(channel * 128 + noteNumber, {
@@ -113,7 +126,7 @@ function parseTrackChunk(data: Uint8Array, start: number, length: number): Parse
 		}
 
 		if (type === 0x80) {
-			const noteNumber = data[pos++]!;
+			const noteNumber = readByte(data, pos++);
 			pos++;
 			closeNote(currentTick, channel, noteNumber);
 			continue;
@@ -130,7 +143,7 @@ function parseTrackChunk(data: Uint8Array, start: number, length: number): Parse
 		}
 
 		if (statusByte === 0xff) {
-			const metaType = data[pos++]!;
+			const metaType = readByte(data, pos++);
 			const [metaLength, metaLengthBytes] = readVarLength(data, pos);
 			pos += metaLengthBytes;
 
@@ -140,7 +153,10 @@ function parseTrackChunk(data: Uint8Array, start: number, length: number): Parse
 
 			if (metaType === 0x51 && metaLength === 3) {
 				const microsecondsPerBeat =
-					((data[pos]! << 16) | (data[pos + 1]! << 8) | data[pos + 2]!) >>> 0;
+					((readByte(data, pos) << 16) |
+						(readByte(data, pos + 1) << 8) |
+						readByte(data, pos + 2)) >>>
+					0;
 				if (microsecondsPerBeat > 0) {
 					track.bpm = Math.round(60_000_000 / microsecondsPerBeat);
 				}
@@ -214,10 +230,11 @@ export function parseMidi(buffer: ArrayBuffer, fileName?: string | null): MidiSo
 	}
 
 	const bpm = rawTracks.find((track) => track.bpm != null)?.bpm ?? 120;
+	const firstTrack = rawTracks[0];
 	const tracks =
-		format === 0 && rawTracks.length === 1
+		format === 0 && rawTracks.length === 1 && firstTrack != null
 			? Array.from(
-					rawTracks[0]!.notes
+					firstTrack.notes
 						.reduce((map, note) => {
 							const notes = map.get(note.channel) ?? [];
 							notes.push(note);
@@ -236,7 +253,7 @@ export function parseMidi(buffer: ArrayBuffer, fileName?: string | null): MidiSo
 						channel
 					)
 				)
-			: (format === 1 && rawTracks.length > 1 && rawTracks[0]!.notes.length === 0
+			: (format === 1 && rawTracks.length > 1 && firstTrack?.notes.length === 0
 					? rawTracks.slice(1)
 					: rawTracks
 				).map((track, index) => buildTrack(track, index));

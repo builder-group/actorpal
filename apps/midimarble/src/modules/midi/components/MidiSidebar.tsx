@@ -1,12 +1,10 @@
-import React from 'react';
 import { useFeatureState } from 'feature-react';
+import React from 'react';
 import { formatMidiChannel, getMidiNoteName, midiConfig } from '../lib';
 import { useMidiFileCx } from '../MidiFileCx';
 
 export const MidiSidebar: React.FC = () => {
 	const midiFileCx = useMidiFileCx();
-
-	// MARK: - State and Memos
 
 	const song = useFeatureState(midiFileCx.$song);
 	const selectedTrackId = useFeatureState(midiFileCx.$selectedTrackId);
@@ -20,8 +18,6 @@ export const MidiSidebar: React.FC = () => {
 		[midiFileCx]
 	);
 
-	// MARK: - Effects
-
 	// MARK: - UI
 
 	if (song == null) {
@@ -29,15 +25,18 @@ export const MidiSidebar: React.FC = () => {
 	}
 
 	return (
-		<aside className="bg-base-0 border-base-200 shrink-0 border-r" style={{ width: midiConfig.layout.sidebarWidth }}>
-			<div className="border-base-200 border-b px-3 py-2">
-				<p className="text-base-500 text-[10px] font-semibold uppercase tracking-[0.2em]">Tracks</p>
-				<p className="text-base-600 mt-1 text-[11px]">
-					{song.tracks.length} tracks · {song.totalBeats} beats · {song.bpm} BPM
+		<aside
+			className="bg-base-0 border-base-100 flex shrink-0 flex-col border-r"
+			style={{ width: midiConfig.layout.sidebarWidth }}
+		>
+			<div className="border-base-100 shrink-0 border-b px-3 py-1.5">
+				<p className="text-base-400 text-[10px] font-semibold tracking-wider uppercase">Tracks</p>
+				<p className="text-base-400 mt-1 text-[9px]">
+					{song.tracks.length} · {song.totalBeats} beats · {song.bpm} BPM
 				</p>
 			</div>
 
-			<div className="min-h-0 overflow-y-auto">
+			<div className="flex-1 overflow-y-auto">
 				{song.tracks.map((track) => {
 					const isSelected = track.id === selectedTrackId;
 					return (
@@ -45,28 +44,28 @@ export const MidiSidebar: React.FC = () => {
 							key={track.id}
 							type="button"
 							onClick={() => handleSelectTrack(track.id)}
-							className="border-base-100 flex w-full cursor-pointer flex-col gap-1 border-b px-3 py-2 text-left"
-							style={{
-								background: isSelected
-									? 'color-mix(in srgb, var(--color-base-100) 70%, white)'
-									: 'transparent',
-							}}
+							className={`border-base-100 flex w-full cursor-pointer flex-col gap-1 border-b px-2.5 py-1.5 text-left ${
+								isSelected ? 'bg-base-100' : 'bg-transparent'
+							}`}
 						>
 							<div className="flex items-center gap-2">
-								<div className="h-2 w-2 shrink-0 rounded-sm" style={{ background: track.color }} />
+								<div
+									className="h-2 w-2 shrink-0 rounded-sm"
+									style={{ background: track.color, opacity: isSelected ? 1 : 0.4 }}
+								/>
+
 								<span
-									className={
-										isSelected
-											? 'text-base-700 min-w-0 flex-1 truncate text-[11px]'
-											: 'text-base-600 min-w-0 flex-1 truncate text-[11px]'
-									}
+									className={`min-w-0 flex-1 truncate text-[11px] ${
+										isSelected ? 'text-base-600 font-semibold' : 'text-base-400'
+									}`}
 								>
 									{track.name}
 								</span>
-								<span className="text-base-400 text-[9px]">{track.noteCount}</span>
+
+								<span className="text-base-300 shrink-0 text-[9px]">{track.noteCount}</span>
 							</div>
 
-							<div className="text-base-400 flex items-center gap-2 text-[9px]">
+							<div className="text-base-300 flex items-center gap-2 text-[9px]">
 								<span>{formatMidiChannel(track.channel)}</span>
 								<span>
 									{getMidiNoteName(track.minNote)}-{getMidiNoteName(track.maxNote)}

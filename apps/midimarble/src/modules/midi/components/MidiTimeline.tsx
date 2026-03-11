@@ -1,5 +1,5 @@
-import React from 'react';
 import { useFeatureState, useListener } from 'feature-react';
+import React from 'react';
 import { midiConfig, MidiLayout } from '../lib';
 import { useMidiFileCx } from '../MidiFileCx';
 import { useMidiViewportCx } from '../MidiViewportCx';
@@ -10,8 +10,6 @@ export const MidiTimeline: React.FC = () => {
 	const midiFileCx = useMidiFileCx();
 	const midiViewportCx = useMidiViewportCx();
 
-	// MARK: - State and Memos
-
 	const song = useFeatureState(midiFileCx.$song);
 	const [showMinorLabels, setShowMinorLabels] = React.useState(
 		midiViewportCx.$pixelsPerBeat.get() >= 56
@@ -19,29 +17,68 @@ export const MidiTimeline: React.FC = () => {
 
 	const scrollRef = React.useRef<HTMLDivElement>(null);
 	const innerRef = React.useRef<HTMLDivElement>(null);
+	const markerRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
 
 	const layout = React.useMemo(
 		() => (song == null ? null : midiViewportCx.getLayout(song)),
 		[midiViewportCx, song]
 	);
 
-	const contentWidth = layout == null || song == null ? 0 : layout.getContentWidth(song.totalTicks);
-
 	// MARK: - Actions
 
-	const handleSeek = React.useCallback(
-		(event: React.MouseEvent<HTMLDivElement>) => {
-			const nextSong = midiFileCx.$song.get();
-			if (nextSong == null) {
+	const updateMarkerPosition = React.useCallback(
+		(beat: number, element: HTMLDivElement) => {
+			element.style.left = `${beat * midiViewportCx.$pixelsPerBeat.get()}px`;
+		},
+		[midiViewportCx]
+	);
+
+	const updateTimelineGeometry = React.useCallback(
+		(pixelsPerBeat: number) => {
+			const currentSong = midiFileCx.$song.get();
+			if (currentSong == null) {
 				return;
 			}
 
-			const nextLayout = midiViewportCx.getLayout(nextSong);
+			const nextLayout = new MidiLayout(pixelsPerBeat, currentSong.ticksPerBeat);
+			if (innerRef.current != null) {
+				innerRef.current.style.width = `${nextLayout.notesWidth(currentSong.totalTicks)}px`;
+				innerRef.current.style.paddingRight = `${nextLayout.endPadding()}px`;
+			}
+
+			for (const [beat, element] of markerRefs.current) {
+				updateMarkerPosition(beat, element);
+			}
+		},
+		[midiFileCx, updateMarkerPosition]
+	);
+
+	const setMarkerRef = React.useCallback(
+		(beat: number, element: HTMLDivElement | null) => {
+			if (element == null) {
+				markerRefs.current.delete(beat);
+				return;
+			}
+
+			markerRefs.current.set(beat, element);
+			updateMarkerPosition(beat, element);
+		},
+		[updateMarkerPosition]
+	);
+
+	const handleSeek = React.useCallback(
+		(event: React.MouseEvent<HTMLDivElement>) => {
+			const currentSong = midiFileCx.$song.get();
+			if (currentSong == null) {
+				return;
+			}
+
+			const currentLayout = midiViewportCx.getLayout(currentSong);
 			const x =
 				event.clientX -
 				event.currentTarget.getBoundingClientRect().left +
 				midiViewportCx.$scrollLeft.get();
-			midiFileCx.seekToTick(nextLayout.pxToTick(x));
+			midiFileCx.seekToTick(currentLayout.pxToTick(x));
 		},
 		[midiFileCx, midiViewportCx]
 	);
@@ -51,18 +88,14 @@ export const MidiTimeline: React.FC = () => {
 	useListener(
 		midiViewportCx.$pixelsPerBeat,
 		({ value }) => {
-			const currentSong = midiFileCx.$song.get();
-			if (currentSong == null || innerRef.current == null) {
-				return;
-			}
-
-			const nextLayout = new MidiLayout(value, currentSong.ticksPerBeat);
-			innerRef.current.style.width = `${nextLayout.getContentWidth(currentSong.totalTicks)}px`;
+			updateTimelineGeometry(value);
 
 			const nextShowMinorLabels = value >= 56;
-			setShowMinorLabels((prev) => (prev === nextShowMinorLabels ? prev : nextShowMinorLabels));
+			setShowMinorLabels((previousValue) =>
+				previousValue === nextShowMinorLabels ? previousValue : nextShowMinorLabels
+			);
 		},
-		[midiFileCx, midiViewportCx]
+		[updateTimelineGeometry]
 	);
 
 	useListener(
@@ -75,6 +108,10 @@ export const MidiTimeline: React.FC = () => {
 		[midiViewportCx]
 	);
 
+	React.useEffect(() => {
+		updateTimelineGeometry(midiViewportCx.$pixelsPerBeat.get());
+	}, [midiViewportCx, song, updateTimelineGeometry, showMinorLabels]);
+
 	// MARK: - UI
 
 	if (song == null || layout == null) {
@@ -82,11 +119,21 @@ export const MidiTimeline: React.FC = () => {
 	}
 
 	return (
-		<div className="border-base-200 flex shrink-0 border-b" style={{ height: midiConfig.layout.rulerHeight }}>
-			<div className="bg-base-0 border-base-200 shrink-0 border-r" style={{ width: midiConfig.layout.keyboardWidth }} />
+		<div
+			className="border-base-200 flex shrink-0 border-b"
+			style={{ height: midiConfig.layout.rulerHeight }}
+		>
+			<div
+				className="bg-base-0 border-base-200 shrink-0 border-r"
+				style={{ width: midiConfig.layout.keyboardWidth }}
+			/>
 
 			<div ref={scrollRef} className="flex-1 overflow-hidden" onClick={handleSeek}>
-				<div ref={innerRef} className="bg-base-0 relative h-full" style={{ width: contentWidth }}>
+				<div
+					ref={innerRef}
+					className="bg-base-0 relative h-full"
+					style={{ width: layout.notesWidth(song.totalTicks), paddingRight: layout.endPadding() }}
+				>
 					{Array.from({ length: song.totalBeats + 1 }, (_, beat) => {
 						const isMeasure = beat % beatsPerMeasure === 0;
 						if (!isMeasure && !showMinorLabels) {
@@ -96,18 +143,23 @@ export const MidiTimeline: React.FC = () => {
 						return (
 							<div
 								key={beat}
-								className="absolute top-0 bottom-0"
-								style={{ left: `${layout.tickToContentPercent(beat * song.ticksPerBeat, song.totalTicks)}%` }}
+								ref={(element) => setMarkerRef(beat, element)}
+								className="absolute inset-y-0"
 							>
 								<div
-									className={isMeasure ? 'bg-base-400 absolute bottom-0 w-px' : 'bg-base-200 absolute bottom-0 w-px'}
-									style={{ height: isMeasure ? 16 : 7 }}
+									className={
+										isMeasure
+											? 'bg-base-300 absolute bottom-0 w-px'
+											: 'bg-base-200 absolute bottom-0 w-px'
+									}
+									style={{ height: isMeasure ? 14 : 6 }}
 								/>
+
 								<span
 									className={
 										isMeasure
-											? 'text-base-600 absolute left-1 top-1 select-none text-[9px] font-bold'
-											: 'text-base-400 absolute left-1 top-1 select-none text-[9px]'
+											? 'text-base-500 absolute top-1 left-0.5 text-[9px] font-bold select-none'
+											: 'text-base-300 absolute top-1 left-0.5 text-[9px] select-none'
 									}
 								>
 									{isMeasure ? Math.floor(beat / beatsPerMeasure) + 1 : beat + 1}

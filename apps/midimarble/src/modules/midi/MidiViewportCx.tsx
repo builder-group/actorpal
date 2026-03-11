@@ -5,8 +5,6 @@ import { midiConfig, MidiLayout } from './lib';
 import type { MidiSong, MidiViewportRect } from './types';
 
 export class MidiViewportCx {
-	// MARK: - State and Memos
-
 	public readonly scrollContainerRef = React.createRef<HTMLDivElement>();
 	public readonly $containerRect = createState<MidiViewportRect>({ width: 0, height: 0, left: 0 });
 	public readonly $scrollLeft = createState(0);
@@ -77,19 +75,26 @@ export class MidiViewportCx {
 		return new MidiLayout(this.$pixelsPerBeat.get(), song.ticksPerBeat);
 	}
 
-	public getContentWidth(song: MidiSong, pixelsPerBeat = this.$pixelsPerBeat.get()): number {
-		return new MidiLayout(pixelsPerBeat, song.ticksPerBeat).getContentWidth(song.totalTicks);
+	public getNotesWidth(song: MidiSong, pixelsPerBeat = this.$pixelsPerBeat.get()): number {
+		return new MidiLayout(pixelsPerBeat, song.ticksPerBeat).notesWidth(song.totalTicks);
 	}
 
 	public getInnerWidth(song: MidiSong, pixelsPerBeat = this.$pixelsPerBeat.get()): number {
-		return midiConfig.layout.keyboardWidth + this.getContentWidth(song, pixelsPerBeat);
+		const layout = new MidiLayout(pixelsPerBeat, song.ticksPerBeat);
+		return (
+			midiConfig.layout.keyboardWidth + layout.notesWidth(song.totalTicks) + layout.endPadding()
+		);
 	}
 
 	public getMaxScrollLeft(song: MidiSong, pixelsPerBeat = this.$pixelsPerBeat.get()): number {
 		return Math.max(0, this.getInnerWidth(song, pixelsPerBeat) - this.containerWidth);
 	}
 
-	public clampScrollLeft(song: MidiSong, scrollLeft: number, pixelsPerBeat = this.$pixelsPerBeat.get()): number {
+	public clampScrollLeft(
+		song: MidiSong,
+		scrollLeft: number,
+		pixelsPerBeat = this.$pixelsPerBeat.get()
+	): number {
 		return Math.max(0, Math.min(this.getMaxScrollLeft(song, pixelsPerBeat), scrollLeft));
 	}
 
@@ -122,8 +127,6 @@ export class MidiViewportCx {
 const ReactMidiViewportCx = React.createContext<MidiViewportCx | null>(null);
 
 export const MidiViewportCxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	// MARK: - State and Memos
-
 	const cx = useMemoCleanup(() => {
 		const midiViewportCx = new MidiViewportCx();
 		return [midiViewportCx, () => midiViewportCx.unmount()];

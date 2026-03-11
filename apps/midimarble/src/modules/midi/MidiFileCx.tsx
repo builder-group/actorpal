@@ -5,8 +5,6 @@ import { parseMidi } from './lib';
 import type { MidiSong } from './types';
 
 export class MidiFileCx {
-	// MARK: - State and Memos
-
 	public readonly $song = createState<MidiSong | null>(null);
 	public readonly $selectedTrackId = createState<number | null>(null);
 	public readonly $isLoading = createState(false);
@@ -126,8 +124,6 @@ export class MidiFileCx {
 const ReactMidiFileCx = React.createContext<MidiFileCx | null>(null);
 
 export const MidiFileCxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	// MARK: - State and Memos
-
 	const cx = useMemoCleanup(() => {
 		const midiFileCx = new MidiFileCx();
 		return [midiFileCx, () => midiFileCx.unmount()];

@@ -24,17 +24,12 @@ export class MidiLayout {
 		return (midiConfig.layout.totalNotes - 1 - noteNumber) * midiConfig.layout.noteHeight;
 	}
 
-	public getContentWidth(totalTicks: number): number {
-		const paddingWidth = this.pixelsPerBeat * midiConfig.layout.endPaddingBeats;
-		return Math.max(this.tickToPx(totalTicks) + paddingWidth, midiConfig.layout.minContentWidth);
+	public notesWidth(totalTicks: number): number {
+		return Math.max(0, this.tickToPx(totalTicks));
 	}
 
-	public tickToContentPercent(tick: number, totalTicks: number): number {
-		return (this.tickToPx(tick) / Math.max(1, this.getContentWidth(totalTicks))) * 100;
-	}
-
-	public durationToContentPercent(durationTicks: number, totalTicks: number): number {
-		return (this.tickToPx(durationTicks) / Math.max(1, this.getContentWidth(totalTicks))) * 100;
+	public endPadding(): number {
+		return this.pixelsPerBeat * midiConfig.layout.endPaddingBeats;
 	}
 }
 

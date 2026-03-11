@@ -10,7 +10,7 @@ import {
 import React from 'react';
 
 export function useQueryComponents<GComponents extends readonly (TComponentRef | TEntity)[]>(
-	app: TApp<any>,
+	app: TApp,
 	options: TUseQueryComponentsFactoryValue<GComponents>,
 	deps: React.DependencyList = []
 ): TComponentDataTuple<GComponents>[] {
@@ -31,9 +31,9 @@ export function useQueryComponents<GComponents extends readonly (TComponentRef |
 		const unbinds: Array<() => void> = [];
 		for (const component of watched) {
 			unbinds.push(
-				app._componentRegistry.onComponentAdd(component, sync),
-				app._componentRegistry.onComponentChange(component, sync),
-				app._componentRegistry.onComponentRemove(component, sync)
+				app._componentRegistry.onAdd(component, sync),
+				app._componentRegistry.onChange(component, sync),
+				app._componentRegistry.onRemove(component, sync)
 			);
 		}
 

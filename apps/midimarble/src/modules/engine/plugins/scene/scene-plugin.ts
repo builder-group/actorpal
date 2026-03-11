@@ -1,65 +1,47 @@
-import { animateFallingMarblesSystem } from './systems';
-import type { TSceneApp, TScenePlugin, TSpawnDemoMarbleOptions } from './types';
+import {
+	createMarbleBundle,
+	createPegboardBundle,
+	createStraightTrackBundle
+} from './scene-bundles';
+import type { TSceneApp, TScenePlugin } from './types';
 
 export function createScenePlugin(): TScenePlugin {
 	return {
 		name: 'Scene',
-		deps: ['Default', 'Core', 'Render'],
+		deps: ['Default', 'Core', 'Physics', 'Render'],
 		components: {
-			// Mixins
-			FallingMarbleMixin: []
-		},
-		appExtensions: {
-			spawnPegboard(this: TSceneApp): number {
-				return this.spawnRenderable({
-					meshRef: 'pegboard',
-					position: { x: 0, y: 0, z: 0 },
-					rotation: { x: 0, y: Math.PI / 2, z: 0 },
-					scale: { x: 1, y: 1, z: 1 }
-				});
-			},
-			spawnDemoMarble(this: TSceneApp, options: TSpawnDemoMarbleOptions): number {
-				const eid = this.spawnRenderable({
-					meshRef: 'marble',
-					position: { x: options.x, y: options.startY, z: options.z },
-					scale: { x: 0.7, y: 0.7, z: 0.7 }
-				});
-
-				this.addComponent(eid, this.c.FallingMarbleMixin, {
-					speed: options.speed,
-					startY: options.startY,
-					resetY: options.resetY,
-					spinX: options.spin.x,
-					spinY: options.spin.y,
-					spinZ: options.spin.z
-				});
-
-				return eid;
-			}
+			MarbleMixin: [],
+			StraightTrackMixin: [],
+			PegboardMixin: []
 		},
 		setup(app: TSceneApp) {
 			seedScene(app);
-			app.addSystem(animateFallingMarblesSystem, { set: 'Update' });
 		}
 	};
 }
 
 function seedScene(app: TSceneApp): void {
-	app.spawnPegboard();
-
-	const marbleOffsets = [-12, -6, 0, 6, 12];
-	for (const [index, z] of marbleOffsets.entries()) {
-		app.spawnDemoMarble({
-			x: 0.9,
-			z,
-			startY: 40 + index * 10,
-			speed: 22 + index * 2.5,
-			resetY: -96,
-			spin: {
-				x: 0.6 + index * 0.15,
-				y: 0.8 + index * 0.12,
-				z: 0.2 + index * 0.08
-			}
-		});
-	}
+	app.spawnBundle(createPegboardBundle(app));
+	app.spawnBundle(
+		createStraightTrackBundle(app, {
+			position: { x: -7.25, y: 16, z: -18 },
+			rotation: { x: 0.28, y: 0, z: 0 },
+			length: 16
+		})
+	);
+	app.spawnBundle(
+		createStraightTrackBundle(app, {
+			position: { x: -7.25, y: 10.9, z: -1.4 },
+			rotation: { x: -0.1, y: 0, z: 0 },
+			length: 14
+		})
+	);
+	app.spawnBundle(
+		createStraightTrackBundle(app, {
+			position: { x: -7.25, y: 4.2, z: 12.8 },
+			rotation: { x: 0.22, y: 0, z: 0 },
+			length: 12
+		})
+	);
+	app.spawnBundle(createMarbleBundle(app, { position: { x: -7.25, y: 18.4, z: -25.2 } }));
 }

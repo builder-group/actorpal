@@ -4,20 +4,30 @@ import { useEditorCx } from '../EditorCx';
 
 export function useSceneSummary(): TSceneSummary {
 	const app = useEditorCx().runtime.app;
-	const values = useQueryComponents(app, {
-		components: [Entity, app.c.MeshMixin, app.c.PositionMixin] as const,
-		queryOrFilter: With(app.c.MeshMixin),
-		watchComponents: [app.c.MeshMixin, app.c.PositionMixin]
+	const marbles = useQueryComponents(app, {
+		components: [Entity, app.c.MarbleMixin, app.c.PositionMixin] as const,
+		queryOrFilter: With(app.c.MarbleMixin),
+		watchComponents: [app.c.MarbleMixin, app.c.PositionMixin]
+	});
+	const straightTracks = useQueryComponents(app, {
+		components: [Entity] as const,
+		queryOrFilter: With(app.c.StraightTrackMixin),
+		watchComponents: [app.c.StraightTrackMixin]
+	});
+	const pegboards = useQueryComponents(app, {
+		components: [Entity] as const,
+		queryOrFilter: With(app.c.PegboardMixin),
+		watchComponents: [app.c.PegboardMixin]
 	});
 
-	const marbleCount = values.filter(([, mesh]) => mesh.ref === 'marble').length;
-	const pegboardCount = values.filter(([, mesh]) => mesh.ref === 'pegboard').length;
-	const leadMarble = values.find(([, mesh]) => mesh.ref === 'marble');
+	const leadMarble = marbles[0];
 
 	return {
-		entityCount: values.length,
-		marbleCount,
-		pegboardCount,
+		entityCount: marbles.length + straightTracks.length + pegboards.length,
+		marbleCount: marbles.length,
+		straightTrackCount: straightTracks.length,
+		pegboardCount: pegboards.length,
+		physicsReady: app.r.isReady,
 		leadMarblePosition:
 			leadMarble == null
 				? null
@@ -38,6 +48,8 @@ interface TVec3 {
 interface TSceneSummary {
 	entityCount: number;
 	marbleCount: number;
+	straightTrackCount: number;
 	pegboardCount: number;
+	physicsReady: boolean;
 	leadMarblePosition: TVec3 | null;
 }

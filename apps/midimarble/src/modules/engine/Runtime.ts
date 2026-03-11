@@ -7,9 +7,11 @@ import {
 } from 'ecsify';
 import {
 	createCorePlugin,
+	createPhysicsPlugin,
 	createRenderPlugin,
 	createScenePlugin,
 	type TCorePlugin,
+	type TPhysicsPlugin,
 	type TRenderPlugin,
 	type TScenePlugin
 } from './plugins';
@@ -25,6 +27,7 @@ export class Runtime {
 			plugins: [
 				createDefaultPlugin(),
 				createCorePlugin(),
+				createPhysicsPlugin(),
 				createRenderPlugin(),
 				createScenePlugin()
 			] as const,
@@ -84,5 +87,5 @@ export class Runtime {
 }
 
 export type TRuntimeApp = TApp<
-	TAppContext<[TDefaultPlugin, TCorePlugin, TRenderPlugin, TScenePlugin]>
+	TAppContext<[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin]>
 >;

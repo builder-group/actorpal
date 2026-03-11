@@ -1,11 +1,11 @@
 import { Viewport } from './lib';
 import {
-	cleanupOrphanedMeshObjectsSystem,
+	cleanupOrphanedThreeObjectsSystem,
+	mountThreeObjectsSystem,
 	renderFrameSystem,
-	spawnMeshObjectsSystem,
-	syncMeshTransformsSystem
+	syncThreeObjectTransformsSystem
 } from './systems';
-import type { TRenderApp, TRenderPlugin, TSpawnRenderableOptions } from './types';
+import type { TRenderApp, TRenderPlugin } from './types';
 
 export function createRenderPlugin(): TRenderPlugin {
 	const viewport = new Viewport();
@@ -19,30 +19,25 @@ export function createRenderPlugin(): TRenderPlugin {
 		},
 		resources: {
 			viewport,
-			meshObjects: new Map()
+			sceneObjects: new Map()
 		},
 		appExtensions: {
-			spawnRenderable(this: TRenderApp, options: TSpawnRenderableOptions): number {
-				const eid = this.spawnSpatial(options);
-				this.addComponent(eid, this.c.MeshMixin, { ref: options.meshRef });
-				return eid;
-			},
 			setRenderContainer(this: TRenderApp, container: HTMLDivElement | null): void {
 				this.r.viewport.setContainer(container);
 			},
 			disposeRender(this: TRenderApp): void {
-				this.r.meshObjects.clear();
+				this.r.sceneObjects.clear();
 				this.r.viewport.dispose();
 			}
 		},
 		setup(app: TRenderApp) {
-			app.addSystem(spawnMeshObjectsSystem, { set: 'Update' });
-			app.addSystem(syncMeshTransformsSystem, { set: 'Update' });
-			app.addSystem(cleanupOrphanedMeshObjectsSystem, {
+			app.addSystem(mountThreeObjectsSystem, { set: 'First' });
+			app.addSystem(syncThreeObjectTransformsSystem, { set: 'Last' });
+			app.addSystem(cleanupOrphanedThreeObjectsSystem, {
 				set: 'Last',
-				after: syncMeshTransformsSystem
+				after: syncThreeObjectTransformsSystem
 			});
-			app.addSystem(renderFrameSystem, { set: 'Last', after: syncMeshTransformsSystem });
+			app.addSystem(renderFrameSystem, { set: 'Last', after: syncThreeObjectTransformsSystem });
 		}
 	};
 }

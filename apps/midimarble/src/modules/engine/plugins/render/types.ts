@@ -1,6 +1,6 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type * as THREE from 'three';
-import type { TCorePlugin, TSpawnSpatialOptions } from '../core';
+import type { TCorePlugin } from '../core';
 import type { Viewport } from './lib/Viewport';
 
 // MARK: - Plugin
@@ -13,10 +13,9 @@ export type TRenderPlugin = TPlugin<
 		};
 		resources: {
 			viewport: Viewport;
-			meshObjects: TRMeshObjects;
+			sceneObjects: TRSceneObjects;
 		};
 		appExtensions: {
-			spawnRenderable(options: TSpawnRenderableOptions): number;
 			setRenderContainer(container: HTMLDivElement | null): void;
 			disposeRender(): void;
 		};
@@ -27,16 +26,15 @@ export type TRenderPlugin = TPlugin<
 
 export type TRenderApp = TApp<TAppContext<[TDefaultPlugin, TCorePlugin, TRenderPlugin]>>;
 
-export interface TSpawnRenderableOptions extends TSpawnSpatialOptions {
-	meshRef: string;
-}
-
 // MARK: - Resources
 
-export type TRMeshObjects = Map<number, THREE.Object3D | null>;
+export type TRSceneObjects = Map<number, THREE.Object3D>;
 
 // MARK: - Components
 
-export interface TCMeshMixin {
-	ref: string;
+export type TCMeshMixin = TCThreeMeshMixin;
+
+export interface TCThreeMeshMixin {
+	type: 'three';
+	object: THREE.Object3D;
 }

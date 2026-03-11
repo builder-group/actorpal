@@ -1,5 +1,6 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type { TVec3 } from '../../types';
+import { TBundle } from './bundle';
 
 // MARK: - Plugin
 
@@ -15,7 +16,8 @@ export type TCorePlugin = TPlugin<
 			elapsedSeconds: number;
 		};
 		appExtensions: {
-			spawnSpatial(options: TSpawnSpatialOptions): number;
+			insertBundle(eid: number, bundle: TBundle): void;
+			spawnBundle(bundle: TBundle): number;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
@@ -23,12 +25,6 @@ export type TCorePlugin = TPlugin<
 >;
 
 export type TCoreApp = TApp<TAppContext<[TDefaultPlugin, TCorePlugin]>>;
-
-export interface TSpawnSpatialOptions {
-	position?: TVec3;
-	rotation?: TVec3;
-	scale?: TVec3;
-}
 
 // MARK: - Components
 

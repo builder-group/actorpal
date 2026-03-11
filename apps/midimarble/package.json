@@ -26,6 +26,7 @@
 		"update:latest": "pnpm update --latest"
 	},
 	"dependencies": {
+		"@dimforge/rapier3d-compat": "^0.19.3",
 		"@tanstack/react-devtools": "^0.9.10",
 		"@tanstack/react-router": "^1.166.6",
 		"@tanstack/react-router-devtools": "^1.166.6",

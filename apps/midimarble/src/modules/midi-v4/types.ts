@@ -30,9 +30,3 @@ export interface MidiSong {
 	durationSeconds: number;
 	tracks: MidiTrack[];
 }
-
-export interface MidiViewportRect {
-	width: number;
-	height: number;
-	left: number;
-}

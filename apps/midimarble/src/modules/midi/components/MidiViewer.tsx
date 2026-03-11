@@ -1,134 +1,155 @@
-// Root MIDI viewer component.
-// Provides MidiCx + TimelineCx, then composes the sub-components.
-// Drop zone shown when no song is loaded; piano roll when a song is ready.
-
-import React, { useCallback, useRef, useState } from 'react';
 import { useFeatureState } from 'feature-react';
-import { MidiCxProvider, useMidiCx } from '../MidiCx';
-import { TimelineCxProvider } from '../TimelineCx';
-import { Toolbar } from './Toolbar';
-import { TrackPanel } from './TrackPanel';
-import { NoteRuler } from './NoteRuler';
-import { NoteGrid } from './NoteGrid';
+import React from 'react';
+import { MidiFileCxProvider, useMidiFileCx } from '../MidiFileCx';
+import { MidiViewportCxProvider } from '../MidiViewportCx';
+import { MidiPianoRoll } from './MidiPianoRoll';
+import { MidiSidebar } from './MidiSidebar';
+import { MidiTimeline } from './MidiTimeline';
+import { MidiToolbar } from './MidiToolbar';
 
-export const MidiViewer: React.FC<TMidiViewerProps> = (props) => {
-	const { style, className } = props;
-
+export const MidiViewer: React.FC<TMidiViewerProps> = ({ className, style }) => {
 	return (
-		<MidiCxProvider>
-			<TimelineCxProvider>
-				<div
-					className={className}
-					style={{
-						display: 'flex',
-						flexDirection: 'column',
-						width: '100%',
-						height: '100%',
-						background: 'var(--color-base-0)',
-						overflow: 'hidden',
-						...style,
-					}}
+		<MidiFileCxProvider>
+			<MidiViewportCxProvider>
+				<section
+					className={`bg-base-0 flex h-full w-full overflow-hidden ${className ?? ''}`.trim()}
+					style={style}
 				>
-					<InnerViewer />
-				</div>
-			</TimelineCxProvider>
-		</MidiCxProvider>
+					<InnerMidiViewer />
+				</section>
+			</MidiViewportCxProvider>
+		</MidiFileCxProvider>
 	);
 };
 
-// MARK: - Inner (inside both providers)
+const InnerMidiViewer: React.FC = () => {
+	const midiFileCx = useMidiFileCx();
 
-const InnerViewer: React.FC = () => {
-	const midiCx = useMidiCx();
-	const song = useFeatureState(midiCx.$song);
-	const isLoading = useFeatureState(midiCx.$isLoading);
-	const error = useFeatureState(midiCx.$error);
+	// MARK: - State and Memos
+
+	const song = useFeatureState(midiFileCx.$song);
+	const isLoading = useFeatureState(midiFileCx.$isLoading);
+	const error = useFeatureState(midiFileCx.$error);
+
+	// MARK: - UI
 
 	if (song == null) {
-		return <DropZone isLoading={isLoading} error={error} />;
+		return <MidiEmptyState error={error} isLoading={isLoading} />;
 	}
 
 	return (
 		<>
-			<Toolbar />
-			{/* Main row: track panel | ruler + grid */}
-			<div className="flex flex-1 overflow-hidden min-h-0">
-				<div style={{ width: 140, flexShrink: 0 }}>
-					<TrackPanel />
-				</div>
-				<div className="flex flex-col flex-1 overflow-hidden min-w-0">
-					<NoteRuler onSeek={(tick) => midiCx.seekTo(tick)} />
-					<NoteGrid />
-				</div>
+			<MidiSidebar />
+			<div className="flex min-w-0 flex-1 flex-col">
+				<MidiToolbar />
+				<MidiTimeline />
+				<MidiPianoRoll />
 			</div>
 		</>
 	);
 };
 
-// MARK: - Drop zone
+const MidiEmptyState: React.FC<TMidiEmptyStateProps> = ({ error, isLoading }) => {
+	const midiFileCx = useMidiFileCx();
 
-const DropZone: React.FC<TDropZoneProps> = (props) => {
-	const { isLoading, error } = props;
-	const midiCx = useMidiCx();
-	const [isDragging, setIsDragging] = useState(false);
-	const inputRef = useRef<HTMLInputElement>(null);
+	// MARK: - State and Memos
 
-	const handleDrop = useCallback(
-		(e: React.DragEvent) => {
-			e.preventDefault();
+	const [isDragging, setIsDragging] = React.useState(false);
+	const inputRef = React.useRef<HTMLInputElement>(null);
+
+	// MARK: - Actions
+
+	const handleOpenFilePicker = React.useCallback(() => {
+		inputRef.current?.click();
+	}, []);
+
+	const handleDragOver = React.useCallback((event: React.DragEvent<HTMLDivElement>) => {
+		event.preventDefault();
+		setIsDragging(true);
+	}, []);
+
+	const handleDragLeave = React.useCallback(() => {
+		setIsDragging(false);
+	}, []);
+
+	const handleDrop = React.useCallback(
+		(event: React.DragEvent<HTMLDivElement>) => {
+			event.preventDefault();
 			setIsDragging(false);
-			const file = e.dataTransfer.files[0];
-			if (file != null) void midiCx.loadFile(file);
+			const file = event.dataTransfer.files[0];
+			if (file != null) {
+				void midiFileCx.loadFile(file);
+			}
 		},
-		[midiCx],
+		[midiFileCx]
 	);
 
-	const handleChange = useCallback(
-		(e: React.ChangeEvent<HTMLInputElement>) => {
-			const file = e.target.files?.[0];
-			if (file != null) void midiCx.loadFile(file);
-		},
-		[midiCx],
-	);
+	// MARK: - Effects
+
+	// MARK: - UI
 
 	return (
-		<div
-			onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-			onDragLeave={() => setIsDragging(false)}
-			onDrop={handleDrop}
-			onClick={() => inputRef.current?.click()}
-			className="flex-1 flex flex-col items-center justify-center gap-2 m-3 rounded-lg cursor-pointer"
-			style={{
-				border: `2px dashed ${isDragging ? 'var(--color-primary)' : 'var(--color-base-200)'}`,
-				background: isDragging ? 'color-mix(in srgb, var(--color-primary) 4%, transparent)' : 'transparent',
-			}}
-		>
-			{isLoading ? (
-				<span className="text-[11px]" style={{ color: 'var(--color-base-400)' }}>Parsing…</span>
-			) : (
-				<>
-					<span className="text-xl">🎹</span>
-					<span className="text-[11px]" style={{ color: 'var(--color-base-400)' }}>
-						Drop a MIDI file or click to open
-					</span>
-					{error != null && (
-						<span className="text-[10px]" style={{ color: 'var(--color-error)' }}>{error}</span>
-					)}
-				</>
-			)}
-			<input ref={inputRef} type="file" accept=".mid,.midi" className="hidden" onChange={handleChange} />
+		<div className="bg-base-50 flex flex-1 items-center justify-center p-4">
+			<div
+				className="w-full max-w-[440px] cursor-pointer rounded-xl border-2 border-dashed px-6 py-10 text-center"
+				style={{
+					borderColor: isDragging ? 'var(--color-primary)' : 'var(--color-base-200)',
+					background: isDragging
+						? 'color-mix(in srgb, var(--color-primary) 4%, white)'
+						: 'color-mix(in srgb, var(--color-base-0) 92%, white)',
+				}}
+				onClick={handleOpenFilePicker}
+				onDragOver={handleDragOver}
+				onDragLeave={handleDragLeave}
+				onDrop={handleDrop}
+			>
+				<div
+					className="bg-base-100 text-base-500 mx-auto mb-3 flex size-10 items-center justify-center rounded-full"
+					style={{ background: 'color-mix(in srgb, var(--color-base-100) 70%, white)' }}
+				>
+					&#9835;
+				</div>
+
+				<p className="text-base-700 text-sm font-semibold">
+					{isLoading ? 'Parsing MIDI...' : 'Drop a MIDI file'}
+				</p>
+				<p className="text-base-500 mt-2 text-xs">
+					Compact piano-roll preview for the marble timeline workflow.
+				</p>
+				<p className="text-base-400 mt-1 text-xs">
+					Ctrl/Cmd + wheel zooms at the cursor. Click the ruler to seek.
+				</p>
+
+				<button type="button" className="bg-base-100 text-base-700 mt-5 rounded px-3 py-1.5 text-xs font-semibold">
+					Open `.mid` or `.midi`
+				</button>
+
+				{error != null && <p className="text-error mt-3 text-xs">{error}</p>}
+
+				<input
+					ref={inputRef}
+					type="file"
+					accept=".mid,.midi"
+					className="hidden"
+					onChange={(event) => {
+						const file = event.target.files?.[0];
+						if (file != null) {
+							void midiFileCx.loadFile(file);
+						}
+						event.target.value = '';
+					}}
+				/>
+			</div>
 		</div>
 	);
 };
 
-// MARK: - Types
-
 interface TMidiViewerProps {
-	style?: React.CSSProperties;
 	className?: string;
+	style?: React.CSSProperties;
 }
 
-interface TDropZoneProps {
-	isLoading: boolean;
+interface TMidiEmptyStateProps {
 	error: string | null;
+	isLoading: boolean;
 }

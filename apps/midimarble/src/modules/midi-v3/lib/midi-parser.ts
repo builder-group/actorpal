@@ -1,5 +1,17 @@
-import type { MidiNote, MidiSong, MidiTrack } from '../types';
-import { midiConfig } from './midi-config';
+import type { MidiV3Note, MidiV3Song, MidiV3Track } from '../types';
+
+const TRACK_COLORS = [
+	'#2563eb',
+	'#f97316',
+	'#eab308',
+	'#16a34a',
+	'#db2777',
+	'#7c3aed',
+	'#0891b2',
+	'#dc2626',
+	'#65a30d',
+	'#4338ca'
+];
 
 interface PendingNote {
 	tick: number;
@@ -12,7 +24,7 @@ interface ParsedTrackChunk {
 	name: string;
 	bpm: number | null;
 	channels: Set<number>;
-	notes: MidiNote[];
+	notes: MidiV3Note[];
 }
 
 function readUint16(data: Uint8Array, pos: number): number {
@@ -162,7 +174,7 @@ function parseTrackChunk(data: Uint8Array, start: number, length: number): Parse
 	return track;
 }
 
-function buildTrack(rawTrack: ParsedTrackChunk, id: number): MidiTrack {
+function buildTrack(rawTrack: ParsedTrackChunk, id: number): MidiV3Track {
 	const noteCount = rawTrack.notes.length;
 	const minNote = noteCount === 0 ? 0 : Math.min(...rawTrack.notes.map((note) => note.noteNumber));
 	const maxNote = noteCount === 0 ? 0 : Math.max(...rawTrack.notes.map((note) => note.noteNumber));
@@ -174,7 +186,7 @@ function buildTrack(rawTrack: ParsedTrackChunk, id: number): MidiTrack {
 		id,
 		name: rawTrack.name.trim() || `Track ${id + 1}`,
 		channel: rawTrack.channels.size === 1 ? (Array.from(rawTrack.channels)[0] ?? null) : null,
-		color: midiConfig.colors.trackPalette[id % midiConfig.colors.trackPalette.length]!,
+		color: TRACK_COLORS[id % TRACK_COLORS.length]!,
 		notes: rawTrack.notes,
 		noteCount,
 		minNote,
@@ -184,7 +196,7 @@ function buildTrack(rawTrack: ParsedTrackChunk, id: number): MidiTrack {
 	};
 }
 
-export function parseMidi(buffer: ArrayBuffer, fileName?: string | null): MidiSong {
+export function parseMidiV3(buffer: ArrayBuffer, fileName?: string | null): MidiV3Song {
 	const data = new Uint8Array(buffer);
 
 	if (readString(data, 0, 4) !== 'MThd') {
@@ -214,16 +226,16 @@ export function parseMidi(buffer: ArrayBuffer, fileName?: string | null): MidiSo
 	}
 
 	const bpm = rawTracks.find((track) => track.bpm != null)?.bpm ?? 120;
-	const tracks =
+	const domainTracks =
 		format === 0 && rawTracks.length === 1
 			? Array.from(
 					rawTracks[0]!.notes
 						.reduce((map, note) => {
-							const notes = map.get(note.channel) ?? [];
-							notes.push(note);
-							map.set(note.channel, notes);
+							const group = map.get(note.channel) ?? [];
+							group.push(note);
+							map.set(note.channel, group);
 							return map;
-						}, new Map<number, MidiNote[]>())
+						}, new Map<number, MidiV3Note[]>())
 						.entries()
 				).map(([channel, notes]) =>
 					buildTrack(
@@ -241,7 +253,8 @@ export function parseMidi(buffer: ArrayBuffer, fileName?: string | null): MidiSo
 					: rawTracks
 				).map((track, index) => buildTrack(track, index));
 
-	const totalTicks = tracks.length === 0 ? 0 : Math.max(...tracks.map((track) => track.endTick));
+	const totalTicks =
+		domainTracks.length === 0 ? 0 : Math.max(...domainTracks.map((track) => track.endTick));
 	const totalBeats = ticksPerBeat === 0 ? 0 : Math.ceil(totalTicks / ticksPerBeat);
 	const durationSeconds = totalBeats * (60 / bpm);
 	const songName = rawTracks.find((track) => track.name.trim() !== '')?.name.trim();
@@ -254,6 +267,6 @@ export function parseMidi(buffer: ArrayBuffer, fileName?: string | null): MidiSo
 		totalTicks,
 		totalBeats,
 		durationSeconds,
-		tracks
+		tracks: domainTracks
 	};
 }

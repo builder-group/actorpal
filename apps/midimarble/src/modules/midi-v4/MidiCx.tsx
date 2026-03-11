@@ -1,13 +1,15 @@
 // Song data, track selection, and playback transport.
-// Zoom and scroll state lives in TimelineCx — keep these concerns separate.
+// Zoom/scroll state is intentionally separate — see ViewportCx.tsx.
 
-import React from 'react';
 import { createState } from 'feature-state';
+import React from 'react';
 import { useMemoCleanup } from '@/hooks';
 import { parseMidi } from './lib';
 import type { MidiSong, MidiTrack } from './types';
 
 export class MidiCx {
+	// MARK: - State
+
 	public readonly $song = createState<MidiSong | null>(null);
 	public readonly $selectedTrackId = createState<number | null>(null);
 	public readonly $isLoading = createState(false);
@@ -25,17 +27,14 @@ export class MidiCx {
 		this.$isLoading.set(true);
 		this.$error.set(null);
 		try {
-			const buffer = await file.arrayBuffer();
-			const song = parseMidi(buffer);
-			if (song.name === 'Untitled') {
-				(song as MidiSong).name = file.name.replace(/\.midi?$/i, '');
-			}
+			const song = parseMidi(await file.arrayBuffer(), file.name);
 			this.$song.set(song);
 			this.$selectedTrackId.set(song.tracks[0]?.id ?? null);
 			this.$playheadTick.set(0);
 		} catch (err) {
-			this.$error.set(err instanceof Error ? err.message : 'Failed to parse MIDI file');
 			this.$song.set(null);
+			this.$selectedTrackId.set(null);
+			this.$error.set(err instanceof Error ? err.message : 'Failed to parse MIDI file.');
 		} finally {
 			this.$isLoading.set(false);
 		}
@@ -102,6 +101,8 @@ export class MidiCx {
 		this._lastFrameTime = null;
 	}
 
+	// MARK: - Lifecycle
+
 	public unmount(): void {
 		this._cancel();
 	}
@@ -111,8 +112,7 @@ export class MidiCx {
 
 const ReactMidiCx = React.createContext<MidiCx | null>(null);
 
-export const MidiCxProvider: React.FC<{ children: React.ReactNode }> = (props) => {
-	const { children } = props;
+export const MidiCxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const cx = useMemoCleanup(() => {
 		const midiCx = new MidiCx();
 		return [midiCx, () => midiCx.unmount()];

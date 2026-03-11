@@ -12,7 +12,7 @@ export const DEFAULT_SCROLL_NOTE = 72; // C5 — good default visible range
 export class NoteTransform {
 	constructor(
 		public readonly pixelsPerBeat: number,
-		public readonly ticksPerBeat: number,
+		public readonly ticksPerBeat: number
 	) {}
 
 	get pixelsPerTick(): number {

@@ -1,7 +1,7 @@
 // Transport controls: play/pause/stop, time display, zoom, file picker.
 
-import React, { useCallback, useMemo, useRef } from 'react';
 import { useFeatureState } from 'feature-react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { useMidiCx } from '../MidiCx';
 import { useTimelineCx } from '../TimelineCx';
 
@@ -26,15 +26,18 @@ export const Toolbar: React.FC = () => {
 
 	return (
 		<div
-			className="flex items-center gap-1.5 shrink-0 px-2.5"
+			className="flex shrink-0 items-center gap-1.5 px-2.5"
 			style={{
 				height: 34,
 				background: 'var(--color-base-0)',
-				borderBottom: '1px solid var(--color-base-100)',
+				borderBottom: '1px solid var(--color-base-100)'
 			}}
 		>
 			{/* Song name */}
-			<span className="text-[11px] max-w-[120px] truncate" style={{ color: 'var(--color-base-400)' }}>
+			<span
+				className="max-w-[120px] truncate text-[11px]"
+				style={{ color: 'var(--color-base-400)' }}
+			>
 				{song.name}
 			</span>
 
@@ -53,7 +56,7 @@ export const Toolbar: React.FC = () => {
 
 			{/* Time */}
 			<span
-				className="text-[11px] tabular-nums min-w-[34px]"
+				className="min-w-[34px] text-[11px] tabular-nums"
 				style={{ color: 'var(--color-base-500)' }}
 			>
 				{timeStr}
@@ -63,7 +66,10 @@ export const Toolbar: React.FC = () => {
 
 			{/* Zoom */}
 			<Btn label="−" title="Zoom out (Ctrl+Scroll)" onClick={() => timelineCx.zoomOut()} />
-			<span className="text-[10px] text-center min-w-[52px]" style={{ color: 'var(--color-base-400)' }}>
+			<span
+				className="min-w-[52px] text-center text-[10px]"
+				style={{ color: 'var(--color-base-400)' }}
+			>
 				{Math.round(pixelsPerBeat)}px/beat
 			</span>
 			<Btn label="+" title="Zoom in (Ctrl+Scroll)" onClick={() => timelineCx.zoomIn()} />
@@ -78,7 +84,7 @@ export const Toolbar: React.FC = () => {
 // MARK: - Sub-components
 
 const Divider: React.FC = () => (
-	<div className="w-px h-3.5 shrink-0" style={{ background: 'var(--color-base-100)' }} />
+	<div className="h-3.5 w-px shrink-0" style={{ background: 'var(--color-base-100)' }} />
 );
 
 const Btn: React.FC<TBtnProps> = (props) => {
@@ -88,10 +94,12 @@ const Btn: React.FC<TBtnProps> = (props) => {
 			type="button"
 			title={title}
 			onClick={onClick}
-			className="shrink-0 rounded cursor-pointer text-xs leading-none px-1.5 py-0.5 border-none"
+			className="shrink-0 cursor-pointer rounded border-none px-1.5 py-0.5 text-xs leading-none"
 			style={{
-				background: active ? 'color-mix(in srgb, var(--color-primary) 15%, transparent)' : 'transparent',
-				color: active ? 'var(--color-primary)' : 'var(--color-base-400)',
+				background: active
+					? 'color-mix(in srgb, var(--color-primary) 15%, transparent)'
+					: 'transparent',
+				color: active ? 'var(--color-primary)' : 'var(--color-base-400)'
 			}}
 		>
 			{label}
@@ -109,7 +117,7 @@ const FilePicker: React.FC = () => {
 			if (file != null) void midiCx.loadFile(file);
 			e.target.value = '';
 		},
-		[midiCx],
+		[midiCx]
 	);
 
 	return (
@@ -117,15 +125,21 @@ const FilePicker: React.FC = () => {
 			<button
 				type="button"
 				onClick={() => inputRef.current?.click()}
-				className="rounded text-[10px] font-semibold cursor-pointer border-none px-2 py-0.5"
+				className="cursor-pointer rounded border-none px-2 py-0.5 text-[10px] font-semibold"
 				style={{
 					background: 'var(--color-base-100)',
-					color: 'var(--color-base-500)',
+					color: 'var(--color-base-500)'
 				}}
 			>
 				Open MIDI
 			</button>
-			<input ref={inputRef} type="file" accept=".mid,.midi" className="hidden" onChange={handleChange} />
+			<input
+				ref={inputRef}
+				type="file"
+				accept=".mid,.midi"
+				className="hidden"
+				onChange={handleChange}
+			/>
 		</>
 	);
 };

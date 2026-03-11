@@ -2,14 +2,14 @@
 // Scroll is controlled externally by NoteGrid (shared scroll container).
 
 import React from 'react';
-import { NOTE_HEIGHT, PIANO_WIDTH, TOTAL_NOTES, isBlackKey, isCNote } from '../lib';
+import { isBlackKey, isCNote, NOTE_HEIGHT, PIANO_WIDTH, TOTAL_NOTES } from '../lib';
 
 // Physical piano key colors — these represent actual piano key aesthetics, not UI theme colors.
 const KEY = {
 	whiteBg: '#d8d8e8',
 	cBg: '#d0d8f0',
 	blackGradient: 'linear-gradient(to right, #212121 0%, #5d5a5a 89.5%, #303030 92.4%, #000 100%)',
-	defaultAccent: 'var(--color-primary)',
+	defaultAccent: 'var(--color-primary)'
 } as const;
 
 const BLACK_KEY_WIDTH = Math.round(PIANO_WIDTH * 0.64);
@@ -23,7 +23,7 @@ export const PianoKeys: React.FC<TPianoKeysProps> = (props) => {
 				width: PIANO_WIDTH,
 				height: NOTE_HEIGHT * TOTAL_NOTES,
 				flexShrink: 0,
-				borderRight: '1px solid var(--color-base-200)',
+				borderRight: '1px solid var(--color-base-200)'
 			}}
 		>
 			{Array.from({ length: TOTAL_NOTES }, (_, i) => {
@@ -44,7 +44,9 @@ const PianoKeyRow: React.FC<TPianoKeyRowProps> = (props) => {
 
 	if (black) {
 		return (
-			<div style={{ position: 'relative', height: NOTE_HEIGHT, background: 'var(--color-base-50)' }}>
+			<div
+				style={{ position: 'relative', height: NOTE_HEIGHT, background: 'var(--color-base-50)' }}
+			>
 				{/* Black key body — Signal gradient */}
 				<div
 					style={{
@@ -53,7 +55,7 @@ const PianoKeyRow: React.FC<TPianoKeyRowProps> = (props) => {
 						top: 1,
 						width: BLACK_KEY_WIDTH,
 						height: NOTE_HEIGHT - 2,
-						background: KEY.blackGradient,
+						background: KEY.blackGradient
 					}}
 				/>
 				{/* White-key gap divider */}
@@ -64,7 +66,7 @@ const PianoKeyRow: React.FC<TPianoKeyRowProps> = (props) => {
 						top: NOTE_HEIGHT / 2,
 						right: 0,
 						height: 1,
-						background: 'var(--color-base-200)',
+						background: 'var(--color-base-200)'
 					}}
 				/>
 			</div>
@@ -77,7 +79,7 @@ const PianoKeyRow: React.FC<TPianoKeyRowProps> = (props) => {
 				position: 'relative',
 				height: NOTE_HEIGHT,
 				background: c ? KEY.cBg : KEY.whiteBg,
-				borderBottom: `1px solid var(--color-base-200)`,
+				borderBottom: `1px solid var(--color-base-200)`
 			}}
 		>
 			{/* C-note accent bar (Signal pattern: 4px on right edge) */}
@@ -89,7 +91,7 @@ const PianoKeyRow: React.FC<TPianoKeyRowProps> = (props) => {
 						top: 0,
 						width: 4,
 						height: '100%',
-						background: accentColor,
+						background: accentColor
 					}}
 				/>
 			)}
@@ -105,7 +107,7 @@ const PianoKeyRow: React.FC<TPianoKeyRowProps> = (props) => {
 						fontWeight: 700,
 						color: accentColor,
 						lineHeight: 1,
-						userSelect: 'none',
+						userSelect: 'none'
 					}}
 				>
 					C{octave}

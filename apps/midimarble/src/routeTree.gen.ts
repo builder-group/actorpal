@@ -9,9 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MidiV4RouteImport } from './routes/midi-v4'
+import { Route as MidiV3RouteImport } from './routes/midi-v3'
+import { Route as MidiV2RouteImport } from './routes/midi-v2'
 import { Route as MidiRouteImport } from './routes/midi'
 import { Route as IndexRouteImport } from './routes/index'
 
+const MidiV4Route = MidiV4RouteImport.update({
+  id: '/midi-v4',
+  path: '/midi-v4',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MidiV3Route = MidiV3RouteImport.update({
+  id: '/midi-v3',
+  path: '/midi-v3',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MidiV2Route = MidiV2RouteImport.update({
+  id: '/midi-v2',
+  path: '/midi-v2',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MidiRoute = MidiRouteImport.update({
   id: '/midi',
   path: '/midi',
@@ -26,31 +44,64 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/midi': typeof MidiRoute
+  '/midi-v2': typeof MidiV2Route
+  '/midi-v3': typeof MidiV3Route
+  '/midi-v4': typeof MidiV4Route
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/midi': typeof MidiRoute
+  '/midi-v2': typeof MidiV2Route
+  '/midi-v3': typeof MidiV3Route
+  '/midi-v4': typeof MidiV4Route
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/midi': typeof MidiRoute
+  '/midi-v2': typeof MidiV2Route
+  '/midi-v3': typeof MidiV3Route
+  '/midi-v4': typeof MidiV4Route
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/midi'
+  fullPaths: '/' | '/midi' | '/midi-v2' | '/midi-v3' | '/midi-v4'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/midi'
-  id: '__root__' | '/' | '/midi'
+  to: '/' | '/midi' | '/midi-v2' | '/midi-v3' | '/midi-v4'
+  id: '__root__' | '/' | '/midi' | '/midi-v2' | '/midi-v3' | '/midi-v4'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MidiRoute: typeof MidiRoute
+  MidiV2Route: typeof MidiV2Route
+  MidiV3Route: typeof MidiV3Route
+  MidiV4Route: typeof MidiV4Route
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/midi-v4': {
+      id: '/midi-v4'
+      path: '/midi-v4'
+      fullPath: '/midi-v4'
+      preLoaderRoute: typeof MidiV4RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/midi-v3': {
+      id: '/midi-v3'
+      path: '/midi-v3'
+      fullPath: '/midi-v3'
+      preLoaderRoute: typeof MidiV3RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/midi-v2': {
+      id: '/midi-v2'
+      path: '/midi-v2'
+      fullPath: '/midi-v2'
+      preLoaderRoute: typeof MidiV2RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/midi': {
       id: '/midi'
       path: '/midi'
@@ -71,6 +122,9 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MidiRoute: MidiRoute,
+  MidiV2Route: MidiV2Route,
+  MidiV3Route: MidiV3Route,
+  MidiV4Route: MidiV4Route,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

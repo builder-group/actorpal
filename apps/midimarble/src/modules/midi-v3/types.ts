@@ -1,4 +1,4 @@
-export interface MidiNote {
+export interface MidiV3Note {
 	id: number;
 	tick: number;
 	durationTicks: number;
@@ -7,12 +7,12 @@ export interface MidiNote {
 	channel: number;
 }
 
-export interface MidiTrack {
+export interface MidiV3Track {
 	id: number;
 	name: string;
 	channel: number | null;
 	color: string;
-	notes: MidiNote[];
+	notes: MidiV3Note[];
 	noteCount: number;
 	minNote: number;
 	maxNote: number;
@@ -20,7 +20,7 @@ export interface MidiTrack {
 	endTick: number;
 }
 
-export interface MidiSong {
+export interface MidiV3Song {
 	name: string;
 	fileName: string | null;
 	ticksPerBeat: number;
@@ -28,11 +28,11 @@ export interface MidiSong {
 	totalTicks: number;
 	totalBeats: number;
 	durationSeconds: number;
-	tracks: MidiTrack[];
+	tracks: MidiV3Track[];
 }
 
-export interface MidiViewportRect {
+export interface MidiV3ViewportRect {
 	width: number;
-	height: number;
 	left: number;
+	height: number;
 }

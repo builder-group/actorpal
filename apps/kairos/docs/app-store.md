@@ -3,7 +3,7 @@
 ```text
 Kairos: Random Timer
 
-Interval Countdown Timer
+Countdown Timer, Auto Repeat
 ```
 
 ```text
@@ -33,6 +33,7 @@ USE KAIROS FOR
 - Meditation: sit without watching the clock
 - Exercise: hold effort without bracing for the last seconds
 - Study sessions: add flexible focus or break intervals
+- Interval training: Auto Repeat randomises every set so you never anticipate the next round
 - Party games: perfect for Hot Potato, Musical Chairs, and other pass-it-fast games
 
 FEATURES
@@ -40,10 +41,12 @@ FEATURES
 - Random timer between your chosen minimum and maximum
 - Clean countdown interface designed for iPhone
 - Hide Time Display for a more focused, less predictable experience
-- Auto Repeat and Auto Stop after the timer ends
+- Auto Repeat, Overtime, and Auto Stop modes after the timer ends
+- Label your timers for quick recognition in Recents
 - Choice of built-in alarm sounds
 - Haptic feedback when time is up
 - Recents for quickly restarting favorite timer setups
+- Light, Dark, and System theme
 - No ads or sign-up required
 
 Kairos is built for the moments when exact timing gets in the way and a little uncertainty makes the experience better.
@@ -52,7 +55,7 @@ Kairos is built for the moments when exact timing gets in the way and a little u
 **Keywords:**
 
 ```text
-meditation,study,exercise,hot potato,musical chairs,focus,plank,hiit,party,game,fitness,repeat
+meditation,study,exercise,hot potato,musical chairs,focus,plank,hiit,party,game,tabata,yoga,loop
 ```
 
 ## App Store Screenshots
@@ -104,5 +107,5 @@ Headline: Timer Options
 Subhead: sound and repeat
 Screen: Timer configuration
 Show: Alarm Sound, After Timer Ends, and Hide Time Display
-Suggested state: Show Auto Repeat or Auto Stop only if that ships in the submitted build
+Suggested state: Show Auto Repeat selected
 ```

@@ -5,6 +5,8 @@ import {
 } from './scene-bundles';
 import type { TSceneApp, TScenePlugin } from './types';
 
+export const MARBLE_SPAWN_POSITION = { x: -7.25, y: 18.4, z: -25.2 };
+
 export function createScenePlugin(): TScenePlugin {
 	return {
 		name: 'Scene',
@@ -43,5 +45,5 @@ function seedScene(app: TSceneApp): void {
 			length: 12
 		})
 	);
-	app.spawnBundle(createMarbleBundle(app, { position: { x: -7.25, y: 18.4, z: -25.2 } }));
+	app.spawnBundle(createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION }));
 }

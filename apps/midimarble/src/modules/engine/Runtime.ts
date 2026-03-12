@@ -10,10 +10,12 @@ import {
 	createPhysicsPlugin,
 	createRenderPlugin,
 	createScenePlugin,
+	createTrajectoryPlugin,
 	type TCorePlugin,
 	type TPhysicsPlugin,
 	type TRenderPlugin,
-	type TScenePlugin
+	type TScenePlugin,
+	type TTrajectoryPlugin
 } from './plugins';
 
 export class Runtime {
@@ -29,7 +31,8 @@ export class Runtime {
 				createCorePlugin(),
 				createPhysicsPlugin(),
 				createRenderPlugin(),
-				createScenePlugin()
+				createScenePlugin(),
+				createTrajectoryPlugin()
 			] as const,
 			systemSets: ['First', 'Update', 'Last']
 		});
@@ -87,5 +90,7 @@ export class Runtime {
 }
 
 export type TRuntimeApp = TApp<
-	TAppContext<[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin]>
+	TAppContext<
+		[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin, TTrajectoryPlugin]
+	>
 >;

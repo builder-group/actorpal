@@ -10,7 +10,7 @@ import {
 import React from 'react';
 
 export function useQueryComponents<GComponents extends readonly (TComponentRef | TEntity)[]>(
-	app: TApp,
+	app: TApp<any>,
 	options: TUseQueryComponentsFactoryValue<GComponents>,
 	deps: React.DependencyList = []
 ): TComponentDataTuple<GComponents>[] {

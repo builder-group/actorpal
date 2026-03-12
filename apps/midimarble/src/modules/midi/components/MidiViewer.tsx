@@ -1,5 +1,6 @@
 import { useFeatureState } from 'feature-react';
 import React from 'react';
+import { Group, Panel, Separator } from 'react-resizable-panels';
 import { MidiFileCxProvider, useMidiFileCx } from '../MidiFileCx';
 import { MidiViewportCxProvider } from '../MidiViewportCx';
 import { MidiPianoRoll } from './MidiPianoRoll';
@@ -38,13 +39,18 @@ const InnerMidiViewer: React.FC = () => {
 	return (
 		<>
 			<MidiToolbar />
-			<div className="flex min-h-0 flex-1 overflow-hidden">
-				<MidiSidebar />
-				<div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-					<MidiTimeline />
-					<MidiPianoRoll />
-				</div>
-			</div>
+			<Group className="min-h-0 flex-1 overflow-hidden">
+				<Panel defaultSize="140px" minSize="100px" maxSize="300px">
+					<MidiSidebar />
+				</Panel>
+				<Separator className="border-base-100 w-px shrink-0 cursor-col-resize border-r" />
+				<Panel>
+					<div className="flex h-full min-w-0 flex-col overflow-hidden">
+						<MidiTimeline />
+						<MidiPianoRoll />
+					</div>
+				</Panel>
+			</Group>
 		</>
 	);
 };

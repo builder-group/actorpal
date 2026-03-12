@@ -25,10 +25,7 @@ export const MidiSidebar: React.FC = () => {
 	}
 
 	return (
-		<aside
-			className="bg-base-0 border-base-100 flex shrink-0 flex-col border-r"
-			style={{ width: midiConfig.layout.sidebarWidth }}
-		>
+		<aside className="bg-base-0 flex h-full w-full flex-col overflow-hidden">
 			<div className="border-base-100 shrink-0 border-b px-3 py-1.5">
 				<p className="text-base-400 text-[10px] font-semibold tracking-wider uppercase">Tracks</p>
 				<p className="text-base-400 mt-1 text-[9px]">

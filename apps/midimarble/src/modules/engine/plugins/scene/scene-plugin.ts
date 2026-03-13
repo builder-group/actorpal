@@ -1,10 +1,6 @@
+import { createMarbleBundle, createPegboardBundle, createStraightTrackBundle } from './bundles';
 import { createSceneManipulationHandles, resetSceneManipulationState } from './lib/manipulation';
 import { setupSceneManipulation } from './manipulation';
-import {
-	createMarbleBundle,
-	createPegboardBundle,
-	createStraightTrackBundle
-} from './scene-bundles';
 import {
 	syncAuthoredTransformsToLiveSystem,
 	syncSceneManipulationHandleAppearanceSystem,

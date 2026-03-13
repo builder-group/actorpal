@@ -1,4 +1,4 @@
-import { findNearestCheckpointStep } from '../../physics/simulation';
+import { findNearestCheckpointStep } from '../../physics/lib/simulation';
 import type { TTrajectoryApp } from '../types';
 
 const MAX_STEPS = 1000;

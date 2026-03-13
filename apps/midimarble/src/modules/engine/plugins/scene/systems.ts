@@ -1,12 +1,12 @@
 import { Added, Changed, Entity, Or } from 'ecsify';
 import * as THREE from 'three';
+import { createStraightTrackColliders, createStraightTrackGeometry } from './bundles';
 import {
 	getEditableLinearElement,
 	getLinearElementHandlePositions,
 	updateHandleAppearance
 } from './lib/manipulation';
 import { sameVec3 } from './lib/vec3';
-import { createStraightTrackColliders, createStraightTrackGeometry } from './scene-bundles';
 import type { TSceneApp } from './types';
 
 export function syncAuthoredTransformsToLiveSystem(app: TSceneApp) {

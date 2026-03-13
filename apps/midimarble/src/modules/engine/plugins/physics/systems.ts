@@ -1,5 +1,5 @@
-import type * as RAPIER from '@dimforge/rapier3d-compat';
 import { Entity, With } from 'ecsify';
+import { replaceLiveWorld, storeCheckpoint, syncPreloadWorldToStep } from './lib/simulation';
 import { startSimulationSync } from './lib/simulation-sync';
 import { updateSimulationTransport } from './lib/transport';
 import {
@@ -10,7 +10,6 @@ import {
 	quaternionToEuler,
 	syncBodyTransform
 } from './lib/world';
-import { replaceLiveWorld, storeCheckpoint, syncPreloadWorldToStep } from './simulation';
 import type { TPhysicsApp } from './types';
 
 export function spawnRigidBodiesSystem(app: TPhysicsApp) {

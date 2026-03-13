@@ -6,7 +6,7 @@ import type {
 	TRRigidBodies,
 	TSimulationConfig,
 	TSimulationTransport
-} from './types';
+} from '../types';
 
 type TPhysicsSimulationRestoreAccess = {
 	r: {

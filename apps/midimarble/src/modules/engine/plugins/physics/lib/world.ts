@@ -1,7 +1,7 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
 import { Entity } from 'ecsify';
-import { storeCheckpoint } from '../simulation';
 import type { TCRigidBodyMixin, TPhysicsApp, TPhysicsColliderDescriptor } from '../types';
+import { storeCheckpoint } from './simulation';
 import { updateSimulationTransport } from './transport';
 
 export function createRigidBodyDesc(

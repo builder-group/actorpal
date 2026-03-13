@@ -51,29 +51,28 @@ export function syncTrackEditHandlesSystem(app: TSceneEditorApp) {
 
 	handles.start.position.copy(endpoints.start.clone().sub(offset));
 	handles.end.position.copy(endpoints.end.clone().add(offset));
+	handles.start.quaternion.copy(app.r.viewport.camera.quaternion);
+	handles.end.quaternion.copy(app.r.viewport.camera.quaternion);
 	handles.start.visible = true;
 	handles.end.visible = true;
 }
 
 export function createTrackEditHandles(handleRadius: number): { start: THREE.Mesh; end: THREE.Mesh } {
-	const geometry = new THREE.SphereGeometry(handleRadius, 24, 24);
-	const material = new THREE.MeshStandardMaterial({
+	const geometry = new THREE.CircleGeometry(handleRadius, 48);
+	const material = new THREE.MeshBasicMaterial({
 		color: HANDLE_COLOR,
-		roughness: 0.42,
-		metalness: 0.08
+		side: THREE.DoubleSide
 	});
 
 	const start = new THREE.Mesh(geometry.clone(), material.clone());
 	start.userData[HANDLE_KIND_KEY] = 'start';
 	start.visible = false;
-	start.castShadow = true;
-	start.receiveShadow = true;
+	start.renderOrder = 10;
 
 	const end = new THREE.Mesh(geometry.clone(), material.clone());
 	end.userData[HANDLE_KIND_KEY] = 'end';
 	end.visible = false;
-	end.castShadow = true;
-	end.receiveShadow = true;
+	end.renderOrder = 10;
 
 	return { start, end };
 }

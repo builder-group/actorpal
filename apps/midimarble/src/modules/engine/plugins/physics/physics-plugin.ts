@@ -1,5 +1,6 @@
 import * as RAPIER from '@dimforge/rapier3d-compat';
 import {
+	advanceSceneEditRebuildSystem,
 	cleanupOrphanedPhysicsBodiesSystem,
 	invalidateSimulationOnSceneEditSystem,
 	preloadPhysicsWorldSystem,
@@ -33,22 +34,32 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 				bufferedStep: 0,
 				revision: 0
 			},
-			simulationConfig: {
-				checkpointIntervalSteps: 60,
-				preloadHorizonSteps: 2400,
-				maxPreloadStepsPerUpdate: 120,
-				maxLiveStepsPerUpdate: 12,
-				maxDeltaSeconds: 0.05
-			},
+				simulationConfig: {
+					checkpointIntervalSteps: 60,
+					preloadHorizonSteps: 2400,
+					maxPreloadStepsPerUpdate: 120,
+					maxLiveStepsPerUpdate: 12,
+					maxEditRebuildStepsPerUpdate: 240,
+					maxDeltaSeconds: 0.05
+				},
 			checkpointStore: new Map(),
 			preloadStep: 0,
 			rigidBodies: new Map(),
 			colliders: new Map(),
-			pendingSceneEditInvalidation: {
-				dirty: false,
-				revisionBumped: false
-			}
-		},
+				pendingSceneEditInvalidation: {
+					dirty: false,
+					revisionBumped: false
+				},
+				sceneEditRebuild: {
+					active: false,
+					targetStep: 0,
+					currentStep: 0,
+					revision: 0,
+					resumeWhenReady: false,
+					world: null,
+					checkpointStore: new Map()
+				}
+			},
 		setup(app: TPhysicsApp) {
 			void initPromise.then(() => {
 				app.r.rapier = RAPIER;
@@ -71,9 +82,13 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 				set: 'Update',
 				after: invalidateSimulationOnSceneEditSystem
 			});
-			app.addSystem(preloadPhysicsWorldSystem, {
+			app.addSystem(advanceSceneEditRebuildSystem, {
 				set: 'Update',
 				after: stepPhysicsWorldSystem
+			});
+			app.addSystem(preloadPhysicsWorldSystem, {
+				set: 'Update',
+				after: advanceSceneEditRebuildSystem
 			});
 			app.addSystem(syncDynamicBodiesToComponentsSystem, {
 				set: 'Update',

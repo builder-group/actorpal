@@ -24,6 +24,7 @@ export type TPhysicsPlugin = TPlugin<
 			rigidBodies: TRRigidBodies;
 			colliders: TRColliders;
 			pendingSceneEditInvalidation: TPendingSceneEditInvalidation;
+			sceneEditRebuild: TSceneEditRebuild;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
@@ -48,12 +49,23 @@ export interface TSimulationConfig {
 	preloadHorizonSteps: number;
 	maxPreloadStepsPerUpdate: number;
 	maxLiveStepsPerUpdate: number;
+	maxEditRebuildStepsPerUpdate: number;
 	maxDeltaSeconds: number;
 }
 
 export interface TPendingSceneEditInvalidation {
 	dirty: boolean;
 	revisionBumped: boolean;
+}
+
+export interface TSceneEditRebuild {
+	active: boolean;
+	targetStep: number;
+	currentStep: number;
+	revision: number;
+	resumeWhenReady: boolean;
+	world: RAPIER.World | null;
+	checkpointStore: TCheckpointStore;
 }
 
 export interface TCRigidBodyMixin {

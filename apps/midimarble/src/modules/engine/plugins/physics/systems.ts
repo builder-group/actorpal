@@ -64,7 +64,7 @@ export function syncNonDynamicBodiesFromComponentsSystem(app: TPhysicsApp) {
 
 export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 	const world = app.r.world;
-	if (world == null) {
+	if (world == null || app.r.sceneEditRebuild.active) {
 		return;
 	}
 
@@ -111,7 +111,7 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
 	const rapier = app.r.rapier;
 	const world = app.r.world;
-	if (rapier == null || world == null) {
+	if (rapier == null || world == null || app.r.sceneEditRebuild.active) {
 		return;
 	}
 
@@ -164,34 +164,111 @@ export function invalidateSimulationOnSceneEditSystem(app: TPhysicsApp) {
 	}
 
 	const targetStep = app.r.simulationTransport.playheadStep;
-	let nextRevision = app.r.simulationTransport.revision;
+	let nextRevision =
+		pending.revisionBumped && app.r.sceneEditRebuild.active
+			? app.r.sceneEditRebuild.revision
+			: app.r.simulationTransport.revision;
 	if (!pending.revisionBumped) {
 		nextRevision += 1;
 	}
 
-	const rebuiltWorld = rebuildEditedWorldAtStep(app, targetStep);
+	const rebuiltWorld = createEditedWorldBase(app);
 	if (rebuiltWorld == null) {
 		return;
 	}
 
 	app.r.accumulatorSeconds = 0;
-	replaceEditedLiveWorld(app, rebuiltWorld);
+	app.r.sceneEditRebuild.world?.free();
 	app.r.preloadWorld?.free();
-	const preloadSnapshot = rebuiltWorld.takeSnapshot();
-	const preloadWorld = rapier.World.restoreSnapshot(preloadSnapshot);
-	preloadWorld.timestep = app.r.fixedTimeStepSeconds;
-
-	app.updateResource('preloadWorld', preloadWorld);
-	app.updateResource('preloadStep', targetStep);
+	app.updateResource('sceneEditRebuild', {
+		active: true,
+		targetStep,
+		currentStep: 0,
+		revision: nextRevision,
+		resumeWhenReady: app.r.sceneEditRebuild.resumeWhenReady,
+		world: rebuiltWorld,
+		checkpointStore: new Map([[0, rebuiltWorld.takeSnapshot()]])
+	});
 	app.updateResource('pendingSceneEditInvalidation', {
 		dirty: false,
-		revisionBumped: false
+		revisionBumped: true
 	});
+	app.updateResource('preloadWorld', null);
+	app.updateResource('preloadStep', 0);
 	updateSimulationTransport(app, {
 		mode: 'paused',
 		playheadStep: targetStep,
-		bufferedStep: targetStep,
-		revision: nextRevision
+		bufferedStep: Math.min(app.r.simulationTransport.bufferedStep, targetStep)
+	});
+}
+
+export function advanceSceneEditRebuildSystem(app: TPhysicsApp) {
+	const rebuild = app.r.sceneEditRebuild;
+	const rebuildWorld = rebuild.world;
+	if (!rebuild.active || rebuildWorld == null) {
+		return;
+	}
+
+	const config = app.r.simulationConfig;
+	let currentStep = rebuild.currentStep;
+	let stepsRun = 0;
+
+	while (currentStep < rebuild.targetStep && stepsRun < config.maxEditRebuildStepsPerUpdate) {
+		rebuildWorld.step();
+		currentStep++;
+		stepsRun++;
+
+		if (currentStep % config.checkpointIntervalSteps === 0) {
+			storeCheckpoint(rebuild.checkpointStore, currentStep, rebuildWorld.takeSnapshot());
+		}
+	}
+
+	if (currentStep !== rebuild.currentStep) {
+		app.updateResource('sceneEditRebuild', {
+			...rebuild,
+			currentStep
+		});
+	}
+
+	if (currentStep < rebuild.targetStep) {
+		return;
+	}
+
+	const completedWorld = rebuildWorld;
+	const completedCheckpoints = rebuild.checkpointStore;
+
+	app.r.checkpointStore.clear();
+	for (const [step, snapshot] of completedCheckpoints) {
+		storeCheckpoint(app.r.checkpointStore, step, snapshot);
+	}
+	if (!app.r.checkpointStore.has(currentStep)) {
+		storeCheckpoint(app.r.checkpointStore, currentStep, completedWorld.takeSnapshot());
+	}
+
+	replaceEditedLiveWorld(app, completedWorld);
+	app.r.preloadWorld?.free();
+	const rapier = app.r.rapier;
+	if (rapier != null) {
+		const preloadSnapshot = completedWorld.takeSnapshot();
+		const preloadWorld = rapier.World.restoreSnapshot(preloadSnapshot);
+		preloadWorld.timestep = app.r.fixedTimeStepSeconds;
+		app.updateResource('preloadWorld', preloadWorld);
+	}
+	app.updateResource('preloadStep', currentStep);
+	app.updateResource('sceneEditRebuild', {
+		active: false,
+		targetStep: currentStep,
+		currentStep,
+		revision: rebuild.revision,
+		resumeWhenReady: false,
+		world: null,
+		checkpointStore: new Map()
+	});
+	updateSimulationTransport(app, {
+		mode: rebuild.resumeWhenReady ? 'running' : 'paused',
+		playheadStep: currentStep,
+		bufferedStep: currentStep,
+		revision: rebuild.revision
 	});
 }
 
@@ -383,7 +460,7 @@ function updateSimulationTransport(
 	});
 }
 
-function rebuildEditedWorldAtStep(app: TPhysicsApp, targetStep: number): RAPIER.World | null {
+function createEditedWorldBase(app: TPhysicsApp): RAPIER.World | null {
 	const rapier = app.r.rapier;
 	if (rapier == null) {
 		return null;
@@ -397,19 +474,6 @@ function rebuildEditedWorldAtStep(app: TPhysicsApp, targetStep: number): RAPIER.
 	const rebuiltWorld = rapier.World.restoreSnapshot(baseSnapshot);
 	rebuiltWorld.timestep = app.r.fixedTimeStepSeconds;
 	reapplyAuthoredStaticScene(app, rebuiltWorld, rapier);
-
-	app.r.checkpointStore.clear();
-	storeCheckpoint(app.r.checkpointStore, 0, rebuiltWorld.takeSnapshot());
-
-	for (let step = 0; step < targetStep; step++) {
-		rebuiltWorld.step();
-
-		const nextStep = step + 1;
-		if (nextStep % app.r.simulationConfig.checkpointIntervalSteps === 0) {
-			storeCheckpoint(app.r.checkpointStore, nextStep, rebuiltWorld.takeSnapshot());
-		}
-	}
-
 	return rebuiltWorld;
 }
 

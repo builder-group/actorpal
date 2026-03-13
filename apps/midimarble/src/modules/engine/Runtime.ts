@@ -53,6 +53,14 @@ export class Runtime {
 
 	public run(): void {
 		const app = this._app;
+		if (app.r.sceneEditRebuild.active) {
+			app.updateResource('sceneEditRebuild', {
+				...app.r.sceneEditRebuild,
+				resumeWhenReady: true
+			});
+			return;
+		}
+
 		app.updateResource('simulationTransport', {
 			...app.r.simulationTransport,
 			mode: 'running'
@@ -60,6 +68,12 @@ export class Runtime {
 	}
 
 	public pause(): void {
+		if (this._app.r.sceneEditRebuild.active) {
+			this._app.updateResource('sceneEditRebuild', {
+				...this._app.r.sceneEditRebuild,
+				resumeWhenReady: false
+			});
+		}
 		this._app.updateResource('simulationTransport', {
 			...this._app.r.simulationTransport,
 			mode: 'paused'
@@ -68,6 +82,13 @@ export class Runtime {
 
 	public reset(): void {
 		const app = this._app;
+		if (app.r.sceneEditRebuild.active) {
+			app.updateResource('sceneEditRebuild', {
+				...app.r.sceneEditRebuild,
+				resumeWhenReady: false
+			});
+			return;
+		}
 		const restoredWorld = restoreWorldAtStep(app, 0);
 		if (restoredWorld == null) {
 			return;
@@ -86,6 +107,13 @@ export class Runtime {
 
 	public seekToStep(step: number): void {
 		const app = this._app;
+		if (app.r.sceneEditRebuild.active) {
+			app.updateResource('sceneEditRebuild', {
+				...app.r.sceneEditRebuild,
+				resumeWhenReady: false
+			});
+			return;
+		}
 		const targetStep = Math.max(0, Math.min(step, app.r.simulationTransport.bufferedStep));
 		const restoredWorld = restoreWorldAtStep(app, targetStep);
 		if (restoredWorld == null) {
@@ -140,6 +168,7 @@ export class Runtime {
 		this.stop();
 		this._app.r.preloadWorld?.free();
 		this._app.r.world?.free();
+		this._app.r.sceneEditRebuild.world?.free();
 		this._app.disposeSceneEditor();
 		this._app.setRenderContainer(null);
 		this._app.disposeRender();

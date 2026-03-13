@@ -4,62 +4,18 @@ import type { TTrajectoryApp } from './types';
 
 const MAX_TICKS = 1000;
 
-function buildLine(buffer: Float32Array, color: string): THREE.Line {
-	const geometry = new THREE.BufferGeometry();
-	const attr = new THREE.BufferAttribute(buffer, 3);
-	attr.setUsage(THREE.DynamicDrawUsage);
-	geometry.setAttribute('position', attr);
-	geometry.setDrawRange(0, 0);
-	return new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, linewidth: 2 }));
-}
-
-export function initTrajectoryLinesSystem(app: TTrajectoryApp) {
-	const state = app.r.trajectoryState;
-	if (state.initialized || !app.r.isReady) {
-		return;
-	}
-
-	const config = app.r.trajectoryConfig;
-
-	const futureBuffer = new Float32Array(MAX_TICKS * 3);
-	const futureLine = buildLine(futureBuffer, config.futureColor);
-	const futureEid = app.createEntity();
-	app.addComponent(futureEid, app.c.MeshMixin, { type: 'three', object: futureLine });
-	app.addComponent(futureEid, app.c.TrajectoryLineMixin);
-
-	const pastBuffer = new Float32Array(MAX_TICKS * 3);
-	const pastLine = buildLine(pastBuffer, config.pastColor);
-	const pastEid = app.createEntity();
-	app.addComponent(pastEid, app.c.MeshMixin, { type: 'three', object: pastLine });
-	app.addComponent(pastEid, app.c.TrajectoryLineMixin);
-
-	state.futureLine = futureLine;
-	state.pastLine = pastLine;
-	state.futureBuffer = futureBuffer;
-	state.pastBuffer = pastBuffer;
-	state.prevFutureColor = config.futureColor;
-	state.prevPastColor = config.pastColor;
-	state.initialized = true;
-}
-
 export function updateTrajectorySystem(app: TTrajectoryApp) {
-	const state = app.r.trajectoryState;
-	if (!state.initialized || !app.r.isReady) {
-		return;
-	}
-
 	const config = app.r.trajectoryConfig;
-	const { futureLine, pastLine } = state;
-	if (futureLine == null || pastLine == null) {
-		return;
-	}
+	const { futureLine, pastLine } = app.r.trajectoryLines;
 
 	futureLine.visible = config.enabled;
 	pastLine.visible = config.enabled;
 
-	if (!config.enabled) {
+	if (!config.enabled || !app.r.isReady) {
 		return;
 	}
+
+	const state = app.r.trajectoryLines;
 
 	if (state.prevFutureColor !== config.futureColor) {
 		(futureLine.material as THREE.LineBasicMaterial).color.set(config.futureColor);

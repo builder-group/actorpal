@@ -15,7 +15,7 @@ export type TTrajectoryPlugin = TPlugin<
 		};
 		resources: {
 			trajectoryConfig: TTrajectoryConfig;
-			trajectoryState: TTrajectoryState;
+			trajectoryLines: TTrajectoryLines;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
@@ -38,11 +38,10 @@ export interface TTrajectoryConfig {
 	pastColor: string;
 }
 
-export interface TTrajectoryState {
-	initialized: boolean;
+export interface TTrajectoryLines {
 	/** Kept alongside entity IDs for efficient per-frame geometry updates */
-	futureLine: THREE.Line | null;
-	pastLine: THREE.Line | null;
+	futureLine: THREE.Line;
+	pastLine: THREE.Line;
 	pastPositions: Array<{ x: number; y: number; z: number }>;
 	futureBuffer: Float32Array;
 	pastBuffer: Float32Array;

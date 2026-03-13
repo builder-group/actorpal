@@ -15,9 +15,8 @@ export type TTrajectoryPlugin = TPlugin<
 		resources: {
 			trajectoryConfig: TTrajectoryConfig;
 			trajectoryLines: TTrajectoryLines;
-			trajectorySyncState: TTrajectorySyncState;
 		};
-		systemSets: 'First' | 'Update' | 'Last';
+		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
 	},
 	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin]
 >;
@@ -44,15 +43,6 @@ export interface TTrajectoryLines {
 	pastBuffer: Float32Array;
 	prevFutureColor: string;
 	prevPastColor: string;
-}
-
-export interface TTrajectorySyncState {
-	world: object | null;
-	playheadStep: number;
-	simulationSyncMode: 'idle' | 'dirty' | 'rebuilding';
-	futureSteps: number;
-	pastSteps: number;
-	enabled: boolean;
 }
 
 // MARK: - Components

@@ -20,18 +20,15 @@ export type TScenePlugin = TPlugin<
 			PegboardMixin: TCPegboardMixin[];
 		};
 		resources: {
-			straightTrackMeshSignatures: TRStraightTrackMeshSignatures;
-			straightTrackColliderSignatures: TRStraightTrackColliderSignatures;
 			sceneSelection: TSceneSelection;
 			sceneManipulationState: TSceneManipulationState;
 			sceneManipulationConfig: TSceneManipulationConfig;
 			sceneManipulationHandles: TSceneManipulationHandles;
-			sceneManipulationHandleSignature: string;
 		};
 		appExtensions: {
 			disposeScene(): void;
 		};
-		systemSets: 'First' | 'Update' | 'Last';
+		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
 	},
 	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin]
 >;
@@ -80,11 +77,6 @@ export interface TCPegboardMixin {
 	height: number;
 	repeatWorldSize: number;
 }
-
-// MARK: - Resources
-
-export type TRStraightTrackMeshSignatures = Map<number, string>;
-export type TRStraightTrackColliderSignatures = Map<number, string>;
 
 export interface TSceneSelection {
 	entityId: number | null;

@@ -29,7 +29,7 @@ export type TPhysicsPlugin = TPlugin<
 			markSimulationDirty(): void;
 			requestSimulationSync(): void;
 		};
-		systemSets: 'First' | 'Update' | 'Last';
+		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
 	},
 	[TDefaultPlugin, TCorePlugin]
 >;

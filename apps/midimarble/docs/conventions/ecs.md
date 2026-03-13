@@ -2,6 +2,8 @@
 
 See also [../architecture.md](../architecture.md) for the Midimarble-specific domain map and plugin ownership.
 
+Primary ECSify reference: [../../../../../community/packages/ecsify/README.md](../../../../../community/packages/ecsify/README.md).
+
 ## Purpose
 
 This document captures generic rules for building with ECS and ECSify.
@@ -145,6 +147,16 @@ When working through the app API, prefer `app.updateComponent()` and `app.update
 
 If direct mutation is necessary in a hot path, mark the change explicitly with ECSify's change-tracking API.
 
+Before inventing local signature maps or shadow sync resources, check whether ECSify already gives you the signal you need:
+
+- `Added(...)`
+- `Changed(...)`
+- `Removed(...)`
+- `app.wasResourceAdded(...)`
+- `app.wasResourceChanged(...)`
+
+Prefer those first. Add manual caches only when there is a measured need that ECSify's built-in change tracking does not cover cleanly.
+
 ### Keep resources intentional
 
 Resources are for global or singleton state, not a place to dump anything that does not fit.
@@ -245,8 +257,35 @@ Rules:
 
 - do not hide non-system helpers inside `systems.ts`
 - move domain actions, math helpers, signatures, and setup utilities into `lib/`
+- `systems.ts` should contain system exports only; even private helper functions should move to `lib/` once they stop being trivial
 - if a plugin grows many systems, split `systems.ts` into a `systems/` folder with one file per domain or system group
 - prefer naming helper files after the domain they support or the specific action they implement
+
+## System Set Guidance
+
+`ecsify` itself only needs this lean default schedule:
+
+- `First`
+- `Update`
+- `Last`
+- `Flush`
+
+An app may extend that with additional generic phases when it has a real need.
+
+For Midimarble, prefer a small generic schedule over domain-specific set names:
+
+- `First`
+- `PreUpdate`
+- `Update`
+- `PostUpdate`
+- `Last`
+- `Flush`
+
+Rules:
+
+- change-tracking consumers must run before `Flush`
+- do not assume `Last` is safe for `Added(...)` or `Changed(...)` unless `Flush` is a separate final phase
+- reserve domain-specific set names such as `Render` only when a truly reusable engine-wide pipeline exists
 
 ## UI Versus ECS
 

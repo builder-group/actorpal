@@ -14,7 +14,7 @@ export type TCorePlugin = TPlugin<
 		appExtensions: {
 			spawnBundle(bundle: TBundle): number;
 		};
-		systemSets: 'First' | 'Update' | 'Last';
+		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
 	},
 	[TDefaultPlugin]
 >;

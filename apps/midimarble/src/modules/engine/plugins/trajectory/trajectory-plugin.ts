@@ -20,7 +20,7 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 	const pastColor = '#ff9943';
 
 	return {
-		// Trajectory is an optional debug/inspection layer driven by physics state.
+		// Trajectory is a separate debug/inspection layer driven by physics state.
 		name: 'Trajectory',
 		deps: ['Default', 'Core', 'Physics', 'Render'],
 		components: {
@@ -41,14 +41,6 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				pastBuffer,
 				prevFutureColor: futureColor,
 				prevPastColor: pastColor
-			},
-			trajectorySyncState: {
-				world: null,
-				playheadStep: -1,
-				simulationSyncMode: 'idle',
-				futureSteps: -1,
-				pastSteps: -1,
-				enabled: false
 			}
 		},
 		setup(app: TTrajectoryApp) {
@@ -60,7 +52,7 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 			const pastEid = app.createEntity();
 			app.addComponent(pastEid, app.c.MeshMixin, { type: 'three', object: pastLine });
 
-			app.addSystem(updateTrajectorySystem, { set: 'Update' });
+			app.addSystem(updateTrajectorySystem, { set: 'PostUpdate' });
 		}
 	};
 }

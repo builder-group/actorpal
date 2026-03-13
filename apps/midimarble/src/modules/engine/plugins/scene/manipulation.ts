@@ -8,6 +8,7 @@ import {
 	getLinearElementHandlePositions,
 	resetSceneManipulationState
 } from './lib/manipulation';
+import { sameVec3 } from './lib/vec3';
 import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
 import type { TSceneApp } from './types';
 
@@ -300,10 +301,6 @@ function getNormalizedPointer(app: TSceneApp, event: PointerEvent): THREE.Vector
 		((event.clientX - rect.left) / rect.width) * 2 - 1,
 		-((event.clientY - rect.top) / rect.height) * 2 + 1
 	);
-}
-
-function sameVec3(a: TVec3, b: TVec3): boolean {
-	return Math.abs(a.x - b.x) < 1e-5 && Math.abs(a.y - b.y) < 1e-5 && Math.abs(a.z - b.z) < 1e-5;
 }
 
 function toVec3(vector: THREE.Vector3): TVec3 {

@@ -40,6 +40,16 @@ This graph is intentionally one-way and acyclic.
 
 `Physics`, `Render`, and `Trajectory` stay scene-agnostic. `Scene` is the only plugin allowed to know all of them.
 
+The engine should prefer ECSify-native change tracking over ad-hoc diff caches:
+
+- `Added(...)`
+- `Changed(...)`
+- `Removed(...)`
+- `app.wasResourceAdded(...)`
+- `app.wasResourceChanged(...)`
+
+Manual signature maps or shadow sync resources are a last resort, not the default.
+
 ## What Lives Outside ECS
 
 The timeline UI stays in React.
@@ -51,6 +61,17 @@ That is intentional:
 - the timeline does not need its own ECS plugin for the current scope
 
 Simulation transport and playhead state remain inside `Physics`, because they directly control physics stepping, seeking, checkpoint restore, and preload.
+
+Midimarble uses this generic schedule:
+
+- `First`
+- `PreUpdate`
+- `Update`
+- `PostUpdate`
+- `Last`
+- `Flush`
+
+`Flush` exists specifically so ECSify change tracking stays visible through late-frame systems.
 
 ## State Layers
 
@@ -163,6 +184,8 @@ Responsibilities:
 
 It does not need to know what a marble is.
 
+Trajectory refresh should be keyed off ECSify resource/component change tracking, not a duplicated shadow sync resource.
+
 ### `Scene`
 
 `Scene` is the app-specific composition root.
@@ -181,7 +204,7 @@ Responsibilities:
 - `RigidBodyMixin`
 - `ColliderMixin`
 
-It may also attach tags owned by optional extension plugins:
+It may also attach tags owned by extension plugins that this app wires in:
 
 - `TrajectorySourceTag`
 
@@ -203,6 +226,8 @@ A straight track is composed from:
 - physics setup via `RigidBodyMixin` and `ColliderMixin`
 
 The track mesh and collider descriptors are updated inside `Scene` when authored track data changes.
+
+That sync is driven by ECSify `Added(...)` and `Changed(...)` queries rather than plugin-local signature caches.
 
 ### Marble
 

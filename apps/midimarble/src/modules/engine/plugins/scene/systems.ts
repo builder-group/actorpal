@@ -1,27 +1,25 @@
-import { Entity, With } from 'ecsify';
+import { Added, Changed, Entity, Or } from 'ecsify';
 import * as THREE from 'three';
 import {
 	getEditableLinearElement,
 	getLinearElementHandlePositions,
-	getSceneManipulationHandleSignature,
 	updateHandleAppearance
 } from './lib/manipulation';
-import {
-	createTrackColliderSignature,
-	createTrackMeshSignature,
-	sameVec3
-} from './lib/track-runtime';
+import { sameVec3 } from './lib/vec3';
 import { createStraightTrackColliders, createStraightTrackGeometry } from './scene-bundles';
 import type { TSceneApp } from './types';
 
 export function syncAuthoredTransformsToLiveSystem(app: TSceneApp) {
-	for (const [eid, authoredTransform, position, rotation, scale] of app.queryComponents([
-		Entity,
-		app.c.AuthoredTransformMixin,
-		app.c.PositionMixin,
-		app.c.RotationMixin,
-		app.c.ScaleMixin
-	] as const)) {
+	for (const [eid, authoredTransform, position, rotation, scale] of app.queryComponents(
+		[
+			Entity,
+			app.c.AuthoredTransformMixin,
+			app.c.PositionMixin,
+			app.c.RotationMixin,
+			app.c.ScaleMixin
+		] as const,
+		Or(Added(app.c.AuthoredTransformMixin), Changed(app.c.AuthoredTransformMixin))
+	)) {
 		if (!sameVec3(position, authoredTransform.position)) {
 			app.updateComponent(eid, app.c.PositionMixin, { ...authoredTransform.position });
 		}
@@ -35,31 +33,16 @@ export function syncAuthoredTransformsToLiveSystem(app: TSceneApp) {
 }
 
 export function syncStraightTrackRuntimeMixinsSystem(app: TSceneApp) {
-	const activeTrackEntities = new Set<number>();
-
-	for (const [eid, mesh, collider, linear, track] of app.queryComponents(
-		[
-			Entity,
-			app.c.MeshMixin,
-			app.c.ColliderMixin,
-			app.c.LinearElementMixin,
-			app.c.StraightTrackMixin
-		] as const,
-		With(app.c.StraightTrackMixin)
+	for (const [eid, mesh, linear, track] of app.queryComponents(
+		[Entity, app.c.MeshMixin, app.c.LinearElementMixin, app.c.StraightTrackMixin] as const,
+		Or(
+			Added(app.c.StraightTrackMixin),
+			Changed(app.c.StraightTrackMixin),
+			Added(app.c.LinearElementMixin),
+			Changed(app.c.LinearElementMixin)
+		)
 	)) {
-		activeTrackEntities.add(eid);
-
-		const meshSignature = createTrackMeshSignature(linear.length, track);
-		const colliderSignature = createTrackColliderSignature(linear.length, track);
-
-		const prevMeshSignature = app.r.straightTrackMeshSignatures.get(eid);
-		if (prevMeshSignature == null) {
-			app.r.straightTrackMeshSignatures.set(eid, meshSignature);
-		} else if (
-			prevMeshSignature !== meshSignature &&
-			mesh.type === 'three' &&
-			mesh.object instanceof THREE.Mesh
-		) {
+		if (mesh.type === 'three' && mesh.object instanceof THREE.Mesh) {
 			mesh.object.geometry.dispose();
 			mesh.object.geometry = createStraightTrackGeometry({ ...track, length: linear.length });
 
@@ -73,35 +56,11 @@ export function syncStraightTrackRuntimeMixinsSystem(app: TSceneApp) {
 			} else if (material instanceof THREE.MeshStandardMaterial) {
 				material.color.set(track.color);
 			}
-
-			app.r.straightTrackMeshSignatures.set(eid, meshSignature);
-		}
-
-		const prevColliderSignature = app.r.straightTrackColliderSignatures.get(eid);
-		if (prevColliderSignature == null) {
-			app.r.straightTrackColliderSignatures.set(eid, colliderSignature);
-			continue;
-		}
-
-		if (prevColliderSignature === colliderSignature) {
-			continue;
 		}
 
 		app.updateComponent(eid, app.c.ColliderMixin, {
 			descriptors: createStraightTrackColliders({ ...track, length: linear.length })
 		});
-		app.r.straightTrackColliderSignatures.set(eid, colliderSignature);
-	}
-
-	for (const eid of Array.from(app.r.straightTrackMeshSignatures.keys())) {
-		if (!activeTrackEntities.has(eid)) {
-			app.r.straightTrackMeshSignatures.delete(eid);
-		}
-	}
-	for (const eid of Array.from(app.r.straightTrackColliderSignatures.keys())) {
-		if (!activeTrackEntities.has(eid)) {
-			app.r.straightTrackColliderSignatures.delete(eid);
-		}
 	}
 }
 
@@ -137,8 +96,7 @@ export function syncSceneManipulationHandlesSystem(app: TSceneApp) {
 }
 
 export function syncSceneManipulationHandleAppearanceSystem(app: TSceneApp) {
-	const signature = getSceneManipulationHandleSignature(app.r.sceneManipulationConfig);
-	if (app.r.sceneManipulationHandleSignature === signature) {
+	if (!app.wasResourceChanged('sceneManipulationConfig')) {
 		return;
 	}
 
@@ -152,5 +110,4 @@ export function syncSceneManipulationHandleAppearanceSystem(app: TSceneApp) {
 		app.r.sceneManipulationConfig.handleRadius,
 		app.r.sceneManipulationConfig.handleColor
 	);
-	app.updateResource('sceneManipulationHandleSignature', signature);
 }

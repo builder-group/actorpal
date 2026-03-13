@@ -1,8 +1,4 @@
-import {
-	createSceneManipulationHandles,
-	getSceneManipulationHandleSignature,
-	resetSceneManipulationState
-} from './lib/manipulation';
+import { createSceneManipulationHandles, resetSceneManipulationState } from './lib/manipulation';
 import { setupSceneManipulation } from './manipulation';
 import {
 	createMarbleBundle,
@@ -40,8 +36,6 @@ export function createScenePlugin(): TScenePlugin {
 			PegboardMixin: []
 		},
 		resources: {
-			straightTrackMeshSignatures: new Map(),
-			straightTrackColliderSignatures: new Map(),
 			sceneSelection: {
 				entityId: null
 			},
@@ -50,8 +44,7 @@ export function createScenePlugin(): TScenePlugin {
 			sceneManipulationHandles: createSceneManipulationHandles(
 				sceneManipulationConfig.handleRadius,
 				sceneManipulationConfig.handleColor
-			),
-			sceneManipulationHandleSignature: getSceneManipulationHandleSignature(sceneManipulationConfig)
+			)
 		},
 		appExtensions: {
 			disposeScene(this: TSceneApp): void {
@@ -84,10 +77,10 @@ export function createScenePlugin(): TScenePlugin {
 			);
 			app.spawnBundle(createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION }));
 
-			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'First' });
-			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'First' });
+			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'PreUpdate' });
+			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
-			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'Update' });
+			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'PostUpdate' });
 			disposeScene = setupSceneManipulation(app);
 		}
 	};

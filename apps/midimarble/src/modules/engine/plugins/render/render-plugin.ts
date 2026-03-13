@@ -1,4 +1,4 @@
-import { Viewport } from './lib';
+import { Viewport } from './lib/Viewport';
 import {
 	cleanupOrphanedThreeObjectsSystem,
 	mountThreeObjectsSystem,
@@ -33,12 +33,12 @@ export function createRenderPlugin(): TRenderPlugin {
 		},
 		setup(app: TRenderApp) {
 			app.addSystem(mountThreeObjectsSystem, { set: 'First' });
-			app.addSystem(syncThreeObjectTransformsSystem, { set: 'Last' });
+			app.addSystem(syncThreeObjectTransformsSystem, { set: 'PostUpdate' });
 			app.addSystem(cleanupOrphanedThreeObjectsSystem, {
 				set: 'Last',
 				after: syncThreeObjectTransformsSystem
 			});
-			app.addSystem(renderFrameSystem, { set: 'Last', after: syncThreeObjectTransformsSystem });
+			app.addSystem(renderFrameSystem, { set: 'Last', after: cleanupOrphanedThreeObjectsSystem });
 		}
 	};
 }

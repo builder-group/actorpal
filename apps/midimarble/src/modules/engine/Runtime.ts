@@ -37,7 +37,7 @@ export class Runtime {
 				createTrajectoryPlugin(),
 				createScenePlugin()
 			] as const,
-			systemSets: ['First', 'Update', 'Last']
+			systemSets: ['First', 'PreUpdate', 'Update', 'PostUpdate', 'Last', 'Flush']
 		});
 	}
 

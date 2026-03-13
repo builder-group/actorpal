@@ -61,7 +61,7 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 		},
 		setup(app: TPhysicsApp) {
 			void initPromise.then(() => {
-				app.r.rapier = RAPIER;
+				app.updateResource('rapier', RAPIER);
 				const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
 				world.timestep = app.r.fixedTimeStepSeconds;
 				app.updateResource('world', world);

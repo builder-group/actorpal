@@ -126,13 +126,6 @@ export function getEditableLinearElement(
 	return null;
 }
 
-export function getSceneManipulationHandleSignature(config: {
-	handleRadius: number;
-	handleColor: string;
-}): string {
-	return `${config.handleRadius}:${config.handleColor}`;
-}
-
 export function updateHandleAppearance(
 	handle: THREE.Mesh,
 	handleRadius: number,

@@ -19,7 +19,7 @@ export type TRenderPlugin = TPlugin<
 			setRenderContainer(container: HTMLDivElement | null): void;
 			disposeRender(): void;
 		};
-		systemSets: 'First' | 'Update' | 'Last';
+		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
 	},
 	[TDefaultPlugin, TCorePlugin]
 >;

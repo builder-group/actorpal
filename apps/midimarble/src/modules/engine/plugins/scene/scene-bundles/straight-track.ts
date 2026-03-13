@@ -4,6 +4,7 @@ import { TVec3 } from '../../../types';
 import type { TPhysicsColliderDescriptor } from '../../physics';
 import type { TSceneApp } from '../types';
 import type { TSceneBundle } from './types';
+import type { TCStraightTrackGeometryMixin } from '../types';
 
 export function createStraightTrackBundle(
 	app: TSceneApp,
@@ -20,6 +21,14 @@ export function createStraightTrackBundle(
 		channelDepth = 0.2,
 		color = ['#2a5e92', '#ffeead', '#ff9943', '#8ac6d6'][Math.floor(Math.random() * 4)]
 	} = options;
+	const geometry = {
+		length,
+		height,
+		width,
+		channelWidth,
+		channelDepth,
+		color: color as string
+	} satisfies TCStraightTrackGeometryMixin;
 
 	return defineBundle(
 		bundleEntry(app.c.PositionMixin, position),
@@ -27,19 +36,13 @@ export function createStraightTrackBundle(
 		bundleEntry(app.c.ScaleMixin, scale),
 		bundleEntry(app.c.MeshMixin, {
 			type: 'three',
-			object: createStraightTrackObject(
-				length,
-				height,
-				width,
-				channelWidth,
-				channelDepth,
-				color as string
-			)
+			object: createStraightTrackObject(geometry)
 		}),
 		bundleEntry(app.c.StraightTrackMixin),
+		bundleEntry(app.c.StraightTrackGeometryMixin, geometry),
 		bundleEntry(app.c.RigidBodyMixin, { kind: 'fixed' }),
 		bundleEntry(app.c.ColliderMixin, {
-			descriptors: createStraightTrackColliders(length, height, width, channelWidth, channelDepth)
+			descriptors: createStraightTrackColliders(geometry)
 		})
 	);
 }
@@ -56,17 +59,15 @@ export interface TCreateStraightTrackBundleOptions {
 	color?: string;
 }
 
-function createStraightTrackObject(
-	length: number,
-	height: number,
-	width: number,
-	channelWidth: number,
-	channelDepth: number,
-	color: string
+export function createStraightTrackObject(
+	track: Pick<
+		TCStraightTrackGeometryMixin,
+		'length' | 'height' | 'width' | 'channelWidth' | 'channelDepth' | 'color'
+	>
 ): THREE.Object3D {
-	const geometry = createStraightTrackGeometry(length, height, width, channelWidth, channelDepth);
+	const geometry = createStraightTrackGeometry(track);
 	const material = new THREE.MeshStandardMaterial({
-		color,
+		color: track.color,
 		roughness: 0.74,
 		metalness: 0.04
 	});
@@ -77,58 +78,55 @@ function createStraightTrackObject(
 	return mesh;
 }
 
-function createStraightTrackColliders(
-	length: number,
-	height: number,
-	width: number,
-	channelWidth: number,
-	channelDepth: number
+export function createStraightTrackColliders(
+	track: Pick<TCStraightTrackGeometryMixin, 'length' | 'height' | 'width' | 'channelWidth' | 'channelDepth'>
 ): TPhysicsColliderDescriptor[] {
-	const wallWidth = (width - channelWidth) / 2;
+	const wallWidth = (track.width - track.channelWidth) / 2;
 
 	return [
 		{
 			shape: 'cuboid',
 			halfExtents: {
-				x: width / 2 - wallWidth,
-				y: (height - channelDepth * 2) / 2,
-				z: length / 2
+				x: track.width / 2 - wallWidth,
+				y: (track.height - track.channelDepth * 2) / 2,
+				z: track.length / 2
 			},
 			translation: { x: 0, y: 0, z: 0 },
 			friction: 0.5
 		},
 		{
 			shape: 'cuboid',
-			halfExtents: { x: wallWidth / 2, y: height / 2, z: length / 2 },
-			translation: { x: -(width / 2) + wallWidth / 2, y: 0, z: 0 },
+			halfExtents: { x: wallWidth / 2, y: track.height / 2, z: track.length / 2 },
+			translation: { x: -(track.width / 2) + wallWidth / 2, y: 0, z: 0 },
 			friction: 0.5
 		},
 		{
 			shape: 'cuboid',
-			halfExtents: { x: wallWidth / 2, y: height / 2, z: length / 2 },
-			translation: { x: width / 2 - wallWidth / 2, y: 0, z: 0 },
+			halfExtents: { x: wallWidth / 2, y: track.height / 2, z: track.length / 2 },
+			translation: { x: track.width / 2 - wallWidth / 2, y: 0, z: 0 },
 			friction: 0.5
 		}
 	];
 }
 
-function createStraightTrackGeometry(
-	length: number,
-	height: number,
-	width: number,
-	channelWidth: number,
-	channelDepth: number
+export function createStraightTrackGeometry(
+	track: Pick<TCStraightTrackGeometryMixin, 'length' | 'height' | 'width' | 'channelWidth' | 'channelDepth'>
 ): THREE.ExtrudeGeometry {
-	const profile = createTrackProfile(height, width, channelWidth, channelDepth);
+	const profile = createTrackProfile(
+		track.height,
+		track.width,
+		track.channelWidth,
+		track.channelDepth
+	);
 	const geometry = new THREE.ExtrudeGeometry(profile, {
 		steps: 1,
-		depth: length,
+		depth: track.length,
 		bevelEnabled: true,
 		bevelThickness: 0,
 		bevelSize: 0
 	});
 
-	geometry.translate(-width / 2, 0, -length / 2);
+	geometry.translate(-track.width / 2, 0, -track.length / 2);
 	geometry.computeVertexNormals();
 	return geometry;
 }

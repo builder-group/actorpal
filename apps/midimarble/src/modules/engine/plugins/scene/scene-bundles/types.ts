@@ -10,6 +10,7 @@ export type TSceneBundle = TBundle<
 		| 'RigidBodyMixin'
 		| 'ColliderMixin'
 		| 'StraightTrackMixin'
+		| 'StraightTrackGeometryMixin'
 		| 'PegboardMixin'
 		| 'MarbleMixin']
 >;

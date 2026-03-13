@@ -23,6 +23,7 @@ export type TPhysicsPlugin = TPlugin<
 			preloadStep: number;
 			rigidBodies: TRRigidBodies;
 			colliders: TRColliders;
+			pendingSceneEditInvalidation: TPendingSceneEditInvalidation;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
@@ -48,6 +49,11 @@ export interface TSimulationConfig {
 	maxPreloadStepsPerUpdate: number;
 	maxLiveStepsPerUpdate: number;
 	maxDeltaSeconds: number;
+}
+
+export interface TPendingSceneEditInvalidation {
+	dirty: boolean;
+	revisionBumped: boolean;
 }
 
 export interface TCRigidBodyMixin {

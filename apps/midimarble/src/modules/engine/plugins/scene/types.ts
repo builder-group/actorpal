@@ -11,7 +11,11 @@ export type TScenePlugin = TPlugin<
 		components: {
 			MarbleMixin: TCMarbleMixin[];
 			StraightTrackMixin: TCStraightTrackMixin[];
+			StraightTrackGeometryMixin: TCStraightTrackGeometryMixin[];
 			PegboardMixin: TCPegboardMixin[];
+		};
+		resources: {
+			straightTrackGeometrySignatures: TStraightTrackGeometrySignatures;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
@@ -30,4 +34,15 @@ export interface TCMarbleMixin {
 
 export type TCStraightTrackMixin = [];
 
+export interface TCStraightTrackGeometryMixin {
+	length: number;
+	height: number;
+	width: number;
+	channelWidth: number;
+	channelDepth: number;
+	color: string;
+}
+
 export type TCPegboardMixin = [];
+
+export type TStraightTrackGeometrySignatures = Map<number, string>;

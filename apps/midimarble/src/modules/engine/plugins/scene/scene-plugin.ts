@@ -3,7 +3,9 @@ import {
 	createPegboardBundle,
 	createStraightTrackBundle
 } from './scene-bundles';
+import { syncStraightTrackGeometrySystem } from './systems';
 import type { TSceneApp, TScenePlugin } from './types';
+import { spawnRigidBodiesSystem } from '../physics/systems';
 
 export const MARBLE_SPAWN_POSITION = { x: -7.25, y: 18.4, z: -25.2 };
 
@@ -14,10 +16,18 @@ export function createScenePlugin(): TScenePlugin {
 		components: {
 			MarbleMixin: [],
 			StraightTrackMixin: [],
+			StraightTrackGeometryMixin: [],
 			PegboardMixin: []
+		},
+		resources: {
+			straightTrackGeometrySignatures: new Map()
 		},
 		setup(app: TSceneApp) {
 			seedScene(app);
+			app.addSystem(syncStraightTrackGeometrySystem, {
+				set: 'First',
+				after: spawnRigidBodiesSystem as unknown as (app: TSceneApp) => void
+			});
 		}
 	};
 }

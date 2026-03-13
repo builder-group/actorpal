@@ -156,6 +156,45 @@ export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
 	updateSimulationTransport(app, { bufferedStep });
 }
 
+export function invalidateSimulationOnSceneEditSystem(app: TPhysicsApp) {
+	const rapier = app.r.rapier;
+	const pending = app.r.pendingSceneEditInvalidation;
+	if (rapier == null || !pending.dirty) {
+		return;
+	}
+
+	const targetStep = app.r.simulationTransport.playheadStep;
+	let nextRevision = app.r.simulationTransport.revision;
+	if (!pending.revisionBumped) {
+		nextRevision += 1;
+	}
+
+	const rebuiltWorld = rebuildEditedWorldAtStep(app, targetStep);
+	if (rebuiltWorld == null) {
+		return;
+	}
+
+	app.r.accumulatorSeconds = 0;
+	replaceEditedLiveWorld(app, rebuiltWorld);
+	app.r.preloadWorld?.free();
+	const preloadSnapshot = rebuiltWorld.takeSnapshot();
+	const preloadWorld = rapier.World.restoreSnapshot(preloadSnapshot);
+	preloadWorld.timestep = app.r.fixedTimeStepSeconds;
+
+	app.updateResource('preloadWorld', preloadWorld);
+	app.updateResource('preloadStep', targetStep);
+	app.updateResource('pendingSceneEditInvalidation', {
+		dirty: false,
+		revisionBumped: false
+	});
+	updateSimulationTransport(app, {
+		mode: 'paused',
+		playheadStep: targetStep,
+		bufferedStep: targetStep,
+		revision: nextRevision
+	});
+}
+
 export function syncDynamicBodiesToComponentsSystem(app: TPhysicsApp) {
 	for (const [eid, rigidBody] of app.queryComponents(
 		[Entity, app.c.RigidBodyMixin] as const,
@@ -342,4 +381,125 @@ function updateSimulationTransport(
 		...app.r.simulationTransport,
 		...patch
 	});
+}
+
+function rebuildEditedWorldAtStep(app: TPhysicsApp, targetStep: number): RAPIER.World | null {
+	const rapier = app.r.rapier;
+	if (rapier == null) {
+		return null;
+	}
+
+	const baseSnapshot = app.r.checkpointStore.get(0);
+	if (baseSnapshot == null) {
+		return null;
+	}
+
+	const rebuiltWorld = rapier.World.restoreSnapshot(baseSnapshot);
+	rebuiltWorld.timestep = app.r.fixedTimeStepSeconds;
+	reapplyAuthoredStaticScene(app, rebuiltWorld, rapier);
+
+	app.r.checkpointStore.clear();
+	storeCheckpoint(app.r.checkpointStore, 0, rebuiltWorld.takeSnapshot());
+
+	for (let step = 0; step < targetStep; step++) {
+		rebuiltWorld.step();
+
+		const nextStep = step + 1;
+		if (nextStep % app.r.simulationConfig.checkpointIntervalSteps === 0) {
+			storeCheckpoint(app.r.checkpointStore, nextStep, rebuiltWorld.takeSnapshot());
+		}
+	}
+
+	return rebuiltWorld;
+}
+
+function reapplyAuthoredStaticScene(
+	app: TPhysicsApp,
+	world: RAPIER.World,
+	rapier: typeof RAPIER
+): void {
+	for (const [eid, position, rotation, rigidBody, collider] of app.queryComponents([
+		Entity,
+		app.c.PositionMixin,
+		app.c.RotationMixin,
+		app.c.RigidBodyMixin,
+		app.c.ColliderMixin
+	] as const)) {
+		if (rigidBody.kind !== 'fixed') {
+			continue;
+		}
+
+		const currentBody = app.r.rigidBodies.get(eid);
+		if (currentBody == null) {
+			continue;
+		}
+
+		const rebuiltBody = world.getRigidBody(currentBody.handle);
+		if (rebuiltBody == null) {
+			continue;
+		}
+
+		rebuiltBody.setTranslation(position, true);
+		rebuiltBody.setRotation(createQuaternionFromEuler(rotation.x, rotation.y, rotation.z), true);
+
+		const existingColliderCount = rebuiltBody.numColliders();
+		for (let index = existingColliderCount - 1; index >= 0; index--) {
+			const existingCollider = rebuiltBody.collider(index);
+			if (existingCollider != null) {
+				world.removeCollider(existingCollider, true);
+			}
+		}
+
+		for (const descriptor of collider.descriptors) {
+			world.createCollider(createColliderDesc(rapier, descriptor), rebuiltBody);
+		}
+	}
+}
+
+function replaceEditedLiveWorld(
+	app: TPhysicsApp,
+	world: NonNullable<TPhysicsApp['r']['world']>
+): void {
+	const nextRigidBodies = new Map<number, RAPIER.RigidBody>();
+	const nextColliders = new Map<number, RAPIER.Collider[]>();
+
+	for (const [eid] of app.queryComponents(
+		[Entity, app.c.RigidBodyMixin] as const,
+		With(app.c.RigidBodyMixin)
+	)) {
+		const currentBody = app.r.rigidBodies.get(eid);
+		if (currentBody == null) {
+			continue;
+		}
+
+		const rebuiltBody = world.getRigidBody(currentBody.handle);
+		if (rebuiltBody == null) {
+			continue;
+		}
+
+		const colliders: RAPIER.Collider[] = [];
+		for (let index = 0; index < rebuiltBody.numColliders(); index++) {
+			const collider = rebuiltBody.collider(index);
+			if (collider != null) {
+				colliders.push(collider);
+			}
+		}
+
+		nextRigidBodies.set(eid, rebuiltBody);
+		nextColliders.set(eid, colliders);
+	}
+
+	app.r.rigidBodies.clear();
+	for (const [eid, body] of nextRigidBodies) {
+		app.r.rigidBodies.set(eid, body);
+	}
+
+	app.r.colliders.clear();
+	for (const [eid, colliders] of nextColliders) {
+		app.r.colliders.set(eid, colliders);
+	}
+
+	const oldWorld = app.r.world;
+	app.updateResource('world', world);
+	oldWorld?.free();
 }

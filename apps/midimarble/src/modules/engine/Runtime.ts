@@ -7,6 +7,7 @@ import {
 } from 'ecsify';
 import {
 	createCorePlugin,
+	createSceneEditorPlugin,
 	createPhysicsPlugin,
 	replaceLiveWorld,
 	createRenderPlugin,
@@ -16,6 +17,7 @@ import {
 	createTimelinePlugin,
 	createTrajectoryPlugin,
 	type TCorePlugin,
+	type TSceneEditorPlugin,
 	type TPhysicsPlugin,
 	type TRenderPlugin,
 	type TScenePlugin,
@@ -37,6 +39,7 @@ export class Runtime {
 				createPhysicsPlugin(),
 				createRenderPlugin(),
 				createScenePlugin(),
+				createSceneEditorPlugin(),
 				createTimelinePlugin(),
 				createTrajectoryPlugin()
 			] as const,
@@ -49,8 +52,9 @@ export class Runtime {
 	}
 
 	public run(): void {
-		this._app.updateResource('simulationTransport', {
-			...this._app.r.simulationTransport,
+		const app = this._app;
+		app.updateResource('simulationTransport', {
+			...app.r.simulationTransport,
 			mode: 'running'
 		});
 	}
@@ -136,6 +140,7 @@ export class Runtime {
 		this.stop();
 		this._app.r.preloadWorld?.free();
 		this._app.r.world?.free();
+		this._app.disposeSceneEditor();
 		this._app.setRenderContainer(null);
 		this._app.disposeRender();
 		this._app.flush();
@@ -165,6 +170,7 @@ export type TRuntimeApp = TApp<
 			TPhysicsPlugin,
 			TRenderPlugin,
 			TScenePlugin,
+			TSceneEditorPlugin,
 			TTimelinePlugin,
 			TTrajectoryPlugin
 		]

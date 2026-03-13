@@ -1,6 +1,7 @@
 import * as RAPIER from '@dimforge/rapier3d-compat';
 import {
 	cleanupOrphanedPhysicsBodiesSystem,
+	invalidateSimulationOnSceneEditSystem,
 	preloadPhysicsWorldSystem,
 	spawnRigidBodiesSystem,
 	stepPhysicsWorldSystem,
@@ -42,7 +43,11 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 			checkpointStore: new Map(),
 			preloadStep: 0,
 			rigidBodies: new Map(),
-			colliders: new Map()
+			colliders: new Map(),
+			pendingSceneEditInvalidation: {
+				dirty: false,
+				revisionBumped: false
+			}
 		},
 		setup(app: TPhysicsApp) {
 			void initPromise.then(() => {
@@ -58,9 +63,13 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 				set: 'Update',
 				after: spawnRigidBodiesSystem
 			});
-			app.addSystem(stepPhysicsWorldSystem, {
+			app.addSystem(invalidateSimulationOnSceneEditSystem, {
 				set: 'Update',
 				after: syncNonDynamicBodiesFromComponentsSystem
+			});
+			app.addSystem(stepPhysicsWorldSystem, {
+				set: 'Update',
+				after: invalidateSimulationOnSceneEditSystem
 			});
 			app.addSystem(preloadPhysicsWorldSystem, {
 				set: 'Update',

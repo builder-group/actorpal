@@ -63,8 +63,24 @@ export class Viewport {
 		return this._scene;
 	}
 
+	public get camera(): THREE.PerspectiveCamera {
+		return this._camera;
+	}
+
+	public get domElement(): HTMLCanvasElement {
+		return this._renderer.domElement;
+	}
+
 	public get textureLoader(): THREE.TextureLoader {
 		return this._textureLoader;
+	}
+
+	public get controlsEnabled(): boolean {
+		return this._controls.enabled;
+	}
+
+	public setControlsEnabled(enabled: boolean): void {
+		this._controls.enabled = enabled;
 	}
 
 	public setContainer(container: HTMLDivElement | null): void {

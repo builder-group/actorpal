@@ -31,8 +31,8 @@ export type TTrajectoryApp = TApp<
 // MARK: - Resources
 
 export interface TTrajectoryConfig {
-	futureTicks: number;
-	pastTicks: number;
+	futureSteps: number;
+	pastSteps: number;
 	enabled: boolean;
 	futureColor: string;
 	pastColor: string;
@@ -42,7 +42,6 @@ export interface TTrajectoryLines {
 	/** Kept alongside entity IDs for efficient per-frame geometry updates */
 	futureLine: THREE.Line;
 	pastLine: THREE.Line;
-	pastPositions: Array<{ x: number; y: number; z: number }>;
 	futureBuffer: Float32Array;
 	pastBuffer: Float32Array;
 	prevFutureColor: string;

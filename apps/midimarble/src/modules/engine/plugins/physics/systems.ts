@@ -1,6 +1,7 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
 import { Entity, With } from 'ecsify';
-import type { TCRigidBodyMixin, TPhysicsApp, TPhysicsColliderDescriptor } from './types';
+import { storeCheckpoint, syncPreloadWorldToStep } from './simulation';
+import type { TCRigidBodyMixin, TPhysicsApp, TPhysicsColliderDescriptor, TSimulationTransport } from './types';
 
 export function spawnRigidBodiesSystem(app: TPhysicsApp) {
 	const world = app.r.world;
@@ -67,12 +68,92 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 		return;
 	}
 
-	app.r.accumulatorSeconds += dt;
+	ensureSimulationBaseInitialized(app);
 
-	while (app.r.accumulatorSeconds >= app.r.fixedTimeStepSeconds) {
+	const config = app.r.simulationConfig;
+	const transport = app.r.simulationTransport;
+
+	if (transport.mode !== 'running') {
+		return;
+	}
+
+	app.r.accumulatorSeconds += Math.min(Math.max(dt, 0), config.maxDeltaSeconds);
+
+	let playheadStep = transport.playheadStep;
+	let bufferedStep = transport.bufferedStep;
+	let stepsRun = 0;
+
+	while (
+		app.r.accumulatorSeconds >= app.r.fixedTimeStepSeconds &&
+		stepsRun < config.maxLiveStepsPerUpdate
+	) {
 		world.step();
 		app.r.accumulatorSeconds -= app.r.fixedTimeStepSeconds;
+		playheadStep++;
+		stepsRun++;
+
+		if (playheadStep % config.checkpointIntervalSteps === 0) {
+			storeCheckpoint(app.r.checkpointStore, playheadStep, world.takeSnapshot());
+		}
 	}
+
+	if (stepsRun === 0) {
+		return;
+	}
+
+	bufferedStep = Math.max(bufferedStep, playheadStep);
+	updateSimulationTransport(app, {
+		playheadStep,
+		bufferedStep
+	});
+}
+
+export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
+	const rapier = app.r.rapier;
+	const world = app.r.world;
+	if (rapier == null || world == null) {
+		return;
+	}
+
+	ensureSimulationBaseInitialized(app);
+	syncPreloadWorldToStep(app, app.r.simulationTransport.bufferedStep);
+
+	const preloadWorld = app.r.preloadWorld;
+	if (preloadWorld == null) {
+		return;
+	}
+
+	const { simulationConfig, simulationTransport } = app.r;
+	const targetBufferedStep =
+		simulationTransport.playheadStep + simulationConfig.preloadHorizonSteps;
+	if (simulationTransport.bufferedStep >= targetBufferedStep) {
+		return;
+	}
+
+	let preloadStep = app.r.preloadStep;
+	let bufferedStep = simulationTransport.bufferedStep;
+	let stepsRun = 0;
+
+	while (
+		bufferedStep < targetBufferedStep &&
+		stepsRun < simulationConfig.maxPreloadStepsPerUpdate
+	) {
+		preloadWorld.step();
+		preloadStep++;
+		bufferedStep = preloadStep;
+		stepsRun++;
+
+		if (preloadStep % simulationConfig.checkpointIntervalSteps === 0) {
+			storeCheckpoint(app.r.checkpointStore, preloadStep, preloadWorld.takeSnapshot());
+		}
+	}
+
+	if (stepsRun === 0) {
+		return;
+	}
+
+	app.updateResource('preloadStep', preloadStep);
+	updateSimulationTransport(app, { bufferedStep });
 }
 
 export function syncDynamicBodiesToComponentsSystem(app: TPhysicsApp) {
@@ -233,4 +314,32 @@ function quaternionToEuler(x: number, y: number, z: number, w: number) {
 	const yaw = Math.atan2(sinyCosp, cosyCosp);
 
 	return { x: roll, y: pitch, z: yaw };
+}
+
+function ensureSimulationBaseInitialized(app: TPhysicsApp): void {
+	const world = app.r.world;
+	const rapier = app.r.rapier;
+	if (world == null || rapier == null || app.r.checkpointStore.has(0)) {
+		return;
+	}
+
+	const initialSnapshot = world.takeSnapshot();
+	storeCheckpoint(app.r.checkpointStore, 0, initialSnapshot);
+
+	const preloadWorld = rapier.World.restoreSnapshot(initialSnapshot);
+	preloadWorld.timestep = app.r.fixedTimeStepSeconds;
+
+	app.updateResource('preloadWorld', preloadWorld);
+	app.updateResource('preloadStep', 0);
+	updateSimulationTransport(app, { playheadStep: 0, bufferedStep: 0 });
+}
+
+function updateSimulationTransport(
+	app: TPhysicsApp,
+	patch: Partial<TSimulationTransport>
+): void {
+	app.updateResource('simulationTransport', {
+		...app.r.simulationTransport,
+		...patch
+	});
 }

@@ -13,9 +13,14 @@ export type TPhysicsPlugin = TPlugin<
 		resources: {
 			rapier: typeof RAPIER | null;
 			world: RAPIER.World | null;
+			preloadWorld: RAPIER.World | null;
 			isReady: boolean;
 			accumulatorSeconds: number;
 			fixedTimeStepSeconds: number;
+			simulationTransport: TSimulationTransport;
+			simulationConfig: TSimulationConfig;
+			checkpointStore: TCheckpointStore;
+			preloadStep: number;
 			rigidBodies: TRRigidBodies;
 			colliders: TRColliders;
 		};
@@ -28,6 +33,22 @@ export type TPhysicsApp = TApp<TAppContext<[TDefaultPlugin, TCorePlugin, TPhysic
 
 export type TRRigidBodies = Map<number, RAPIER.RigidBody>;
 export type TRColliders = Map<number, RAPIER.Collider[]>;
+export type TCheckpointStore = Map<number, Uint8Array>;
+
+export interface TSimulationTransport {
+	mode: 'paused' | 'running';
+	playheadStep: number;
+	bufferedStep: number;
+	revision: number;
+}
+
+export interface TSimulationConfig {
+	checkpointIntervalSteps: number;
+	preloadHorizonSteps: number;
+	maxPreloadStepsPerUpdate: number;
+	maxLiveStepsPerUpdate: number;
+	maxDeltaSeconds: number;
+}
 
 export interface TCRigidBodyMixin {
 	kind: 'dynamic' | 'fixed' | 'kinematicPosition';

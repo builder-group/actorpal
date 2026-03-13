@@ -8,8 +8,11 @@ import {
 import {
 	createCorePlugin,
 	createPhysicsPlugin,
+	replaceLiveWorld,
 	createRenderPlugin,
+	restoreWorldAtStep,
 	createScenePlugin,
+	syncPreloadWorldToStep,
 	createTrajectoryPlugin,
 	type TCorePlugin,
 	type TPhysicsPlugin,
@@ -40,6 +43,61 @@ export class Runtime {
 
 	public get app(): TRuntimeApp {
 		return this._app;
+	}
+
+	public run(): void {
+		this._app.updateResource('simulationTransport', {
+			...this._app.r.simulationTransport,
+			mode: 'running'
+		});
+	}
+
+	public pause(): void {
+		this._app.updateResource('simulationTransport', {
+			...this._app.r.simulationTransport,
+			mode: 'paused'
+		});
+	}
+
+	public reset(): void {
+		const app = this._app;
+		const restoredWorld = restoreWorldAtStep(app, 0);
+		if (restoredWorld == null) {
+			return;
+		}
+
+		replaceLiveWorld(app, restoredWorld);
+		app.r.accumulatorSeconds = 0;
+		clearTransientSimulationState(app);
+		app.updateResource('simulationTransport', {
+			...app.r.simulationTransport,
+			mode: 'paused',
+			playheadStep: 0
+		});
+		syncPreloadWorldToStep(app, app.r.simulationTransport.bufferedStep);
+	}
+
+	public seekToStep(step: number): void {
+		const app = this._app;
+		const targetStep = Math.max(0, Math.min(step, app.r.simulationTransport.bufferedStep));
+		const restoredWorld = restoreWorldAtStep(app, targetStep);
+		if (restoredWorld == null) {
+			return;
+		}
+
+		replaceLiveWorld(app, restoredWorld);
+		app.r.accumulatorSeconds = 0;
+		clearTransientSimulationState(app);
+		app.updateResource('simulationTransport', {
+			...app.r.simulationTransport,
+			playheadStep: targetStep
+		});
+		syncPreloadWorldToStep(app, app.r.simulationTransport.bufferedStep);
+	}
+
+	public seekToSeconds(seconds: number): void {
+		const targetStep = Math.round(seconds / this._app.r.fixedTimeStepSeconds);
+		this.seekToStep(targetStep);
 	}
 
 	public start(): void {
@@ -73,6 +131,8 @@ export class Runtime {
 		}
 		this._isMounted = false;
 		this.stop();
+		this._app.r.preloadWorld?.free();
+		this._app.r.world?.free();
 		this._app.setRenderContainer(null);
 		this._app.disposeRender();
 		this._app.flush();
@@ -87,6 +147,11 @@ export class Runtime {
 		this._app.update(dt);
 		this._frameId = window.requestAnimationFrame(this._loop);
 	};
+}
+
+function clearTransientSimulationState(app: TRuntimeApp): void {
+	app.r.trajectoryLines.pastLine.geometry.setDrawRange(0, 0);
+	app.r.trajectoryLines.futureLine.geometry.setDrawRange(0, 0);
 }
 
 export type TRuntimeApp = TApp<

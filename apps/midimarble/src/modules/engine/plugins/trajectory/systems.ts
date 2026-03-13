@@ -1,8 +1,9 @@
 import { Entity, With } from 'ecsify';
 import * as THREE from 'three';
+import { findNearestCheckpointStep } from '../physics/simulation';
 import type { TTrajectoryApp } from './types';
 
-const MAX_TICKS = 1000;
+const MAX_STEPS = 1000;
 
 export function updateTrajectorySystem(app: TTrajectoryApp) {
 	const config = app.r.trajectoryConfig;
@@ -33,23 +34,7 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 	if (firstMarble == null) {
 		return;
 	}
-	const [marbleEid, marblePos] = firstMarble;
-
-	state.pastPositions.push({ x: marblePos.x, y: marblePos.y, z: marblePos.z });
-	if (state.pastPositions.length > config.pastTicks) {
-		state.pastPositions.splice(0, state.pastPositions.length - config.pastTicks);
-	}
-
-	const pastCount = Math.min(state.pastPositions.length, MAX_TICKS);
-	for (let i = 0; i < pastCount; i++) {
-		const p = state.pastPositions[i]!;
-		state.pastBuffer[i * 3] = p.x;
-		state.pastBuffer[i * 3 + 1] = p.y;
-		state.pastBuffer[i * 3 + 2] = p.z;
-	}
-	const pastAttr = pastLine.geometry.getAttribute('position') as THREE.BufferAttribute;
-	pastAttr.needsUpdate = true;
-	pastLine.geometry.setDrawRange(0, pastCount);
+	const [marbleEid] = firstMarble;
 
 	const world = app.r.world;
 	const rapier = app.r.rapier;
@@ -62,14 +47,19 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 		return;
 	}
 
+	const pastCount = rebuildPastTrajectory(app, marbleBody.handle);
+	const pastAttr = pastLine.geometry.getAttribute('position') as THREE.BufferAttribute;
+	pastAttr.needsUpdate = true;
+	pastLine.geometry.setDrawRange(0, pastCount);
+
 	const snapshot = world.takeSnapshot();
 	const shadow = rapier.World.restoreSnapshot(snapshot);
 	shadow.timestep = app.r.fixedTimeStepSeconds;
 
 	const shadowBody = shadow.getRigidBody(marbleBody.handle);
-	const futureTicks = Math.min(config.futureTicks, MAX_TICKS);
+	const futureSteps = Math.min(config.futureSteps, MAX_STEPS);
 
-	for (let i = 0; i < futureTicks; i++) {
+	for (let i = 0; i < futureSteps; i++) {
 		shadow.step();
 		const t = shadowBody.translation();
 		state.futureBuffer[i * 3] = t.x;
@@ -81,5 +71,59 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 
 	const futureAttr = futureLine.geometry.getAttribute('position') as THREE.BufferAttribute;
 	futureAttr.needsUpdate = true;
-	futureLine.geometry.setDrawRange(0, futureTicks);
+	futureLine.geometry.setDrawRange(0, futureSteps);
+}
+
+function rebuildPastTrajectory(app: TTrajectoryApp, marbleHandle: number): number {
+	const rapier = app.r.rapier;
+	if (rapier == null) {
+		return 0;
+	}
+
+	const configPastSteps = Math.min(app.r.trajectoryConfig.pastSteps, MAX_STEPS);
+	const endStep = app.r.simulationTransport.playheadStep;
+	const startStep = Math.max(0, endStep - Math.max(configPastSteps - 1, 0));
+	const checkpointStep = findNearestCheckpointStep(app.r.checkpointStore, startStep);
+	if (checkpointStep == null) {
+		return 0;
+	}
+
+	const snapshot = app.r.checkpointStore.get(checkpointStep);
+	if (snapshot == null) {
+		return 0;
+	}
+
+	const shadow = rapier.World.restoreSnapshot(snapshot);
+	shadow.timestep = app.r.fixedTimeStepSeconds;
+
+	try {
+		const shadowBody = shadow.getRigidBody(marbleHandle);
+		if (shadowBody == null) {
+			return 0;
+		}
+
+		let count = 0;
+		for (let step = checkpointStep; step < endStep; step++) {
+			if (step >= startStep) {
+				writePoint(app.r.trajectoryLines.pastBuffer, count, shadowBody.translation());
+				count++;
+			}
+			shadow.step();
+		}
+
+		writePoint(app.r.trajectoryLines.pastBuffer, count, shadowBody.translation());
+		return count + 1;
+	} finally {
+		shadow.free();
+	}
+}
+
+function writePoint(
+	buffer: Float32Array,
+	index: number,
+	point: { x: number; y: number; z: number }
+): void {
+	buffer[index * 3] = point.x;
+	buffer[index * 3 + 1] = point.y;
+	buffer[index * 3 + 2] = point.z;
 }

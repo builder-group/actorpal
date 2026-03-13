@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { updateTrajectorySystem } from './systems';
 import type { TTrajectoryApp, TTrajectoryPlugin } from './types';
 
-const MAX_TICKS = 1000;
+const MAX_STEPS = 1000;
 
 function buildLine(buffer: Float32Array, color: string): THREE.Line {
 	const geometry = new THREE.BufferGeometry();
@@ -14,8 +14,8 @@ function buildLine(buffer: Float32Array, color: string): THREE.Line {
 }
 
 export function createTrajectoryPlugin(): TTrajectoryPlugin {
-	const futureBuffer = new Float32Array(MAX_TICKS * 3);
-	const pastBuffer = new Float32Array(MAX_TICKS * 3);
+	const futureBuffer = new Float32Array(MAX_STEPS * 3);
+	const pastBuffer = new Float32Array(MAX_STEPS * 3);
 	const futureColor = '#4a90e2';
 	const pastColor = '#ff9943';
 
@@ -27,8 +27,8 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 		},
 		resources: {
 			trajectoryConfig: {
-				futureTicks: 120,
-				pastTicks: 120,
+				futureSteps: 120,
+				pastSteps: 120,
 				enabled: true,
 				futureColor,
 				pastColor
@@ -36,7 +36,6 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 			trajectoryLines: {
 				futureLine: buildLine(futureBuffer, futureColor),
 				pastLine: buildLine(pastBuffer, pastColor),
-				pastPositions: [],
 				futureBuffer,
 				pastBuffer,
 				prevFutureColor: futureColor,

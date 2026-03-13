@@ -1,7 +1,7 @@
 import React from 'react';
 import { useResource } from '@/modules/engine';
-import type { TTimelineItem } from '@/modules/engine';
 import { useEditorCx } from '../EditorCx';
+import { useTimelineCx, useTimelineViewModel, type TTimelineItem } from '../TimelineCx';
 
 const TIMELINE_HEIGHT = 84;
 const RULER_HEIGHT = 28;
@@ -26,7 +26,7 @@ const TimelineHeader: React.FC<{
 						'rounded px-2.5 py-1 text-[11px] font-medium transition-colors',
 						view.id === activeViewId
 							? 'bg-base-200 text-base-800'
-							: 'text-base-500 hover:text-base-700',
+							: 'text-base-500 hover:text-base-700'
 					].join(' ')}
 				>
 					{view.label}
@@ -82,7 +82,10 @@ const TimelineRuler: React.FC<{
 	bufferedPx: number;
 	pixelsPerSecond: number;
 }> = ({ totalDurationSeconds, bufferedPx, pixelsPerSecond }) => {
-	const secondTicks = Array.from({ length: Math.ceil(totalDurationSeconds) + 1 }, (_, index) => index);
+	const secondTicks = Array.from(
+		{ length: Math.ceil(totalDurationSeconds) + 1 },
+		(_, index) => index
+	);
 
 	return (
 		<div
@@ -154,12 +157,10 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const app = cx.runtime.app;
 	const isReady = useResource(app, 'isReady');
 	const transport = useResource(app, 'simulationTransport');
-	const simulationConfig = app.r.simulationConfig;
-	const timelineUi = useResource(app, 'timelineUi');
-	useResource(app, 'timelineContributors');
-
-	const viewModel = app.getTimelineViewModel();
-	const fixedTimeStepSeconds = app.r.fixedTimeStepSeconds;
+	const simulationConfig = useResource(app, 'simulationConfig');
+	const { timelineUi, setActiveViewId } = useTimelineCx();
+	const viewModel = useTimelineViewModel();
+	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
 	const playheadSeconds = transport.playheadStep * fixedTimeStepSeconds;
 	const bufferedSeconds = transport.bufferedStep * fixedTimeStepSeconds;
 	const totalDurationSeconds = Math.max(
@@ -221,14 +222,16 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 
 	return (
 		<section
-			className={['bg-base-0 flex h-full flex-col overflow-hidden', className].filter(Boolean).join(' ')}
+			className={['bg-base-0 flex h-full flex-col overflow-hidden', className]
+				.filter(Boolean)
+				.join(' ')}
 		>
 			<TimelineHeader
 				viewLabels={viewModel.views.map((view) => ({ id: view.id, label: view.label }))}
 				activeViewId={viewModel.activeViewId}
 				isReady={isReady}
 				mode={transport.mode}
-				onSelectView={(viewId) => app.setActiveTimelineView(viewId)}
+				onSelectView={setActiveViewId}
 				onPlay={() => cx.runtime.run()}
 				onPause={() => cx.runtime.pause()}
 				onReset={() => cx.runtime.reset()}

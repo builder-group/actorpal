@@ -6,24 +6,25 @@ import type { TPhysicsPlugin } from '../physics';
 import type { TRenderPlugin } from '../render';
 import type { TScenePlugin } from '../scene';
 
-export type TSceneEditorPlugin = TPlugin<
+export type TSceneManipulationPlugin = TPlugin<
 	{
-		name: 'SceneEditor';
+		name: 'SceneManipulation';
 		resources: {
-			editorSelection: TEditorSelection;
-			trackEditState: TTrackEditState;
-			trackEditConfig: TTrackEditConfig;
-			trackEditHandles: TTrackEditHandles;
+			sceneSelection: TSceneSelection;
+			sceneManipulationState: TSceneManipulationState;
+			sceneManipulationConfig: TSceneManipulationConfig;
+			sceneManipulationHandles: TSceneManipulationHandles;
+			sceneManipulationHandleSignature: string;
 		};
 		appExtensions: {
-			disposeSceneEditor(): void;
+			disposeSceneManipulation(): void;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
 	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin]
 >;
 
-export type TSceneEditorApp = TApp<
+export type TSceneManipulationApp = TApp<
 	TAppContext<
 		[
 			TDefaultPlugin,
@@ -31,36 +32,32 @@ export type TSceneEditorApp = TApp<
 			TPhysicsPlugin,
 			TRenderPlugin,
 			TScenePlugin,
-			TSceneEditorPlugin
+			TSceneManipulationPlugin
 		]
 	>
 >;
 
-export interface TEditorSelection {
+export interface TSceneSelection {
 	entityId: number | null;
-	kind: 'straightTrack' | null;
 }
 
-export interface TTrackEditState {
+export interface TSceneManipulationState {
 	mode: 'idle' | 'move' | 'resizeStart' | 'resizeEnd';
 	entityId: number | null;
 	isDragging: boolean;
-	dragRevisionPending: boolean;
+	dragRevisionCommitted: boolean;
 	pointerDownClient: { x: number; y: number } | null;
 	dragPlaneX: number | null;
 	dragOffset: TVec3 | null;
-	fixedEndpoint: TVec3 | null;
 }
 
-export interface TTrackEditConfig {
-	minLength: number;
-	maxLength: number;
+export interface TSceneManipulationConfig {
 	handleRadius: number;
-	handleOffset: number;
+	handleColor: string;
 	dragStartPixels: number;
 }
 
-export interface TTrackEditHandles {
+export interface TSceneManipulationHandles {
 	start: THREE.Mesh;
 	end: THREE.Mesh;
 }

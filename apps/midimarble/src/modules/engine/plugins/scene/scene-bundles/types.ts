@@ -3,6 +3,8 @@ import type { TSceneApp } from '../types';
 
 export type TSceneBundle = TBundle<
 	TSceneApp['c'][
+		| 'SceneElementMixin'
+		| 'AuthoredTransformMixin'
 		| 'PositionMixin'
 		| 'RotationMixin'
 		| 'ScaleMixin'
@@ -10,7 +12,7 @@ export type TSceneBundle = TBundle<
 		| 'RigidBodyMixin'
 		| 'ColliderMixin'
 		| 'StraightTrackMixin'
-		| 'StraightTrackGeometryMixin'
+		| 'LinearElementMixin'
 		| 'PegboardMixin'
 		| 'MarbleMixin']
 >;

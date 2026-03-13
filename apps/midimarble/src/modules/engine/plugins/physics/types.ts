@@ -26,6 +26,10 @@ export type TPhysicsPlugin = TPlugin<
 			pendingSceneEditInvalidation: TPendingSceneEditInvalidation;
 			sceneEditRebuild: TSceneEditRebuild;
 		};
+		appExtensions: {
+			notifyAuthoredSceneMutation(options?: { preserveRevision?: boolean }): void;
+			endAuthoredSceneMutation(): void;
+		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
 	[TDefaultPlugin, TCorePlugin]

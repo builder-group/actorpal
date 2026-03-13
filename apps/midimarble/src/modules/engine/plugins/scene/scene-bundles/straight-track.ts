@@ -2,9 +2,13 @@ import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import { TVec3 } from '../../../types';
 import type { TPhysicsColliderDescriptor } from '../../physics';
-import type { TSceneApp } from '../types';
+import type {
+	TCAuthoredTransformMixin,
+	TCLinearElementMixin,
+	TCStraightTrackMixin,
+	TSceneApp
+} from '../types';
 import type { TSceneBundle } from './types';
-import type { TCStraightTrackGeometryMixin } from '../types';
 
 export function createStraightTrackBundle(
 	app: TSceneApp,
@@ -21,28 +25,45 @@ export function createStraightTrackBundle(
 		channelDepth = 0.2,
 		color = ['#2a5e92', '#ffeead', '#ff9943', '#8ac6d6'][Math.floor(Math.random() * 4)]
 	} = options;
-	const geometry = {
+
+	const authoredTransform = {
+		position,
+		rotation,
+		scale
+	} satisfies TCAuthoredTransformMixin;
+	const linearElement = {
 		length,
+		minLength: 6,
+		maxLength: 28,
+		handleOffset: 0.8
+	} satisfies TCLinearElementMixin;
+	const track = {
 		height,
 		width,
 		channelWidth,
 		channelDepth,
 		color: color as string
-	} satisfies TCStraightTrackGeometryMixin;
+	} satisfies TCStraightTrackMixin;
 
 	return defineBundle(
 		bundleEntry(app.c.PositionMixin, position),
 		bundleEntry(app.c.RotationMixin, rotation),
 		bundleEntry(app.c.ScaleMixin, scale),
+		bundleEntry(app.c.AuthoredTransformMixin, authoredTransform),
+		bundleEntry(app.c.SceneElementMixin, {
+			kind: 'straightTrack',
+			label: 'Straight track',
+			editable: true
+		}),
 		bundleEntry(app.c.MeshMixin, {
 			type: 'three',
-			object: createStraightTrackObject(geometry)
+			object: createStraightTrackObject({ ...track, length: linearElement.length })
 		}),
-		bundleEntry(app.c.StraightTrackMixin),
-		bundleEntry(app.c.StraightTrackGeometryMixin, geometry),
+		bundleEntry(app.c.StraightTrackMixin, track),
+		bundleEntry(app.c.LinearElementMixin, linearElement),
 		bundleEntry(app.c.RigidBodyMixin, { kind: 'fixed' }),
 		bundleEntry(app.c.ColliderMixin, {
-			descriptors: createStraightTrackColliders(geometry)
+			descriptors: createStraightTrackColliders({ ...track, length: linearElement.length })
 		})
 	);
 }
@@ -60,10 +81,7 @@ export interface TCreateStraightTrackBundleOptions {
 }
 
 export function createStraightTrackObject(
-	track: Pick<
-		TCStraightTrackGeometryMixin,
-		'length' | 'height' | 'width' | 'channelWidth' | 'channelDepth' | 'color'
-	>
+	track: TStraightTrackShapeConfig & Pick<TCStraightTrackMixin, 'color'>
 ): THREE.Object3D {
 	const geometry = createStraightTrackGeometry(track);
 	const material = new THREE.MeshStandardMaterial({
@@ -79,7 +97,7 @@ export function createStraightTrackObject(
 }
 
 export function createStraightTrackColliders(
-	track: Pick<TCStraightTrackGeometryMixin, 'length' | 'height' | 'width' | 'channelWidth' | 'channelDepth'>
+	track: TStraightTrackShapeConfig
 ): TPhysicsColliderDescriptor[] {
 	const wallWidth = (track.width - track.channelWidth) / 2;
 
@@ -109,9 +127,7 @@ export function createStraightTrackColliders(
 	];
 }
 
-export function createStraightTrackGeometry(
-	track: Pick<TCStraightTrackGeometryMixin, 'length' | 'height' | 'width' | 'channelWidth' | 'channelDepth'>
-): THREE.ExtrudeGeometry {
+export function createStraightTrackGeometry(track: TStraightTrackShapeConfig): THREE.ExtrudeGeometry {
 	const profile = createTrackProfile(
 		track.height,
 		track.width,
@@ -157,3 +173,8 @@ function createTrackProfile(
 
 	return profile;
 }
+
+type TStraightTrackShapeConfig = Pick<
+	TCStraightTrackMixin,
+	'height' | 'width' | 'channelWidth' | 'channelDepth'
+> & { length: number };

@@ -1,7 +1,12 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
 import { Entity, With } from 'ecsify';
 import { storeCheckpoint, syncPreloadWorldToStep } from './simulation';
-import type { TCRigidBodyMixin, TPhysicsApp, TPhysicsColliderDescriptor, TSimulationTransport } from './types';
+import type {
+	TCRigidBodyMixin,
+	TPhysicsApp,
+	TPhysicsColliderDescriptor,
+	TSimulationTransport
+} from './types';
 
 export function spawnRigidBodiesSystem(app: TPhysicsApp) {
 	const world = app.r.world;
@@ -450,10 +455,7 @@ function ensureSimulationBaseInitialized(app: TPhysicsApp): void {
 	updateSimulationTransport(app, { playheadStep: 0, bufferedStep: 0 });
 }
 
-function updateSimulationTransport(
-	app: TPhysicsApp,
-	patch: Partial<TSimulationTransport>
-): void {
+function updateSimulationTransport(app: TPhysicsApp, patch: Partial<TSimulationTransport>): void {
 	app.updateResource('simulationTransport', {
 		...app.r.simulationTransport,
 		...patch

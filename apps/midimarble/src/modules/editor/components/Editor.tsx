@@ -1,14 +1,17 @@
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
-import { Timeline } from './Timeline';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
 import { useSceneSummary } from '../hooks';
+import { TimelineCxProvider } from '../TimelineCx';
+import { Timeline } from './Timeline';
 
 export const Editor: React.FC = () => {
 	return (
 		<EditorCxProvider>
-			<InnerEditor />
+			<TimelineCxProvider>
+				<InnerEditor />
+			</TimelineCxProvider>
 		</EditorCxProvider>
 	);
 };

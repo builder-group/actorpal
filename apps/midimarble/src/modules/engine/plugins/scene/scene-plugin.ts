@@ -1,11 +1,11 @@
+import { spawnRigidBodiesSystem } from '../physics/systems';
 import {
 	createMarbleBundle,
 	createPegboardBundle,
 	createStraightTrackBundle
 } from './scene-bundles';
-import { syncStraightTrackGeometrySystem } from './systems';
+import { syncAuthoredTransformsToLiveSystem, syncStraightTrackGeometrySystem } from './systems';
 import type { TSceneApp, TScenePlugin } from './types';
-import { spawnRigidBodiesSystem } from '../physics/systems';
 
 export const MARBLE_SPAWN_POSITION = { x: -7.25, y: 18.4, z: -25.2 };
 
@@ -14,9 +14,11 @@ export function createScenePlugin(): TScenePlugin {
 		name: 'Scene',
 		deps: ['Default', 'Core', 'Physics', 'Render'],
 		components: {
+			SceneElementMixin: [],
+			AuthoredTransformMixin: [],
 			MarbleMixin: [],
 			StraightTrackMixin: [],
-			StraightTrackGeometryMixin: [],
+			LinearElementMixin: [],
 			PegboardMixin: []
 		},
 		resources: {
@@ -24,6 +26,7 @@ export function createScenePlugin(): TScenePlugin {
 		},
 		setup(app: TSceneApp) {
 			seedScene(app);
+			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'First' });
 			app.addSystem(syncStraightTrackGeometrySystem, {
 				set: 'First',
 				after: spawnRigidBodiesSystem as unknown as (app: TSceneApp) => void

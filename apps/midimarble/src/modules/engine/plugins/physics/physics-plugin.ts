@@ -34,32 +34,51 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 				bufferedStep: 0,
 				revision: 0
 			},
-				simulationConfig: {
-					checkpointIntervalSteps: 60,
-					preloadHorizonSteps: 2400,
-					maxPreloadStepsPerUpdate: 120,
-					maxLiveStepsPerUpdate: 12,
-					maxEditRebuildStepsPerUpdate: 240,
-					maxDeltaSeconds: 0.05
-				},
+			simulationConfig: {
+				checkpointIntervalSteps: 60,
+				preloadHorizonSteps: 2400,
+				maxPreloadStepsPerUpdate: 120,
+				maxLiveStepsPerUpdate: 12,
+				maxEditRebuildStepsPerUpdate: 240,
+				maxDeltaSeconds: 0.05
+			},
 			checkpointStore: new Map(),
 			preloadStep: 0,
 			rigidBodies: new Map(),
 			colliders: new Map(),
-				pendingSceneEditInvalidation: {
-					dirty: false,
-					revisionBumped: false
-				},
-				sceneEditRebuild: {
-					active: false,
-					targetStep: 0,
-					currentStep: 0,
-					revision: 0,
-					resumeWhenReady: false,
-					world: null,
-					checkpointStore: new Map()
-				}
+			pendingSceneEditInvalidation: {
+				dirty: false,
+				revisionBumped: false
 			},
+			sceneEditRebuild: {
+				active: false,
+				targetStep: 0,
+				currentStep: 0,
+				revision: 0,
+				resumeWhenReady: false,
+				world: null,
+				checkpointStore: new Map()
+			}
+		},
+		appExtensions: {
+			notifyAuthoredSceneMutation(
+				this: TPhysicsApp,
+				options?: { preserveRevision?: boolean }
+			): void {
+				this.updateResource('pendingSceneEditInvalidation', {
+					dirty: true,
+					revisionBumped: options?.preserveRevision
+						? this.r.pendingSceneEditInvalidation.revisionBumped
+						: false
+				});
+			},
+			endAuthoredSceneMutation(this: TPhysicsApp): void {
+				this.updateResource('pendingSceneEditInvalidation', {
+					...this.r.pendingSceneEditInvalidation,
+					revisionBumped: false
+				});
+			}
+		},
 		setup(app: TPhysicsApp) {
 			void initPromise.then(() => {
 				app.r.rapier = RAPIER;

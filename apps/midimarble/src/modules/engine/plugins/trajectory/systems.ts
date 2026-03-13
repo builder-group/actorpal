@@ -17,6 +17,15 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 	}
 
 	const state = app.r.trajectoryLines;
+	const shouldFreeze = app.r.simulationSync.mode !== 'idle';
+	const nextSyncState = {
+		world: app.r.world,
+		playheadStep: app.r.simulationTransport.playheadStep,
+		simulationSyncMode: app.r.simulationSync.mode,
+		futureSteps: config.futureSteps,
+		pastSteps: config.pastSteps,
+		enabled: config.enabled
+	};
 
 	if (state.prevFutureColor !== config.futureColor) {
 		(futureLine.material as THREE.LineBasicMaterial).color.set(config.futureColor);
@@ -27,14 +36,23 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 		state.prevPastColor = config.pastColor;
 	}
 
-	const marbles = [
-		...app.queryComponents([Entity, app.c.PositionMixin] as const, With(app.c.MarbleMixin))
-	];
-	const firstMarble = marbles[0];
-	if (firstMarble == null) {
+	if (!shouldRefreshTrajectory(app.r.trajectorySyncState, nextSyncState)) {
 		return;
 	}
-	const [marbleEid] = firstMarble;
+
+	app.updateResource('trajectorySyncState', nextSyncState);
+	if (shouldFreeze) {
+		return;
+	}
+
+	const firstSource = [
+		...app.queryComponents([Entity, app.c.PositionMixin] as const, With(app.c.TrajectorySourceTag))
+	][0];
+	if (firstSource == null) {
+		clearTrajectoryLines(app);
+		return;
+	}
+	const [marbleEid] = firstSource;
 
 	const world = app.r.world;
 	const rapier = app.r.rapier;
@@ -44,6 +62,7 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 
 	const marbleBody = app.r.rigidBodies.get(marbleEid);
 	if (marbleBody == null) {
+		clearTrajectoryLines(app);
 		return;
 	}
 
@@ -72,6 +91,25 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 	const futureAttr = futureLine.geometry.getAttribute('position') as THREE.BufferAttribute;
 	futureAttr.needsUpdate = true;
 	futureLine.geometry.setDrawRange(0, futureSteps);
+}
+
+function clearTrajectoryLines(app: TTrajectoryApp): void {
+	app.r.trajectoryLines.pastLine.geometry.setDrawRange(0, 0);
+	app.r.trajectoryLines.futureLine.geometry.setDrawRange(0, 0);
+}
+
+function shouldRefreshTrajectory(
+	prev: TTrajectoryApp['r']['trajectorySyncState'],
+	next: TTrajectoryApp['r']['trajectorySyncState']
+): boolean {
+	return (
+		prev.world !== next.world ||
+		prev.playheadStep !== next.playheadStep ||
+		prev.simulationSyncMode !== next.simulationSyncMode ||
+		prev.futureSteps !== next.futureSteps ||
+		prev.pastSteps !== next.pastSteps ||
+		prev.enabled !== next.enabled
+	);
 }
 
 function rebuildPastTrajectory(app: TTrajectoryApp, marbleHandle: number): number {

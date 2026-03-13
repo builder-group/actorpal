@@ -1,94 +1,46 @@
 import * as THREE from 'three';
 import type { TVec3 } from '../../types';
-import { computeLinearResizeResult, getDraggedHandlePoint } from './math';
-import type { TSceneManipulationApp, TSceneManipulationPlugin } from './types';
 import {
-	createSceneManipulationHandles,
 	disposeSceneManipulationHandles,
 	editableLinearEntityIds,
 	getEditableLinearElement,
-	getLinearElementHandlePositions,
-	getSceneManipulationHandleSignature,
 	getLinearElementHandleKind,
-	resetSceneManipulationState,
-	syncSceneManipulationHandleAppearanceSystem,
-	syncSceneManipulationHandlesSystem
-} from './systems';
+	getLinearElementHandlePositions,
+	resetSceneManipulationState
+} from './lib/manipulation';
+import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
+import type { TSceneApp } from './types';
 
 const dragPlaneNormal = new THREE.Vector3(1, 0, 0);
 
-export function createSceneManipulationPlugin(): TSceneManipulationPlugin {
+type TSceneCleanup = () => void;
+
+export function setupSceneManipulation(app: TSceneApp): TSceneCleanup {
 	const raycaster = new THREE.Raycaster();
-	const sceneManipulationConfig = {
-		handleRadius: 0.48,
-		handleColor: '#facc15',
-		dragStartPixels: 3
-	};
+	const scene = app.r.viewport.scene;
+	scene.add(app.r.sceneManipulationHandles.start, app.r.sceneManipulationHandles.end);
 
-	let onPointerDown: ((event: PointerEvent) => void) | null = null;
-	let onPointerMove: ((event: PointerEvent) => void) | null = null;
-	let onPointerUp: (() => void) | null = null;
+	const onPointerDown = (event: PointerEvent) => handlePointerDown(app, raycaster, event);
+	const onPointerMove = (event: PointerEvent) => handlePointerMove(app, raycaster, event);
+	const onPointerUp = () => handlePointerUp(app);
 
-	return {
-		name: 'SceneManipulation',
-		deps: ['Default', 'Core', 'Physics', 'Render', 'Scene'],
-		resources: {
-			sceneSelection: {
-				entityId: null
-			},
-			sceneManipulationState: resetSceneManipulationState(),
-			sceneManipulationConfig,
-			sceneManipulationHandles: createSceneManipulationHandles(
-				sceneManipulationConfig.handleRadius,
-				sceneManipulationConfig.handleColor
-			),
-			sceneManipulationHandleSignature: getSceneManipulationHandleSignature(
-				sceneManipulationConfig
-			)
-		},
-		appExtensions: {
-			disposeSceneManipulation(this: TSceneManipulationApp): void {
-				const canvas = this.r.viewport.domElement;
-				if (onPointerDown != null) {
-					canvas.removeEventListener('pointerdown', onPointerDown);
-				}
-				if (onPointerMove != null) {
-					window.removeEventListener('pointermove', onPointerMove);
-				}
-				if (onPointerUp != null) {
-					window.removeEventListener('pointerup', onPointerUp);
-					window.removeEventListener('pointercancel', onPointerUp);
-				}
+	const canvas = app.r.viewport.domElement;
+	canvas.addEventListener('pointerdown', onPointerDown);
+	window.addEventListener('pointermove', onPointerMove);
+	window.addEventListener('pointerup', onPointerUp);
+	window.addEventListener('pointercancel', onPointerUp);
 
-				this.r.viewport.setControlsEnabled(true);
-				disposeSceneManipulationHandles(this.r.sceneManipulationHandles);
-			}
-		},
-		setup(app: TSceneManipulationApp) {
-			const scene = app.r.viewport.scene;
-			scene.add(app.r.sceneManipulationHandles.start, app.r.sceneManipulationHandles.end);
-
-			onPointerDown = (event: PointerEvent) => handlePointerDown(app, raycaster, event);
-			onPointerMove = (event: PointerEvent) => handlePointerMove(app, raycaster, event);
-			onPointerUp = () => handlePointerUp(app);
-
-			const canvas = app.r.viewport.domElement;
-			canvas.addEventListener('pointerdown', onPointerDown);
-			window.addEventListener('pointermove', onPointerMove);
-			window.addEventListener('pointerup', onPointerUp);
-			window.addEventListener('pointercancel', onPointerUp);
-
-			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
-			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'Update' });
-		}
+	return () => {
+		canvas.removeEventListener('pointerdown', onPointerDown);
+		window.removeEventListener('pointermove', onPointerMove);
+		window.removeEventListener('pointerup', onPointerUp);
+		window.removeEventListener('pointercancel', onPointerUp);
+		app.r.viewport.setControlsEnabled(true);
+		disposeSceneManipulationHandles(app.r.sceneManipulationHandles);
 	};
 }
 
-function handlePointerDown(
-	app: TSceneManipulationApp,
-	raycaster: THREE.Raycaster,
-	event: PointerEvent
-): void {
+function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: PointerEvent): void {
 	const pointer = getNormalizedPointer(app, event);
 	if (pointer == null) {
 		return;
@@ -106,14 +58,6 @@ function handlePointerDown(
 	}
 
 	event.preventDefault();
-
-	if (app.r.simulationTransport.mode === 'running') {
-		app.updateResource('simulationTransport', {
-			...app.r.simulationTransport,
-			mode: 'paused'
-		});
-	}
-
 	app.r.viewport.setControlsEnabled(false);
 
 	const linearElement = getEditableLinearElement(app, pickedTarget.entityId);
@@ -127,12 +71,7 @@ function handlePointerDown(
 		entityId: pickedTarget.entityId
 	});
 
-	const planePoint = raycastScenePlane(
-		app,
-		raycaster,
-		pointer,
-		linearElement.transform.position.x
-	);
+	const planePoint = raycastScenePlane(app, raycaster, pointer, linearElement.transform.position.x);
 	if (planePoint == null) {
 		app.updateResource('sceneManipulationState', resetSceneManipulationState());
 		app.r.viewport.setControlsEnabled(true);
@@ -174,11 +113,7 @@ function handlePointerDown(
 	);
 }
 
-function handlePointerMove(
-	app: TSceneManipulationApp,
-	raycaster: THREE.Raycaster,
-	event: PointerEvent
-): void {
+function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: PointerEvent): void {
 	const state = app.r.sceneManipulationState;
 	if (state.entityId == null || state.pointerDownClient == null || state.dragPlaneX == null) {
 		return;
@@ -224,7 +159,7 @@ function handlePointerMove(
 				...linearElement.transform,
 				position: nextPosition
 			});
-			notifyAuthoredSceneMutation(app, state.dragRevisionCommitted);
+			app.markSimulationDirty();
 		}
 		return;
 	}
@@ -246,6 +181,7 @@ function handlePointerMove(
 		draggedPoint
 	);
 
+	let didChange = false;
 	if (
 		!sameVec3(linearElement.transform.position, resized.position) ||
 		!sameVec3(linearElement.transform.rotation, resized.rotation)
@@ -255,43 +191,34 @@ function handlePointerMove(
 			position: resized.position,
 			rotation: resized.rotation
 		});
+		didChange = true;
 	}
 	if (linearElement.linear.length !== resized.length) {
 		app.updateComponent(state.entityId, app.c.LinearElementMixin, {
 			...linearElement.linear,
 			length: resized.length
 		});
+		didChange = true;
 	}
 
-	notifyAuthoredSceneMutation(app, state.dragRevisionCommitted);
+	if (didChange) {
+		app.markSimulationDirty();
+	}
 }
 
-function handlePointerUp(app: TSceneManipulationApp): void {
+function handlePointerUp(app: TSceneApp): void {
 	const state = app.r.sceneManipulationState;
 	if (state.mode === 'idle' && app.r.viewport.controlsEnabled) {
 		return;
 	}
 
 	app.updateResource('sceneManipulationState', resetSceneManipulationState());
-	app.endAuthoredSceneMutation();
+	app.requestSimulationSync();
 	app.r.viewport.setControlsEnabled(true);
 }
 
-function notifyAuthoredSceneMutation(app: TSceneManipulationApp, preserveRevision: boolean): void {
-	app.notifyAuthoredSceneMutation({ preserveRevision });
-
-	if (preserveRevision) {
-		return;
-	}
-
-	app.updateResource('sceneManipulationState', {
-		...app.r.sceneManipulationState,
-		dragRevisionCommitted: true
-	});
-}
-
 function pickHandle(
-	app: TSceneManipulationApp,
+	app: TSceneApp,
 	raycaster: THREE.Raycaster,
 	pointer: THREE.Vector2
 ): { entityId: number; target: 'handle-start' | 'handle-end' } | null {
@@ -319,7 +246,7 @@ function pickHandle(
 }
 
 function pickLinearElement(
-	app: TSceneManipulationApp,
+	app: TSceneApp,
 	raycaster: THREE.Raycaster,
 	pointer: THREE.Vector2
 ): { entityId: number; target: 'element' } | null {
@@ -352,7 +279,7 @@ function pickLinearElement(
 }
 
 function raycastScenePlane(
-	app: TSceneManipulationApp,
+	app: TSceneApp,
 	raycaster: THREE.Raycaster,
 	pointer: THREE.Vector2,
 	planeX: number
@@ -363,10 +290,7 @@ function raycastScenePlane(
 	return raycaster.ray.intersectPlane(plane, point);
 }
 
-function getNormalizedPointer(
-	app: TSceneManipulationApp,
-	event: PointerEvent
-): THREE.Vector2 | null {
+function getNormalizedPointer(app: TSceneApp, event: PointerEvent): THREE.Vector2 | null {
 	const rect = app.r.viewport.domElement.getBoundingClientRect();
 	if (rect.width === 0 || rect.height === 0) {
 		return null;
@@ -379,11 +303,7 @@ function getNormalizedPointer(
 }
 
 function sameVec3(a: TVec3, b: TVec3): boolean {
-	return (
-		Math.abs(a.x - b.x) < 1e-5 &&
-		Math.abs(a.y - b.y) < 1e-5 &&
-		Math.abs(a.z - b.z) < 1e-5
-	);
+	return Math.abs(a.x - b.x) < 1e-5 && Math.abs(a.y - b.y) < 1e-5 && Math.abs(a.z - b.z) < 1e-5;
 }
 
 function toVec3(vector: THREE.Vector3): TVec3 {

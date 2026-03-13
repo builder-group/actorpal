@@ -1,9 +1,9 @@
 import { TBundle } from 'ecsify';
-import { elapsedTimeSystem } from './systems';
 import type { TCoreApp, TCorePlugin } from './types';
 
 export function createCorePlugin(): TCorePlugin {
 	return {
+		// Core owns the shared runtime primitives other engine plugins build on.
 		name: 'Core',
 		deps: ['Default'],
 		components: {
@@ -12,18 +12,12 @@ export function createCorePlugin(): TCorePlugin {
 			RotationMixin: [],
 			ScaleMixin: []
 		},
-		resources: {
-			elapsedSeconds: 0
-		},
 		appExtensions: {
 			spawnBundle(this: TCoreApp, bundle: TBundle): number {
 				const eid = this.createEntity();
 				this.addBundle(eid, bundle);
 				return eid;
 			}
-		},
-		setup(app) {
-			app.addSystem(elapsedTimeSystem, { set: 'Update' });
 		}
 	};
 }

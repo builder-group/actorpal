@@ -11,9 +11,6 @@ export type TCorePlugin = TPlugin<
 			RotationMixin: TCRotationMixin[];
 			ScaleMixin: TCScaleMixin[];
 		};
-		resources: {
-			elapsedSeconds: number;
-		};
 		appExtensions: {
 			spawnBundle(bundle: TBundle): number;
 		};

@@ -1,18 +1,36 @@
-import { spawnRigidBodiesSystem } from '../physics/systems';
+import {
+	createSceneManipulationHandles,
+	getSceneManipulationHandleSignature,
+	resetSceneManipulationState
+} from './lib/manipulation';
+import { setupSceneManipulation } from './manipulation';
 import {
 	createMarbleBundle,
 	createPegboardBundle,
 	createStraightTrackBundle
 } from './scene-bundles';
-import { syncAuthoredTransformsToLiveSystem, syncStraightTrackGeometrySystem } from './systems';
+import {
+	syncAuthoredTransformsToLiveSystem,
+	syncSceneManipulationHandleAppearanceSystem,
+	syncSceneManipulationHandlesSystem,
+	syncStraightTrackRuntimeMixinsSystem
+} from './systems';
 import type { TSceneApp, TScenePlugin } from './types';
 
-export const MARBLE_SPAWN_POSITION = { x: -7.25, y: 18.4, z: -25.2 };
+const MARBLE_SPAWN_POSITION = { x: -7.25, y: 18.4, z: -25.2 };
 
 export function createScenePlugin(): TScenePlugin {
+	const sceneManipulationConfig = {
+		handleRadius: 0.48,
+		handleColor: '#facc15',
+		dragStartPixels: 3
+	};
+	let disposeScene: (() => void) | null = null;
+
 	return {
+		// Scene is Midimarble's app-specific composition root and editing domain.
 		name: 'Scene',
-		deps: ['Default', 'Core', 'Physics', 'Render'],
+		deps: ['Default', 'Core', 'Physics', 'Render', 'Trajectory'],
 		components: {
 			SceneElementMixin: [],
 			AuthoredTransformMixin: [],
@@ -22,41 +40,55 @@ export function createScenePlugin(): TScenePlugin {
 			PegboardMixin: []
 		},
 		resources: {
-			straightTrackGeometrySignatures: new Map()
+			straightTrackMeshSignatures: new Map(),
+			straightTrackColliderSignatures: new Map(),
+			sceneSelection: {
+				entityId: null
+			},
+			sceneManipulationState: resetSceneManipulationState(),
+			sceneManipulationConfig,
+			sceneManipulationHandles: createSceneManipulationHandles(
+				sceneManipulationConfig.handleRadius,
+				sceneManipulationConfig.handleColor
+			),
+			sceneManipulationHandleSignature: getSceneManipulationHandleSignature(sceneManipulationConfig)
+		},
+		appExtensions: {
+			disposeScene(this: TSceneApp): void {
+				disposeScene?.();
+				disposeScene = null;
+			}
 		},
 		setup(app: TSceneApp) {
-			seedScene(app);
+			app.spawnBundle(createPegboardBundle(app));
+			app.spawnBundle(
+				createStraightTrackBundle(app, {
+					position: { x: -7.25, y: 16, z: -18 },
+					rotation: { x: 0.28, y: 0, z: 0 },
+					length: 16
+				})
+			);
+			app.spawnBundle(
+				createStraightTrackBundle(app, {
+					position: { x: -7.25, y: 10.9, z: -1.4 },
+					rotation: { x: -0.1, y: 0, z: 0 },
+					length: 14
+				})
+			);
+			app.spawnBundle(
+				createStraightTrackBundle(app, {
+					position: { x: -7.25, y: 4.2, z: 12.8 },
+					rotation: { x: 0.22, y: 0, z: 0 },
+					length: 12
+				})
+			);
+			app.spawnBundle(createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION }));
+
 			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'First' });
-			app.addSystem(syncStraightTrackGeometrySystem, {
-				set: 'First',
-				after: spawnRigidBodiesSystem as unknown as (app: TSceneApp) => void
-			});
+			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'First' });
+			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
+			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'Update' });
+			disposeScene = setupSceneManipulation(app);
 		}
 	};
-}
-
-function seedScene(app: TSceneApp): void {
-	app.spawnBundle(createPegboardBundle(app));
-	app.spawnBundle(
-		createStraightTrackBundle(app, {
-			position: { x: -7.25, y: 16, z: -18 },
-			rotation: { x: 0.28, y: 0, z: 0 },
-			length: 16
-		})
-	);
-	app.spawnBundle(
-		createStraightTrackBundle(app, {
-			position: { x: -7.25, y: 10.9, z: -1.4 },
-			rotation: { x: -0.1, y: 0, z: 0 },
-			length: 14
-		})
-	);
-	app.spawnBundle(
-		createStraightTrackBundle(app, {
-			position: { x: -7.25, y: 4.2, z: 12.8 },
-			rotation: { x: 0.22, y: 0, z: 0 },
-			length: 12
-		})
-	);
-	app.spawnBundle(createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION }));
 }

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { TVec3 } from '../../types';
-import { getLinearElementForward } from './systems';
+import { getLinearElementForward } from './lib/manipulation';
 
 export interface TLinearResizeInput {
 	position: TVec3;

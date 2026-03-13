@@ -3,15 +3,12 @@ import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
 import { useSceneSummary } from '../hooks';
-import { TimelineCxProvider } from '../TimelineCx';
 import { Timeline } from './Timeline';
 
 export const Editor: React.FC = () => {
 	return (
 		<EditorCxProvider>
-			<TimelineCxProvider>
-				<InnerEditor />
-			</TimelineCxProvider>
+			<InnerEditor />
 		</EditorCxProvider>
 	);
 };

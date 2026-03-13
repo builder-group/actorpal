@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { computeLinearResizeResult, getDraggedHandlePoint } from './math';
+import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
 
 const baseLinearElement = {
 	position: { x: -7.25, y: 16, z: -18 },
@@ -11,7 +11,7 @@ const baseLinearElement = {
 	handleOffset: 0.8
 };
 
-describe('scene-manipulation resize math', () => {
+describe('scene manipulation resize math', () => {
 	it('keeps the authored length when the pointer starts on the current handle', () => {
 		const draggedPoint = new THREE.Vector3(
 			baseLinearElement.position.x,
@@ -46,8 +46,6 @@ describe('scene-manipulation resize math', () => {
 			{ x: 0, y: 2, z: -3 }
 		);
 
-		expect(draggedPoint).toEqual(
-			new THREE.Vector3(baseLinearElement.position.x, 10, -5)
-		);
+		expect(draggedPoint).toEqual(new THREE.Vector3(baseLinearElement.position.x, 10, -5));
 	});
 });

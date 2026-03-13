@@ -1,8 +1,10 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
+import type * as THREE from 'three';
 import type { TVec3 } from '../../types';
 import type { TCorePlugin } from '../core/types';
-import type { TPhysicsPlugin } from '../physics';
+import type { TPhysicsPlugin } from '../physics/types';
 import type { TRenderPlugin } from '../render/types';
+import type { TTrajectoryPlugin } from '../trajectory/types';
 
 // MARK: - Plugin
 
@@ -18,15 +20,26 @@ export type TScenePlugin = TPlugin<
 			PegboardMixin: TCPegboardMixin[];
 		};
 		resources: {
-			straightTrackGeometrySignatures: TStraightTrackGeometrySignatures;
+			straightTrackMeshSignatures: TRStraightTrackMeshSignatures;
+			straightTrackColliderSignatures: TRStraightTrackColliderSignatures;
+			sceneSelection: TSceneSelection;
+			sceneManipulationState: TSceneManipulationState;
+			sceneManipulationConfig: TSceneManipulationConfig;
+			sceneManipulationHandles: TSceneManipulationHandles;
+			sceneManipulationHandleSignature: string;
+		};
+		appExtensions: {
+			disposeScene(): void;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
-	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin]
+	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin]
 >;
 
 export type TSceneApp = TApp<
-	TAppContext<[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin]>
+	TAppContext<
+		[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin, TScenePlugin]
+	>
 >;
 
 // MARK: - Components
@@ -68,4 +81,31 @@ export interface TCPegboardMixin {
 	repeatWorldSize: number;
 }
 
-export type TStraightTrackGeometrySignatures = Map<number, string>;
+// MARK: - Resources
+
+export type TRStraightTrackMeshSignatures = Map<number, string>;
+export type TRStraightTrackColliderSignatures = Map<number, string>;
+
+export interface TSceneSelection {
+	entityId: number | null;
+}
+
+export interface TSceneManipulationState {
+	mode: 'idle' | 'move' | 'resizeStart' | 'resizeEnd';
+	entityId: number | null;
+	isDragging: boolean;
+	pointerDownClient: { x: number; y: number } | null;
+	dragPlaneX: number | null;
+	dragOffset: TVec3 | null;
+}
+
+export interface TSceneManipulationConfig {
+	handleRadius: number;
+	handleColor: string;
+	dragStartPixels: number;
+}
+
+export interface TSceneManipulationHandles {
+	start: THREE.Mesh;
+	end: THREE.Mesh;
+}

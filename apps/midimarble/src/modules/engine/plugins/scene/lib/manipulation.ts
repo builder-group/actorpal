@@ -1,59 +1,8 @@
 import { Entity, With } from 'ecsify';
 import * as THREE from 'three';
-import type { TCLinearElementMixin, TSceneApp } from '../scene';
-import type { TSceneManipulationApp, TSceneManipulationState } from './types';
+import type { TSceneApp } from '../types';
 
 const HANDLE_KIND_KEY = 'linearElementHandleKind';
-
-export function syncSceneManipulationHandlesSystem(app: TSceneManipulationApp) {
-	const selection = app.r.sceneSelection;
-	const handles = app.r.sceneManipulationHandles;
-
-	if (selection.entityId == null) {
-		handles.start.visible = false;
-		handles.end.visible = false;
-		return;
-	}
-
-	const linearElement = getEditableLinearElement(app, selection.entityId);
-	if (linearElement == null) {
-		app.updateResource('sceneSelection', { entityId: null });
-		handles.start.visible = false;
-		handles.end.visible = false;
-		return;
-	}
-
-	const handlePositions = getLinearElementHandlePositions(
-		linearElement.transform.position,
-		linearElement.transform.rotation.x,
-		linearElement.linear.length,
-		linearElement.linear.handleOffset
-	);
-
-	handles.start.position.copy(handlePositions.start);
-	handles.end.position.copy(handlePositions.end);
-	handles.start.visible = true;
-	handles.end.visible = true;
-}
-
-export function syncSceneManipulationHandleAppearanceSystem(app: TSceneManipulationApp) {
-	const signature = getSceneManipulationHandleSignature(app.r.sceneManipulationConfig);
-	if (app.r.sceneManipulationHandleSignature === signature) {
-		return;
-	}
-
-	updateHandleAppearance(
-		app.r.sceneManipulationHandles.start,
-		app.r.sceneManipulationConfig.handleRadius,
-		app.r.sceneManipulationConfig.handleColor
-	);
-	updateHandleAppearance(
-		app.r.sceneManipulationHandles.end,
-		app.r.sceneManipulationConfig.handleRadius,
-		app.r.sceneManipulationConfig.handleColor
-	);
-	app.updateResource('sceneManipulationHandleSignature', signature);
-}
 
 export function createSceneManipulationHandles(
 	handleRadius: number,
@@ -131,13 +80,12 @@ export function getLinearElementHandlePositions(
 }
 
 export function resetSceneManipulationState(
-	patch: Partial<TSceneManipulationState> = {}
-): TSceneManipulationState {
+	patch: Partial<TSceneApp['r']['sceneManipulationState']> = {}
+): TSceneApp['r']['sceneManipulationState'] {
 	return {
 		mode: 'idle',
 		entityId: null,
 		isDragging: false,
-		dragRevisionCommitted: false,
 		pointerDownClient: null,
 		dragPlaneX: null,
 		dragOffset: null,
@@ -145,7 +93,7 @@ export function resetSceneManipulationState(
 	};
 }
 
-export function editableLinearEntityIds(app: TSceneManipulationApp): number[] {
+export function editableLinearEntityIds(app: TSceneApp): number[] {
 	const ids: number[] = [];
 	for (const [eid, sceneElement] of app.queryComponents(
 		[Entity, app.c.SceneElementMixin] as const,
@@ -160,11 +108,11 @@ export function editableLinearEntityIds(app: TSceneManipulationApp): number[] {
 }
 
 export function getEditableLinearElement(
-	app: TSceneManipulationApp,
+	app: TSceneApp,
 	entityId: number
 ): {
 	transform: TSceneApp['c']['AuthoredTransformMixin'][number];
-	linear: TCLinearElementMixin;
+	linear: TSceneApp['c']['LinearElementMixin'][number];
 } | null {
 	for (const [eid, transform, linear] of app.queryComponents(
 		[Entity, app.c.AuthoredTransformMixin, app.c.LinearElementMixin] as const,
@@ -185,16 +133,7 @@ export function getSceneManipulationHandleSignature(config: {
 	return `${config.handleRadius}:${config.handleColor}`;
 }
 
-function createSceneManipulationHandle(handleRadius: number, handleColor: string): THREE.Mesh {
-	const geometry = new THREE.SphereGeometry(handleRadius, 24, 16);
-	const material = new THREE.MeshBasicMaterial({
-		color: handleColor
-	});
-
-	return new THREE.Mesh(geometry, material);
-}
-
-function updateHandleAppearance(
+export function updateHandleAppearance(
 	handle: THREE.Mesh,
 	handleRadius: number,
 	handleColor: string
@@ -212,4 +151,13 @@ function updateHandleAppearance(
 
 	handle.material.dispose();
 	handle.material = new THREE.MeshBasicMaterial({ color: handleColor });
+}
+
+function createSceneManipulationHandle(handleRadius: number, handleColor: string): THREE.Mesh {
+	const geometry = new THREE.SphereGeometry(handleRadius, 24, 16);
+	const material = new THREE.MeshBasicMaterial({
+		color: handleColor
+	});
+
+	return new THREE.Mesh(geometry, material);
 }

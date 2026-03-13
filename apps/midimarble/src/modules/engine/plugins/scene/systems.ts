@@ -1,7 +1,18 @@
 import { Entity, With } from 'ecsify';
 import * as THREE from 'three';
+import {
+	getEditableLinearElement,
+	getLinearElementHandlePositions,
+	getSceneManipulationHandleSignature,
+	updateHandleAppearance
+} from './lib/manipulation';
+import {
+	createTrackColliderSignature,
+	createTrackMeshSignature,
+	sameVec3
+} from './lib/track-runtime';
 import { createStraightTrackColliders, createStraightTrackGeometry } from './scene-bundles';
-import type { TCStraightTrackMixin, TSceneApp } from './types';
+import type { TSceneApp } from './types';
 
 export function syncAuthoredTransformsToLiveSystem(app: TSceneApp) {
 	for (const [eid, authoredTransform, position, rotation, scale] of app.queryComponents([
@@ -23,69 +34,123 @@ export function syncAuthoredTransformsToLiveSystem(app: TSceneApp) {
 	}
 }
 
-export function syncStraightTrackGeometrySystem(app: TSceneApp) {
+export function syncStraightTrackRuntimeMixinsSystem(app: TSceneApp) {
 	const activeTrackEntities = new Set<number>();
 
-	for (const [eid, linear, track, mesh] of app.queryComponents(
-		[Entity, app.c.LinearElementMixin, app.c.StraightTrackMixin, app.c.MeshMixin] as const,
+	for (const [eid, mesh, collider, linear, track] of app.queryComponents(
+		[
+			Entity,
+			app.c.MeshMixin,
+			app.c.ColliderMixin,
+			app.c.LinearElementMixin,
+			app.c.StraightTrackMixin
+		] as const,
 		With(app.c.StraightTrackMixin)
 	)) {
 		activeTrackEntities.add(eid);
 
-		const signature = createTrackGeometrySignature(linear.length, track);
-		const prevSignature = app.r.straightTrackGeometrySignatures.get(eid);
-		if (prevSignature == null) {
-			app.r.straightTrackGeometrySignatures.set(eid, signature);
-			continue;
-		}
+		const meshSignature = createTrackMeshSignature(linear.length, track);
+		const colliderSignature = createTrackColliderSignature(linear.length, track);
 
-		if (
-			prevSignature === signature ||
-			mesh.type !== 'three' ||
-			!(mesh.object instanceof THREE.Mesh)
+		const prevMeshSignature = app.r.straightTrackMeshSignatures.get(eid);
+		if (prevMeshSignature == null) {
+			app.r.straightTrackMeshSignatures.set(eid, meshSignature);
+		} else if (
+			prevMeshSignature !== meshSignature &&
+			mesh.type === 'three' &&
+			mesh.object instanceof THREE.Mesh
 		) {
+			mesh.object.geometry.dispose();
+			mesh.object.geometry = createStraightTrackGeometry({ ...track, length: linear.length });
+
+			const material = mesh.object.material;
+			if (Array.isArray(material)) {
+				for (const entry of material) {
+					if ('color' in entry) {
+						entry.color.set(track.color);
+					}
+				}
+			} else if (material instanceof THREE.MeshStandardMaterial) {
+				material.color.set(track.color);
+			}
+
+			app.r.straightTrackMeshSignatures.set(eid, meshSignature);
+		}
+
+		const prevColliderSignature = app.r.straightTrackColliderSignatures.get(eid);
+		if (prevColliderSignature == null) {
+			app.r.straightTrackColliderSignatures.set(eid, colliderSignature);
 			continue;
 		}
 
-		const nextGeometry = createStraightTrackGeometry({ ...track, length: linear.length });
-		mesh.object.geometry.dispose();
-		mesh.object.geometry = nextGeometry;
-
-		const material = mesh.object.material;
-		if (Array.isArray(material)) {
-			for (const entry of material) {
-				if ('color' in entry) {
-					entry.color.set(track.color);
-				}
-			}
-		} else if (material instanceof THREE.MeshStandardMaterial) {
-			material.color.set(track.color);
+		if (prevColliderSignature === colliderSignature) {
+			continue;
 		}
 
 		app.updateComponent(eid, app.c.ColliderMixin, {
 			descriptors: createStraightTrackColliders({ ...track, length: linear.length })
 		});
-		app.r.straightTrackGeometrySignatures.set(eid, signature);
+		app.r.straightTrackColliderSignatures.set(eid, colliderSignature);
 	}
 
-	for (const eid of Array.from(app.r.straightTrackGeometrySignatures.keys())) {
+	for (const eid of Array.from(app.r.straightTrackMeshSignatures.keys())) {
 		if (!activeTrackEntities.has(eid)) {
-			app.r.straightTrackGeometrySignatures.delete(eid);
+			app.r.straightTrackMeshSignatures.delete(eid);
+		}
+	}
+	for (const eid of Array.from(app.r.straightTrackColliderSignatures.keys())) {
+		if (!activeTrackEntities.has(eid)) {
+			app.r.straightTrackColliderSignatures.delete(eid);
 		}
 	}
 }
 
-function createTrackGeometrySignature(length: number, track: TCStraightTrackMixin): string {
-	return JSON.stringify([
-		length,
-		track.height,
-		track.width,
-		track.channelWidth,
-		track.channelDepth,
-		track.color
-	]);
+export function syncSceneManipulationHandlesSystem(app: TSceneApp) {
+	const selection = app.r.sceneSelection;
+	const handles = app.r.sceneManipulationHandles;
+
+	if (selection.entityId == null) {
+		handles.start.visible = false;
+		handles.end.visible = false;
+		return;
+	}
+
+	const linearElement = getEditableLinearElement(app, selection.entityId);
+	if (linearElement == null) {
+		app.updateResource('sceneSelection', { entityId: null });
+		handles.start.visible = false;
+		handles.end.visible = false;
+		return;
+	}
+
+	const handlePositions = getLinearElementHandlePositions(
+		linearElement.transform.position,
+		linearElement.transform.rotation.x,
+		linearElement.linear.length,
+		linearElement.linear.handleOffset
+	);
+
+	handles.start.position.copy(handlePositions.start);
+	handles.end.position.copy(handlePositions.end);
+	handles.start.visible = true;
+	handles.end.visible = true;
 }
 
-function sameVec3(a: { x: number; y: number; z: number }, b: { x: number; y: number; z: number }) {
-	return Math.abs(a.x - b.x) < 1e-5 && Math.abs(a.y - b.y) < 1e-5 && Math.abs(a.z - b.z) < 1e-5;
+export function syncSceneManipulationHandleAppearanceSystem(app: TSceneApp) {
+	const signature = getSceneManipulationHandleSignature(app.r.sceneManipulationConfig);
+	if (app.r.sceneManipulationHandleSignature === signature) {
+		return;
+	}
+
+	updateHandleAppearance(
+		app.r.sceneManipulationHandles.start,
+		app.r.sceneManipulationConfig.handleRadius,
+		app.r.sceneManipulationConfig.handleColor
+	);
+	updateHandleAppearance(
+		app.r.sceneManipulationHandles.end,
+		app.r.sceneManipulationConfig.handleRadius,
+		app.r.sceneManipulationConfig.handleColor
+	);
+	app.updateResource('sceneManipulationHandleSignature', signature);
 }

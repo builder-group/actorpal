@@ -41,7 +41,7 @@ export function createPegboardBundle(
 		bundleEntry(app.c.PegboardMixin, pegboard),
 		bundleEntry(app.c.MeshMixin, {
 			type: 'three',
-			object: createPegboardObject(pegboard.width, pegboard.height, pegboard.repeatWorldSize)
+			object: createPegboardObject(width, height, repeatWorldSize)
 		})
 	);
 }
@@ -55,7 +55,7 @@ interface TCreatePegboardBundleOptions {
 	repeatWorldSize?: number;
 }
 
-function createPegboardObject(
+export function createPegboardObject(
 	width: number,
 	height: number,
 	repeatWorldSize: number

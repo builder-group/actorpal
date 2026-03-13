@@ -55,15 +55,15 @@ export function createStraightTrackBundle(
 			label: 'Straight track',
 			editable: true
 		}),
-		bundleEntry(app.c.MeshMixin, {
-			type: 'three',
-			object: createStraightTrackObject({ ...track, length: linearElement.length })
-		}),
 		bundleEntry(app.c.StraightTrackMixin, track),
 		bundleEntry(app.c.LinearElementMixin, linearElement),
+		bundleEntry(app.c.MeshMixin, {
+			type: 'three',
+			object: createStraightTrackObject({ ...track, length })
+		}),
 		bundleEntry(app.c.RigidBodyMixin, { kind: 'fixed' }),
 		bundleEntry(app.c.ColliderMixin, {
-			descriptors: createStraightTrackColliders({ ...track, length: linearElement.length })
+			descriptors: createStraightTrackColliders({ ...track, length })
 		})
 	);
 }
@@ -127,7 +127,9 @@ export function createStraightTrackColliders(
 	];
 }
 
-export function createStraightTrackGeometry(track: TStraightTrackShapeConfig): THREE.ExtrudeGeometry {
+export function createStraightTrackGeometry(
+	track: TStraightTrackShapeConfig
+): THREE.ExtrudeGeometry {
 	const profile = createTrackProfile(
 		track.height,
 		track.width,

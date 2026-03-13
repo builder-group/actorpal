@@ -1,40 +1,27 @@
 import React from 'react';
 import { useResource } from '@/modules/engine';
 import { useEditorCx } from '../EditorCx';
-import { useTimelineCx, useTimelineViewModel, type TTimelineItem } from '../TimelineCx';
 
 const TIMELINE_HEIGHT = 84;
 const RULER_HEIGHT = 28;
+const PIXELS_PER_SECOND = 80;
 
 const TimelineHeader: React.FC<{
-	viewLabels: Array<{ id: string; label: string }>;
-	activeViewId: string;
 	isReady: boolean;
 	mode: 'paused' | 'running';
-	onSelectView: (viewId: string) => void;
+	statusLabel: string | null;
 	onPlay: () => void;
 	onPause: () => void;
 	onReset: () => void;
-}> = ({ viewLabels, activeViewId, isReady, mode, onSelectView, onPlay, onPause, onReset }) => (
+}> = ({ isReady, mode, statusLabel, onPlay, onPause, onReset }) => (
 	<div className="border-base-200 bg-base-50 flex shrink-0 items-center gap-2 border-b px-3 py-1.5">
-		{viewLabels.length > 1 ? (
-			viewLabels.map((view) => (
-				<button
-					key={view.id}
-					onClick={() => onSelectView(view.id)}
-					className={[
-						'rounded px-2.5 py-1 text-[11px] font-medium transition-colors',
-						view.id === activeViewId
-							? 'bg-base-200 text-base-800'
-							: 'text-base-500 hover:text-base-700'
-					].join(' ')}
-				>
-					{view.label}
-				</button>
-			))
-		) : (
-			<h3 className="text-base-700 text-xs font-semibold tracking-wide uppercase">Timeline</h3>
-		)}
+		<h3 className="text-base-700 text-xs font-semibold tracking-wide uppercase">Timeline</h3>
+
+		{statusLabel != null ? (
+			<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase">
+				{statusLabel}
+			</span>
+		) : null}
 
 		<div className="ml-auto flex items-center gap-1">
 			<button
@@ -122,45 +109,20 @@ const TimelineRuler: React.FC<{
 	);
 };
 
-const TimelineItemsLayer: React.FC<{
-	items: TTimelineItem[];
-	pixelsPerSecond: number;
-}> = ({ items, pixelsPerSecond }) => (
-	<div className="pointer-events-none absolute inset-0">
-		{items.map((item) =>
-			item.type === 'point' ? (
-				<div
-					key={item.id}
-					className="absolute top-3 h-4 w-1 rounded-full"
-					style={{
-						left: item.timeSeconds * pixelsPerSecond,
-						background: item.color ?? '#ef4444'
-					}}
-				/>
-			) : (
-				<div
-					key={item.id}
-					className="absolute top-3 h-4 rounded-full"
-					style={{
-						left: item.startSeconds * pixelsPerSecond,
-						width: Math.max(2, (item.endSeconds - item.startSeconds) * pixelsPerSecond),
-						background: item.color ?? '#9ca3af'
-					}}
-				/>
-			)
-		)}
-	</div>
-);
-
 export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const cx = useEditorCx();
 	const app = cx.runtime.app;
 	const isReady = useResource(app, 'isReady');
 	const transport = useResource(app, 'simulationTransport');
+	const simulationSync = useResource(app, 'simulationSync');
 	const simulationConfig = useResource(app, 'simulationConfig');
-	const { timelineUi, setActiveViewId } = useTimelineCx();
-	const viewModel = useTimelineViewModel();
 	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
+	const statusLabel =
+		simulationSync.mode === 'idle'
+			? null
+			: simulationSync.mode === 'dirty'
+				? 'Pending'
+				: 'Recomputing';
 	const playheadSeconds = transport.playheadStep * fixedTimeStepSeconds;
 	const bufferedSeconds = transport.bufferedStep * fixedTimeStepSeconds;
 	const totalDurationSeconds = Math.max(
@@ -168,9 +130,9 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 		bufferedSeconds
 	);
 
-	const totalWidthPx = Math.max(totalDurationSeconds * timelineUi.pixelsPerSecond, 1);
-	const playheadPx = playheadSeconds * timelineUi.pixelsPerSecond;
-	const bufferedPx = bufferedSeconds * timelineUi.pixelsPerSecond;
+	const totalWidthPx = Math.max(totalDurationSeconds * PIXELS_PER_SECOND, 1);
+	const playheadPx = playheadSeconds * PIXELS_PER_SECOND;
+	const bufferedPx = bufferedSeconds * PIXELS_PER_SECOND;
 
 	const [isDragging, setIsDragging] = React.useState(false);
 	const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -191,9 +153,9 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 
 			const rect = container.getBoundingClientRect();
 			const px = clientX - rect.left + container.scrollLeft;
-			cx.runtime.seekToSeconds(Math.max(0, px / timelineUi.pixelsPerSecond));
+			cx.runtime.seekToSeconds(Math.max(0, px / PIXELS_PER_SECOND));
 		},
-		[cx, isReady, timelineUi.pixelsPerSecond]
+		[cx, isReady]
 	);
 
 	const handlePointerDown = React.useCallback(
@@ -227,11 +189,9 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				.join(' ')}
 		>
 			<TimelineHeader
-				viewLabels={viewModel.views.map((view) => ({ id: view.id, label: view.label }))}
-				activeViewId={viewModel.activeViewId}
 				isReady={isReady}
 				mode={transport.mode}
-				onSelectView={setActiveViewId}
+				statusLabel={statusLabel}
 				onPlay={() => cx.runtime.run()}
 				onPause={() => cx.runtime.pause()}
 				onReset={() => cx.runtime.reset()}
@@ -249,7 +209,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 					<TimelineRuler
 						totalDurationSeconds={totalDurationSeconds}
 						bufferedPx={bufferedPx}
-						pixelsPerSecond={timelineUi.pixelsPerSecond}
+						pixelsPerSecond={PIXELS_PER_SECOND}
 					/>
 
 					<div
@@ -265,10 +225,6 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 							}}
 						/>
 						<div className="border-base-100 absolute inset-x-0 top-1/2 border-t border-dashed" />
-						<TimelineItemsLayer
-							items={viewModel.items}
-							pixelsPerSecond={timelineUi.pixelsPerSecond}
-						/>
 					</div>
 
 					<div

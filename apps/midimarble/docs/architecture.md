@@ -1,281 +1,257 @@
 # Architecture
 
-See also [conventions/ecs.md](./conventions/ecs.md) for the generic ECS and ECSify rules that guide this codebase.
-
 ## Purpose
 
-This document explains Midimarble's specific architecture at a high level:
+This document is the Midimarble-specific source of truth for:
 
-- what each domain owns
-- why certain concerns are in ECS and others are not
-- how authored state, live runtime state, and transient interaction state fit together
-- how to extend the current foundation without creating hidden coupling
+- plugin ownership
+- plugin dependencies
+- state layering
+- where ECS stops and plain UI begins
 
-For the current project scope, one architecture document is enough. If a single domain becomes large enough that its section stops being easy to scan, that is the point to split it into domain-specific follow-up docs.
-
-## Product Scope
-
-The current foundation is optimized for:
+The current architecture is intentionally optimized for the narrow prototype:
 
 - one marble
 - editable straight tracks
-- direct scene manipulation
-- timeline playback over buffered simulation
-- an ECS-first engine with clear domain ownership
+- direct manipulation
+- physics-backed playback with a timeline UI
 
-The architecture should stay simple for that scope while leaving clean paths for more scene elements and editor tools later.
+## Plugin Graph
 
-## Runtime Overview
-
-The runtime is built from these engine plugins:
+The engine now uses five plugins:
 
 - `Core`
 - `Physics`
 - `Render`
-- `Scene`
-- `SceneManipulation`
 - `Trajectory`
+- `Scene`
 
-The editor layer also uses a React context:
+Dependency graph:
 
-- `TimelineCx`
+- `Core` has no app-specific dependencies
+- `Physics` depends on `Core`
+- `Render` depends on `Core`
+- `Trajectory` depends on `Core`, `Physics`, and `Render`
+- `Scene` depends on `Core`, `Physics`, `Render`, and `Trajectory`
 
-That split is intentional. Timeline is editor presentation state over engine data, not an engine domain itself.
+This graph is intentionally one-way and acyclic.
+
+`Scene` is the app-specific composition root for Midimarble entities.
+
+`Physics`, `Render`, and `Trajectory` stay scene-agnostic. `Scene` is the only plugin allowed to know all of them.
+
+## What Lives Outside ECS
+
+The timeline UI stays in React.
+
+That is intentional:
+
+- timeline controls are editor presentation
+- the UI reads engine state and calls runtime methods
+- the timeline does not need its own ECS plugin for the current scope
+
+Simulation transport and playhead state remain inside `Physics`, because they directly control physics stepping, seeking, checkpoint restore, and preload.
 
 ## State Layers
 
-### Authored scene state
+### Authored state
 
-This is the editable scene document.
+This is the scene document.
 
 Current examples:
 
-- `AuthoredTransformMixin`
 - `SceneElementMixin`
-- `LinearElementMixin`
+- `AuthoredTransformMixin`
 - `StraightTrackMixin`
+- `LinearElementMixin`
+- `PegboardMixin`
 
-This state is what scene editing changes directly.
+Authored state is what editing mutates.
 
 ### Live runtime state
 
-This is the state used by rendering and simulation.
+This is the state used by simulation and rendering.
 
 Current examples:
 
 - `PositionMixin`
 - `RotationMixin`
 - `ScaleMixin`
-- rigid body and collider components
-- Three.js mesh objects
+- `RigidBodyMixin`
+- `ColliderMixin`
+- `MeshMixin`
+- Rapier worlds and checkpoint data
 
-For static scene elements, live transforms are derived from authored transforms.
-For dynamic elements such as the marble, live state is driven by simulation.
+For static scene entities, live transforms are derived from authored transforms.
+
+For dynamic entities like the marble, live transforms are driven by physics.
 
 ### Transient interaction state
 
-This exists only while the user is editing.
+This exists only while editing.
 
 Current examples:
 
-- selected entity
+- selected entity id
 - drag mode
-- pointer-down offsets
+- drag offsets
 - manipulation handles
 
-This state belongs to `SceneManipulation`, not to the scene document.
+This state lives in `Scene` because the current editor interaction is entirely scene-specific.
 
-## Domain Ownership
+## Plugin Ownership
 
 ### `Core`
 
-Owns generic live runtime primitives:
+Owns only shared runtime primitives:
 
-- transform mixins used by render and physics
-- general app helpers
+- `PositionMixin`
+- `RotationMixin`
+- `ScaleMixin`
+- `spawnBundle()`
 
 `Core` should stay small and domain-neutral.
 
-### `Scene`
-
-Owns the authored scene document and scene-domain derivation.
-
-Responsibilities:
-
-- define scene element components
-- seed the scene
-- sync authored transforms into live transforms for static elements
-- derive straight-track geometry and colliders from authored scene data
-
-`Scene` is the source of truth for what the user has authored.
-
 ### `Physics`
 
-Owns simulation and playback behavior.
+Owns only physics semantics and simulation runtime control.
 
 Responsibilities:
 
-- Rapier world lifecycle
-- rigid body and collider creation
-- stepping the live world
-- maintaining buffered preload state
-- checkpointing
-- rebuilding simulation after authored scene edits
+- Rapier lifecycle
+- rigid body and collider components
+- live world stepping
+- checkpoint and preload buffering
+- seek/reset support
+- generic simulation invalidation and resync
+
+Public physics sync contract:
+
+- `markSimulationDirty()`
+- `requestSimulationSync()`
 
 Important boundary:
 
-- editor code does not write physics invalidation resources directly
-- editor code calls explicit physics app extensions to signal authored scene mutation
+- `Physics` does not know scene editing
+- callers only tell physics that simulation is stale or should rebuild
 
 ### `Render`
 
-Owns the viewport and ECS-to-Three sync.
+Owns only rendering semantics.
 
 Responsibilities:
 
-- scene, camera, controls, and renderer lifecycle
-- applying live ECS state to rendered objects
+- viewport lifecycle
+- `MeshMixin`
+- mounting Three objects
+- syncing live transforms to Three objects
+- disposing orphaned render objects
 
-It should not own authored editing rules.
-
-### `SceneManipulation`
-
-Owns direct manipulation of editable scene elements.
-
-Responsibilities:
-
-- selection
-- hit testing
-- handle creation and positioning
-- drag bookkeeping
-- mutations to authored scene components during move and resize
-
-Current abstraction level:
-
-- generic for authored linear elements on the scene plane
-- not yet a full universal editor tool framework
-
-That is intentional. It stays simple while still being reusable beyond one hardcoded straight-track tool.
+`Render` does not know scene semantics.
 
 ### `Trajectory`
 
-Owns simulation-derived trajectory visualization.
+Owns only trajectory visualization.
 
 Responsibilities:
 
-- compute path previews from simulation state
-- render them as overlays
+- `TrajectorySourceTag`
+- trajectory buffers and line objects
+- simulation-derived path rendering
 
-This is derived output, not authored data.
+`Trajectory` defines what a trajectory source is and queries only `TrajectorySourceTag`.
 
-### `TimelineCx`
+It does not need to know what a marble is.
 
-Owns timeline presentation and extension at the editor layer.
+### `Scene`
+
+`Scene` is the app-specific composition root.
 
 Responsibilities:
 
-- active timeline view
-- pixels-per-second zoom
-- contributor registration
-- timeline view model assembly
-- explicit subscriptions to watched engine resources and components
+- authored scene components
+- initial scene seeding
+- direct manipulation state and systems
+- entity bundle factories
+- authored-to-runtime sync for scene-authored track meshes and collider descriptors
 
-Why it is outside ECS:
+`Scene` is allowed to attach mixins owned by other plugins when it creates entities:
 
-- it is primarily UI composition state
-- it consumes engine state but does not need engine systems
-- React/context is the simpler ownership model
+- `MeshMixin`
+- `RigidBodyMixin`
+- `ColliderMixin`
 
-## Current Scene Model
+It may also attach tags owned by optional extension plugins:
 
-### Straight tracks
+- `TrajectorySourceTag`
 
-Straight tracks are modeled as:
+That is composition, not ownership leakage.
+
+`Scene` does not define what those mixins mean. It only decides that a Midimarble entity uses them.
+
+## Current Entity Model
+
+### Straight track
+
+A straight track is composed from:
 
 - scene identity and editability via `SceneElementMixin`
 - authored placement via `AuthoredTransformMixin`
-- generic linear authored behavior via `LinearElementMixin`
-- track-specific profile data via `StraightTrackMixin`
+- authored track shape via `StraightTrackMixin`
+- generic linear editing data via `LinearElementMixin`
+- render data via `MeshMixin`
+- physics setup via `RigidBodyMixin` and `ColliderMixin`
 
-This split lets the manipulation layer stay generic for linear elements while the scene layer owns track-specific mesh and collider derivation.
+The track mesh and collider descriptors are updated inside `Scene` when authored track data changes.
 
 ### Marble
 
-The marble is currently a dynamic simulation entity.
+The marble is composed from:
 
-It uses live transform state and physics-driven motion, not authored transform state.
+- scene identity via `SceneElementMixin`
+- marble config via `MarbleMixin`
+- trajectory source capability via `TrajectorySourceTag`
+- render data via `MeshMixin`
+- physics setup via `RigidBodyMixin` and `ColliderMixin`
 
-That keeps the authored scene document separate from simulation output.
+The marble is not modeled as authored transform state after spawn. Its live position comes from physics.
 
-## Why Things Are Done This Way
+### Pegboard
 
-### Why authored transforms are separate from live transforms
+The pegboard is currently simple environment geometry with authored placement and a render object.
 
-Because the document and the current simulation/render state are not the same thing.
+## Simulation Sync Model
 
-Keeping them separate makes it clear:
+When authored scene data changes:
 
-- what the user authored
-- what the world is currently doing
-- what can safely be reset or rebuilt
+1. `Scene` mutates authored components.
+2. `Scene` calls `markSimulationDirty()`.
+3. `Physics` treats the buffered simulation as invalid from step `0`.
+4. The UI shows rebuild progress from `0` up to the current playhead.
+5. On commit, `Scene` calls `requestSimulationSync()`.
+6. `Physics` rebuilds exactly to the current playhead and swaps the rebuilt world in.
 
-### Why straight-track editing uses center plus length
+This is intentionally honest.
 
-The current manipulation model is based on:
+The past is not shown as still-valid after an authored edit, because it is not guaranteed to be valid.
 
-- authored center position
-- authored forward direction from rotation
-- authored extent from `LinearElementMixin.length`
+## Why This Shape
 
-That matches the supported Marblie-like interaction well and keeps resizing behavior understandable.
+This architecture is deliberately simple for the prototype:
 
-### Why the timeline is not an engine plugin
+- one app-specific composition root instead of extra scene sub-plugins
+- owner plugins stay pure
+- timeline UI stays outside ECS
+- state layers remain explicit
+- plugin dependencies stay one-way
 
-Because the timeline is editor presentation state over transport and buffered simulation data.
+The goal is not maximal abstraction.
 
-Putting it in ECS would make the engine type surface larger without giving a clear runtime benefit.
+The goal is that another engineer can answer these questions quickly:
 
-## Extension Guidance
+1. Where is the authored scene document?
+2. Where does physics invalidation live?
+3. Who creates a straight track entity?
+4. Who owns the meaning of each mixin?
 
-### Adding a new scene element
-
-Ask:
-
-1. What authored data belongs in `Scene`?
-2. Does it share a generic manipulation capability with existing elements?
-3. Which scene or runtime system derives its mesh, colliders, or simulation data?
-
-If the element is editable, prefer composing it from existing generic capabilities before inventing a new one-off editor path.
-
-### Adding a new manipulation mode
-
-Ask:
-
-1. Is the mode generic across element capabilities?
-2. Is the state transient?
-3. Does it edit authored scene data directly?
-
-If yes, it probably belongs in `SceneManipulation`.
-
-### Adding a new timeline layer
-
-Add it as a timeline contributor in `TimelineCx`, not as an engine plugin, unless it genuinely needs its own runtime systems.
-
-Declare:
-
-- `watchResources`
-- `watchComponents`
-
-so the timeline stays explicitly reactive.
-
-## Current Risks
-
-The architecture is in good shape for the current scope.
-
-The main remaining risks are not boundary problems, they are product-growth risks:
-
-- adding new scene element types without preserving capability-based modeling
-- pushing UI concerns back into ECS for convenience
-- letting editor interaction mutate physics internals instead of using explicit boundaries
-
-If those rules are kept, this foundation should remain easy to extend.
+If those answers stop being obvious, the architecture needs another pass.

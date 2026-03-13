@@ -23,12 +23,11 @@ export type TPhysicsPlugin = TPlugin<
 			preloadStep: number;
 			rigidBodies: TRRigidBodies;
 			colliders: TRColliders;
-			pendingSceneEditInvalidation: TPendingSceneEditInvalidation;
-			sceneEditRebuild: TSceneEditRebuild;
+			simulationSync: TSimulationSync;
 		};
 		appExtensions: {
-			notifyAuthoredSceneMutation(options?: { preserveRevision?: boolean }): void;
-			endAuthoredSceneMutation(): void;
+			markSimulationDirty(): void;
+			requestSimulationSync(): void;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
@@ -45,7 +44,6 @@ export interface TSimulationTransport {
 	mode: 'paused' | 'running';
 	playheadStep: number;
 	bufferedStep: number;
-	revision: number;
 }
 
 export interface TSimulationConfig {
@@ -53,22 +51,31 @@ export interface TSimulationConfig {
 	preloadHorizonSteps: number;
 	maxPreloadStepsPerUpdate: number;
 	maxLiveStepsPerUpdate: number;
-	maxEditRebuildStepsPerUpdate: number;
+	maxSyncStepsPerUpdate: number;
 	maxDeltaSeconds: number;
 }
 
-export interface TPendingSceneEditInvalidation {
-	dirty: boolean;
-	revisionBumped: boolean;
+export type TSimulationSync =
+	| TIdleSimulationSync
+	| TDirtySimulationSync
+	| TRebuildingSimulationSync;
+
+export interface TIdleSimulationSync {
+	mode: 'idle';
 }
 
-export interface TSceneEditRebuild {
-	active: boolean;
+export interface TDirtySimulationSync {
+	mode: 'dirty';
+	resumeWhenReady: boolean;
+	requested: boolean;
+}
+
+export interface TRebuildingSimulationSync {
+	mode: 'rebuilding';
 	targetStep: number;
 	currentStep: number;
-	revision: number;
 	resumeWhenReady: boolean;
-	world: RAPIER.World | null;
+	world: RAPIER.World;
 	checkpointStore: TCheckpointStore;
 }
 

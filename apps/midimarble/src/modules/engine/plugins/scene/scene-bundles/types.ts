@@ -8,11 +8,12 @@ export type TSceneBundle = TBundle<
 		| 'PositionMixin'
 		| 'RotationMixin'
 		| 'ScaleMixin'
-		| 'MeshMixin'
-		| 'RigidBodyMixin'
-		| 'ColliderMixin'
 		| 'StraightTrackMixin'
 		| 'LinearElementMixin'
 		| 'PegboardMixin'
-		| 'MarbleMixin']
+		| 'MarbleMixin'
+		| 'TrajectorySourceTag'
+		| 'MeshMixin'
+		| 'RigidBodyMixin'
+		| 'ColliderMixin']
 >;

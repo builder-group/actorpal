@@ -3,7 +3,6 @@ import type * as THREE from 'three';
 import type { TCorePlugin } from '../core';
 import type { TPhysicsPlugin } from '../physics';
 import type { TRenderPlugin } from '../render/types';
-import type { TScenePlugin } from '../scene/types';
 
 // MARK: - Plugin
 
@@ -11,21 +10,20 @@ export type TTrajectoryPlugin = TPlugin<
 	{
 		name: 'Trajectory';
 		components: {
-			TrajectoryLineMixin: [];
+			TrajectorySourceTag: TCTrajectorySourceTag[];
 		};
 		resources: {
 			trajectoryConfig: TTrajectoryConfig;
 			trajectoryLines: TTrajectoryLines;
+			trajectorySyncState: TTrajectorySyncState;
 		};
 		systemSets: 'First' | 'Update' | 'Last';
 	},
-	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin]
+	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin]
 >;
 
 export type TTrajectoryApp = TApp<
-	TAppContext<
-		[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin, TTrajectoryPlugin]
-	>
+	TAppContext<[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin]>
 >;
 
 // MARK: - Resources
@@ -47,3 +45,16 @@ export interface TTrajectoryLines {
 	prevFutureColor: string;
 	prevPastColor: string;
 }
+
+export interface TTrajectorySyncState {
+	world: object | null;
+	playheadStep: number;
+	simulationSyncMode: 'idle' | 'dirty' | 'rebuilding';
+	futureSteps: number;
+	pastSteps: number;
+	enabled: boolean;
+}
+
+// MARK: - Components
+
+export interface TCTrajectorySourceTag {}

@@ -27,6 +27,10 @@ Bad:
 - components that own hidden side effects
 - components that mix unrelated concerns because they are convenient today
 
+Zero-data components should use a marker-style name such as `*Marker` or `*Tag`.
+
+Reserve `*Mixin` for components that actually carry state.
+
 ### Systems own behavior
 
 Systems should:
@@ -179,6 +183,71 @@ Before creating a plugin, ask:
 
 If the concern is mostly presentation state, React/context is often the better boundary.
 
+### Keep plugin ownership separate from composition
+
+A plugin should own the meaning and behavior of its own mixins and resources.
+
+That does not mean the same plugin must be the one that initially attaches those mixins to entities.
+
+An app-specific composition root may assemble entities from multiple domains:
+
+- scene-authored mixins
+- render mixins
+- physics mixins
+- debug or derived capability markers
+
+That is composition, not ownership leakage.
+
+### Prefer one app-specific composition root over speculative sub-plugins
+
+For a narrow prototype, default to fewer plugin boundaries.
+
+If one top-level app plugin can honestly own:
+
+- authored state
+- transient interaction state
+- entity seeding
+- entity composition
+
+then keep it together until reuse pressure is real.
+
+Do not create extra plugins only because the split feels architecturally neat.
+
+### Keep plugin dependencies acyclic
+
+Dependencies should flow from generic domains toward app-specific domains.
+
+Good pattern:
+
+- shared primitives at the bottom
+- reusable owner plugins in the middle
+- one app-specific composition root at the top
+
+Bad pattern:
+
+- cycles between scene, physics, render, and editor concerns
+- plugins that need each other to explain what they mean
+
+If two plugins start depending on each other, the boundary is usually wrong.
+
+## Plugin File Layout
+
+Keep plugin structure predictable.
+
+Default shape:
+
+- `*-plugin.ts` for plugin declaration and setup
+- `systems.ts` for actual ECS systems only
+- `types.ts` for public plugin types
+- `lib/` for support logic used by systems or plugin setup
+
+Rules:
+
+- do not hide non-system helpers inside `systems.ts`
+- move domain actions, math helpers, signatures, and setup utilities into `lib/`
+- if a plugin grows many systems, split `systems.ts` into a `systems/` folder with one file per domain or system group
+- prefer naming helper files after the domain they support or the specific action they implement
+
 ## UI Versus ECS
 
 Put a concern in UI/context when it is mostly:
@@ -208,6 +277,8 @@ For editor interactions:
 - make handle and tool config explicit
 
 If a behavior is generic across multiple element types, model that capability generically instead of hardcoding one element type into the interaction layer.
+
+Even when authored and transient interaction state live under the same top-level plugin, keep them clearly separated in names, files, and resources.
 
 ## Testing Rules
 

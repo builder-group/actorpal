@@ -24,8 +24,9 @@ export function createMarbleBundle(
 			label: 'Marble',
 			editable: false
 		}),
-		bundleEntry(app.c.MeshMixin, { type: 'three', object: createMarbleObject(radius) }),
 		bundleEntry(app.c.MarbleMixin, { radius }),
+		bundleEntry(app.c.TrajectorySourceTag, {}),
+		bundleEntry(app.c.MeshMixin, { type: 'three', object: createMarbleObject(radius) }),
 		bundleEntry(app.c.RigidBodyMixin, {
 			kind: 'dynamic',
 			canSleep: false,
@@ -53,7 +54,7 @@ export interface TCreateMarbleBundleOptions {
 	radius?: number;
 }
 
-function createMarbleObject(radius: number): THREE.Object3D {
+export function createMarbleObject(radius: number): THREE.Object3D {
 	const marble = new THREE.Mesh(
 		new THREE.SphereGeometry(radius, 48, 48),
 		new THREE.MeshStandardMaterial({

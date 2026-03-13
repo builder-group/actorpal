@@ -1,8 +1,9 @@
 import * as RAPIER from '@dimforge/rapier3d-compat';
+import { markSimulationDirty, requestSimulationSync } from './lib/simulation-sync';
 import {
-	advanceSceneEditRebuildSystem,
+	advanceSimulationSyncSystem,
+	beginSimulationSyncSystem,
 	cleanupOrphanedPhysicsBodiesSystem,
-	invalidateSimulationOnSceneEditSystem,
 	preloadPhysicsWorldSystem,
 	spawnRigidBodiesSystem,
 	stepPhysicsWorldSystem,
@@ -15,6 +16,7 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 	const initPromise = RAPIER.init();
 
 	return {
+		// Physics owns simulation state, stepping, checkpoints, and resync.
 		name: 'Physics',
 		deps: ['Default', 'Core'],
 		components: {
@@ -31,52 +33,30 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 			simulationTransport: {
 				mode: 'paused',
 				playheadStep: 0,
-				bufferedStep: 0,
-				revision: 0
+				bufferedStep: 0
 			},
 			simulationConfig: {
 				checkpointIntervalSteps: 60,
 				preloadHorizonSteps: 2400,
 				maxPreloadStepsPerUpdate: 120,
 				maxLiveStepsPerUpdate: 12,
-				maxEditRebuildStepsPerUpdate: 240,
+				maxSyncStepsPerUpdate: 240,
 				maxDeltaSeconds: 0.05
 			},
 			checkpointStore: new Map(),
 			preloadStep: 0,
 			rigidBodies: new Map(),
 			colliders: new Map(),
-			pendingSceneEditInvalidation: {
-				dirty: false,
-				revisionBumped: false
-			},
-			sceneEditRebuild: {
-				active: false,
-				targetStep: 0,
-				currentStep: 0,
-				revision: 0,
-				resumeWhenReady: false,
-				world: null,
-				checkpointStore: new Map()
+			simulationSync: {
+				mode: 'idle'
 			}
 		},
 		appExtensions: {
-			notifyAuthoredSceneMutation(
-				this: TPhysicsApp,
-				options?: { preserveRevision?: boolean }
-			): void {
-				this.updateResource('pendingSceneEditInvalidation', {
-					dirty: true,
-					revisionBumped: options?.preserveRevision
-						? this.r.pendingSceneEditInvalidation.revisionBumped
-						: false
-				});
+			markSimulationDirty(this: TPhysicsApp): void {
+				markSimulationDirty(this);
 			},
-			endAuthoredSceneMutation(this: TPhysicsApp): void {
-				this.updateResource('pendingSceneEditInvalidation', {
-					...this.r.pendingSceneEditInvalidation,
-					revisionBumped: false
-				});
+			requestSimulationSync(this: TPhysicsApp): void {
+				requestSimulationSync(this);
 			}
 		},
 		setup(app: TPhysicsApp) {
@@ -93,21 +73,21 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 				set: 'Update',
 				after: spawnRigidBodiesSystem
 			});
-			app.addSystem(invalidateSimulationOnSceneEditSystem, {
+			app.addSystem(beginSimulationSyncSystem, {
 				set: 'Update',
 				after: syncNonDynamicBodiesFromComponentsSystem
 			});
 			app.addSystem(stepPhysicsWorldSystem, {
 				set: 'Update',
-				after: invalidateSimulationOnSceneEditSystem
+				after: beginSimulationSyncSystem
 			});
-			app.addSystem(advanceSceneEditRebuildSystem, {
+			app.addSystem(advanceSimulationSyncSystem, {
 				set: 'Update',
 				after: stepPhysicsWorldSystem
 			});
 			app.addSystem(preloadPhysicsWorldSystem, {
 				set: 'Update',
-				after: advanceSceneEditRebuildSystem
+				after: advanceSimulationSyncSystem
 			});
 			app.addSystem(syncDynamicBodiesToComponentsSystem, {
 				set: 'Update',

@@ -11,6 +11,7 @@ export function createRenderPlugin(): TRenderPlugin {
 	const viewport = new Viewport();
 
 	return {
+		// Render owns viewport lifecycle and mounted scene objects only.
 		name: 'Render',
 		deps: ['Default', 'Core'],
 		components: {

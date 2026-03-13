@@ -1,7 +1,7 @@
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
-import { MidiViewer } from '@/modules/midi';
+import { Timeline } from './Timeline';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
 import { useSceneSummary } from '../hooks';
 
@@ -14,7 +14,6 @@ export const Editor: React.FC = () => {
 };
 
 const MarbleSection: React.FC = () => {
-	const cx = useEditorCx();
 	const scene = useSceneSummary();
 	const pos = scene.leadMarblePosition;
 
@@ -24,71 +23,6 @@ const MarbleSection: React.FC = () => {
 			<p className="text-base-600 mt-2 font-mono text-xs">
 				{pos == null ? '—' : `${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}`}
 			</p>
-			<button
-				onClick={() => cx.runtime.reset()}
-				disabled={!scene.physicsReady}
-				className="mt-3 rounded-md bg-white px-3 py-1.5 text-xs shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 disabled:opacity-40"
-			>
-				Reset simulation
-			</button>
-		</section>
-	);
-};
-
-const TransportSection: React.FC = () => {
-	const cx = useEditorCx();
-	const app = cx.runtime.app;
-	const isReady = useResource(app, 'isReady');
-	const transport = useResource(app, 'simulationTransport');
-	const fixedTimeStepSeconds = app.r.fixedTimeStepSeconds;
-	const playheadSeconds = transport.playheadStep * fixedTimeStepSeconds;
-	const bufferedSeconds = transport.bufferedStep * fixedTimeStepSeconds;
-
-	return (
-		<section>
-			<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Transport</h3>
-			<div className="mt-3 flex gap-2">
-				<button
-					onClick={() => cx.runtime.run()}
-					disabled={!isReady || transport.mode === 'running'}
-					className="rounded-md bg-white px-3 py-1.5 text-xs shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 disabled:opacity-40"
-				>
-					Run
-				</button>
-				<button
-					onClick={() => cx.runtime.pause()}
-					disabled={!isReady || transport.mode === 'paused'}
-					className="rounded-md bg-white px-3 py-1.5 text-xs shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 disabled:opacity-40"
-				>
-					Pause
-				</button>
-				<button
-					onClick={() => cx.runtime.reset()}
-					disabled={!isReady}
-					className="rounded-md bg-white px-3 py-1.5 text-xs shadow-sm ring-1 ring-gray-300 ring-inset hover:bg-gray-50 disabled:opacity-40"
-				>
-					Reset
-				</button>
-			</div>
-			<p className="text-base-600 mt-3 font-mono text-xs">
-				mode={transport.mode} playhead={transport.playheadStep} buffered={transport.bufferedStep}
-			</p>
-			<p className="text-base-600 mt-1 font-mono text-xs">
-				{playheadSeconds.toFixed(2)}s / {bufferedSeconds.toFixed(2)}s buffered
-			</p>
-			<label className="text-base-700 mt-3 block text-sm">
-				Seek
-				<input
-					type="range"
-					min={0}
-					max={bufferedSeconds}
-					step={fixedTimeStepSeconds}
-					value={Math.min(playheadSeconds, bufferedSeconds)}
-					disabled={!isReady || transport.bufferedStep === 0}
-					className="mt-1 block w-full"
-					onChange={(e) => cx.runtime.seekToSeconds(Number(e.target.value))}
-				/>
-			</label>
 		</section>
 	);
 };
@@ -177,8 +111,6 @@ const InnerEditor: React.FC = () => {
 							<aside className="bg-base-50 flex h-full flex-col gap-6 overflow-y-auto p-4">
 								<MarbleSection />
 								<hr className="border-base-200" />
-								<TransportSection />
-								<hr className="border-base-200" />
 								<TrajectorySection />
 							</aside>
 						</Panel>
@@ -188,7 +120,7 @@ const InnerEditor: React.FC = () => {
 				<Separator className="border-base-300 h-px shrink-0 cursor-row-resize border-t" />
 
 				<Panel defaultSize="280px" minSize="120px" maxSize="60%">
-					<MidiViewer className="h-full" />
+					<Timeline className="h-full" />
 				</Panel>
 			</Group>
 		</main>

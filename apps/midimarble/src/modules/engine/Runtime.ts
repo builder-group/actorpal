@@ -13,11 +13,13 @@ import {
 	restoreWorldAtStep,
 	createScenePlugin,
 	syncPreloadWorldToStep,
+	createTimelinePlugin,
 	createTrajectoryPlugin,
 	type TCorePlugin,
 	type TPhysicsPlugin,
 	type TRenderPlugin,
 	type TScenePlugin,
+	type TTimelinePlugin,
 	type TTrajectoryPlugin
 } from './plugins';
 
@@ -35,6 +37,7 @@ export class Runtime {
 				createPhysicsPlugin(),
 				createRenderPlugin(),
 				createScenePlugin(),
+				createTimelinePlugin(),
 				createTrajectoryPlugin()
 			] as const,
 			systemSets: ['First', 'Update', 'Last']
@@ -156,6 +159,14 @@ function clearTransientSimulationState(app: TRuntimeApp): void {
 
 export type TRuntimeApp = TApp<
 	TAppContext<
-		[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TScenePlugin, TTrajectoryPlugin]
+		[
+			TDefaultPlugin,
+			TCorePlugin,
+			TPhysicsPlugin,
+			TRenderPlugin,
+			TScenePlugin,
+			TTimelinePlugin,
+			TTrajectoryPlugin
+		]
 	>
 >;

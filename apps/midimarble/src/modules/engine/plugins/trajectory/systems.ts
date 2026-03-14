@@ -17,10 +17,11 @@ import type { TTrajectoryApp } from './types';
 export function updateTrajectorySystem(app: TTrajectoryApp) {
 	const config = app.r.trajectoryConfig;
 	const state = app.r.trajectoryState;
+	const isPreviewEnabled = app.r.previewConfig.enabled;
 
-	state.futureLine.visible = config.enabled;
-	state.pastLine.visible = config.enabled;
-	state.noteMarkerGroup.visible = config.enabled;
+	state.futureLine.visible = config.enabled && !isPreviewEnabled;
+	state.pastLine.visible = config.enabled && !isPreviewEnabled;
+	state.noteMarkerGroup.visible = config.enabled && !isPreviewEnabled;
 
 	if (!config.enabled || !app.r.isReady) {
 		clearTrajectoryVisuals(app);

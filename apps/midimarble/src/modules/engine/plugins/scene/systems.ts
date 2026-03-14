@@ -13,6 +13,7 @@ import {
 	syncResolvedNotePlatform,
 	syncUnresolvedNotePlatform
 } from './lib/note-platform-runtime';
+import { resetSceneManipulationState } from './lib/manipulation-state';
 import { clearSceneEntitySelection } from './lib/scene-selection';
 import { sameVec3 } from './lib/vec3';
 import type { TSceneApp } from './types';
@@ -149,6 +150,12 @@ export function syncSceneManipulationHandlesSystem(app: TSceneApp) {
 	const selection = app.r.sceneSelection;
 	const handles = app.r.sceneManipulationHandles;
 
+	if (app.r.previewConfig.enabled) {
+		handles.start.visible = false;
+		handles.end.visible = false;
+		return;
+	}
+
 	if (selection.entityId == null) {
 		handles.start.visible = false;
 		handles.end.visible = false;
@@ -213,6 +220,25 @@ export function syncExclusiveSelectionSystem(app: TSceneApp) {
 	}
 
 	clearSceneEntitySelection(app);
+}
+
+export function syncPreviewInteractionSystem(app: TSceneApp) {
+	if (!app.wasResourceChanged('previewConfig') || !app.r.previewConfig.enabled) {
+		return;
+	}
+
+	const state = app.r.sceneManipulationState;
+	if (state.mode === 'idle') {
+		return;
+	}
+
+	if (state.didEdit) {
+		app.markSimulationDirty();
+		app.requestSimulationSync();
+		app.updateResource('sceneEditState', { pending: false });
+	}
+
+	app.updateResource('sceneManipulationState', resetSceneManipulationState());
 }
 
 export function syncNotePlatformMarkerStateSystem(app: TSceneApp) {

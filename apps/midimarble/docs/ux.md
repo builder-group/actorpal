@@ -51,6 +51,9 @@ The current editor now supports:
 - creating or reselecting one `NotePlatform` per note from the selected note inspector
 - inspector-first editing for the selected note platform's rotation and length
 - placed vs unplaced note state reflected in the timeline and trajectory
+- a global `Preview` mode with a soft follow camera
+- hiding authoring overlays while preview is active
+- a pinned preview camera inspector while preview is active
 
 This is the first proof of note-bound geometry, not the finished platform toolset.
 
@@ -177,6 +180,8 @@ The right sidebar should also follow that same current target:
 - selected straight track
 - selected marble
 
+While preview mode is active, the sidebar should temporarily switch from selection inspection to preview camera settings.
+
 ## Trajectory And Marker UX
 
 ### Past and future
@@ -192,6 +197,14 @@ It tells the user what has already been solved or traversed.
 The future should be shown only as far as the engine has currently simulated ahead.
 It should also never imply musical time beyond the imported song length.
 That future is the actionable space where upcoming note markers can be clicked.
+
+In preview mode, authoring overlays should disappear:
+
+- trajectory lines
+- note markers
+- manipulation handles
+
+The scene itself should remain visible.
 
 ### Note markers
 

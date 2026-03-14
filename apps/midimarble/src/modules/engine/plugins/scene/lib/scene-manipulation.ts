@@ -55,6 +55,10 @@ export function setupSceneManipulation(app: TSceneApp): TSceneCleanup {
 }
 
 function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: PointerEvent): void {
+	if (app.r.previewConfig.enabled) {
+		return;
+	}
+
 	const pointer = getNormalizedPointer(app, event);
 	if (pointer == null) {
 		return;
@@ -186,6 +190,10 @@ function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 }
 
 function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: PointerEvent): void {
+	if (app.r.previewConfig.enabled) {
+		return;
+	}
+
 	const state = app.r.sceneManipulationState;
 	if (state.entityId == null || state.pointerDownClient == null || state.dragPlaneX == null) {
 		return;
@@ -245,6 +253,7 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 			rotationX: resized.rotation.x,
 			length: resized.length
 		});
+		app.updateResource('sceneEditState', { pending: true });
 		app.updateResource('sceneManipulationState', {
 			...app.r.sceneManipulationState,
 			didEdit: true
@@ -268,6 +277,7 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 				...linearElement.transform,
 				position: nextPosition
 			});
+			app.updateResource('sceneEditState', { pending: true });
 			app.updateResource('sceneManipulationState', {
 				...app.r.sceneManipulationState,
 				didEdit: true
@@ -314,6 +324,7 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 	}
 
 	if (didChange) {
+		app.updateResource('sceneEditState', { pending: true });
 		app.updateResource('sceneManipulationState', {
 			...app.r.sceneManipulationState,
 			didEdit: true
@@ -330,6 +341,7 @@ function handlePointerUp(app: TSceneApp): void {
 	if (state.didEdit) {
 		app.markSimulationDirty();
 		app.requestSimulationSync();
+		app.updateResource('sceneEditState', { pending: false });
 	}
 
 	app.updateResource('sceneManipulationState', resetSceneManipulationState());

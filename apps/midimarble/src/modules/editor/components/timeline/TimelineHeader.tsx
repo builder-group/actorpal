@@ -1,4 +1,4 @@
-import { FileUp, Pause, Play, SkipBack, SkipForward, Square, ZoomIn, ZoomOut } from 'lucide-react';
+import { Eye, FileUp, Pause, Play, SkipBack, SkipForward, Square, ZoomIn, ZoomOut } from 'lucide-react';
 import React from 'react';
 
 const TICK_REPEAT_INITIAL_DELAY_MS = 260;
@@ -10,7 +10,8 @@ const TimelineIconButton: React.FC<{
 	title: string;
 	onClick: () => void;
 	repeatOnHold?: boolean;
-}> = ({ disabled, icon: Icon, title, onClick, repeatOnHold = false }) => {
+	pressed?: boolean;
+}> = ({ disabled, icon: Icon, title, onClick, repeatOnHold = false, pressed = false }) => {
 	const timeoutRef = React.useRef<number | null>(null);
 	const intervalRef = React.useRef<number | null>(null);
 	const suppressResetRef = React.useRef<number | null>(null);
@@ -79,7 +80,11 @@ const TimelineIconButton: React.FC<{
 			onLostPointerCapture={stopRepeat}
 			disabled={disabled}
 			title={title}
-			className="text-base-500 hover:text-base-800 flex h-7 w-7 items-center justify-center rounded transition-colors disabled:opacity-30"
+			className={`flex h-7 w-7 items-center justify-center rounded transition-colors disabled:opacity-30 ${
+				pressed
+					? 'bg-base-900 text-base-0 hover:bg-base-900'
+					: 'text-base-500 hover:text-base-800'
+			}`}
 		>
 			<Icon size={14} strokeWidth={1.8} />
 		</button>
@@ -109,19 +114,20 @@ export const TimelineHeader: React.FC<{
 	importLabel: string;
 	importError: string | null;
 	mode: 'paused' | 'running';
+	previewEnabled: boolean;
 	trackName: string | null;
 	bpm: number | null;
 	playheadTick: number;
 	liveStep: number;
 	preloadedLabel: string;
 	selectedNoteLabel: string | null;
-	zoomLabel: string;
 	onOpenMidi: () => void;
 	onStepBackwardTick: () => void;
 	onStepForwardTick: () => void;
 	onPlay: () => void;
 	onPause: () => void;
 	onReset: () => void;
+	onTogglePreview: () => void;
 	onZoomOut: () => void;
 	onZoomIn: () => void;
 }> = ({
@@ -131,19 +137,20 @@ export const TimelineHeader: React.FC<{
 	importLabel,
 	importError,
 	mode,
+	previewEnabled,
 	trackName,
 	bpm,
 	playheadTick,
 	liveStep,
 	preloadedLabel,
 	selectedNoteLabel,
-	zoomLabel,
 	onOpenMidi,
 	onStepBackwardTick,
 	onStepForwardTick,
 	onPlay,
 	onPause,
 	onReset,
+	onTogglePreview,
 	onZoomOut,
 	onZoomIn
 }) => (
@@ -187,14 +194,18 @@ export const TimelineHeader: React.FC<{
 				</span>
 			) : null}
 
-			<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase">
-				Zoom {zoomLabel}
-			</span>
-
 			<div className="ml-auto flex items-center gap-2">
 				<TimelineOpenMidiButton disabled={isImporting} label={importLabel} onClick={onOpenMidi} />
 
 				<div className="flex items-center gap-1">
+					<TimelineIconButton
+						disabled={false}
+						icon={Eye}
+						title={previewEnabled ? 'Disable preview mode' : 'Enable preview mode'}
+						onClick={onTogglePreview}
+						pressed={previewEnabled}
+					/>
+
 					<TimelineIconButton
 						disabled={!canZoom}
 						icon={ZoomOut}

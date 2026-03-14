@@ -23,6 +23,7 @@ export type TScenePlugin = TPlugin<
 		};
 		resources: {
 			sceneSelection: TSceneSelection;
+			sceneEditState: TSceneEditState;
 			sceneManipulationState: TSceneManipulationState;
 			sceneManipulationConfig: TSceneManipulationConfig;
 			sceneManipulationHandles: TSceneManipulationHandles;
@@ -94,6 +95,10 @@ export interface TCNotePlatformMixin {
 
 export interface TSceneSelection {
 	entityId: number | null;
+}
+
+export interface TSceneEditState {
+	pending: boolean;
 }
 
 export interface TSceneManipulationState {

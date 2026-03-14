@@ -35,9 +35,11 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const midiImportError = useResource(app, 'midiImportError');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
 	const transport = useResource(app, 'transport');
+	const previewConfig = useResource(app, 'previewConfig');
 	const liveStep = useResource(app, 'liveStep');
 	const bufferedStep = useResource(app, 'bufferedStep');
 	const simulationSync = useResource(app, 'simulationSync');
+	const sceneEditState = useResource(app, 'sceneEditState');
 	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
 	const notePlatforms = useQueryComponents(app, {
 		components: [Entity, app.c.NoteBindingMixin] as const,
@@ -62,15 +64,17 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 		midiSong == null
 			? 0
 			: Math.min(stepToTick(bufferedStep, midiSong, fixedTimeStepSeconds), midiSong.totalTicks);
+	const hasPendingFuture = sceneEditState.pending || simulationSync.mode !== 'idle';
+	const visibleBufferedTick = hasPendingFuture ? 0 : bufferedTick;
 	const preloadedSteps = Math.max(0, bufferedStep - liveStep);
 	const preloadedLabel =
-		simulationSync.mode === 'dirty'
+		sceneEditState.pending || simulationSync.mode === 'dirty'
 			? 'Preloaded Pending'
 			: simulationSync.mode === 'rebuilding'
 				? 'Preloaded Recomputing'
 				: `Preloaded ${preloadedSteps}`;
 	const playheadPx = playheadTick * pixelsPerTick;
-	const bufferedPx = bufferedTick * pixelsPerTick;
+	const bufferedPx = visibleBufferedTick * pixelsPerTick;
 	const noteRows = React.useMemo(() => buildNoteRows(selectedTrack?.notes ?? []), [selectedTrack]);
 	const selectedNote = React.useMemo(
 		() => selectedTrack?.notes.find((note) => note.id === selectedNoteId) ?? null,
@@ -87,7 +91,6 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const contentHeight = Math.max(noteRows.length * NOTE_ROW_HEIGHT, MIN_ROLL_HEIGHT);
 	const timelineWidth =
 		midiSong == null ? Math.max(containerWidth, 1) : timelineCx.getTimelineWidth(midiSong);
-	const zoomLabel = `${timelineCx.getZoomRatio().toFixed(2)}x`;
 
 	const [isDragging, setIsDragging] = React.useState(false);
 	const [isImporting, setIsImporting] = React.useState(false);
@@ -237,19 +240,20 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				importLabel={isImporting ? 'Importing…' : 'Open MIDI'}
 				importError={midiImportError}
 				mode={transport.mode}
+				previewEnabled={previewConfig.enabled}
 				trackName={selectedTrack?.name ?? null}
 				bpm={midiSong?.bpm ?? null}
 				playheadTick={playheadTick}
 				liveStep={liveStep}
 				preloadedLabel={preloadedLabel}
 				selectedNoteLabel={selectedNoteLabel}
-				zoomLabel={zoomLabel}
 				onOpenMidi={openMidiPicker}
 				onStepBackwardTick={() => cx.runtime.stepBackwardTick()}
 				onStepForwardTick={() => cx.runtime.stepForwardTick()}
 				onPlay={() => cx.runtime.run()}
 				onPause={() => cx.runtime.pause()}
 				onReset={() => cx.runtime.reset()}
+				onTogglePreview={() => cx.runtime.togglePreview()}
 				onZoomOut={handleZoomOut}
 				onZoomIn={handleZoomIn}
 			/>

@@ -14,6 +14,7 @@ import {
 import { setupSceneManipulation } from './lib/scene-manipulation';
 import { selectSceneEntity } from './lib/scene-selection';
 import {
+	syncPreviewInteractionSystem,
 	syncAuthoredTransformsToLiveSystem,
 	syncMarbleRuntimeMixinsSystem,
 	syncExclusiveSelectionSystem,
@@ -51,6 +52,9 @@ export function createScenePlugin(): TScenePlugin {
 		resources: {
 			sceneSelection: {
 				entityId: null
+			},
+			sceneEditState: {
+				pending: false
 			},
 			sceneManipulationState: resetSceneManipulationState(),
 			sceneManipulationConfig,
@@ -120,12 +124,19 @@ export function createScenePlugin(): TScenePlugin {
 					length: 12
 				})
 			);
-			app.spawnBundle(createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION }));
+			const marbleEntityId = app.spawnBundle(
+				createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION })
+			);
+			app.updateResource('previewState', {
+				...app.r.previewState,
+				targetEntityId: marbleEntityId
+			});
 
 			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'PreUpdate' });
 			app.addSystem(syncMarbleRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncExclusiveSelectionSystem, { set: 'Update' });
+			app.addSystem(syncPreviewInteractionSystem, { set: 'Update', after: syncExclusiveSelectionSystem });
 			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
 			app.addSystem(syncNotePlatformRuntimeSystem, { set: 'PostUpdate' });
 			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'PostUpdate' });

@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { syncNotePlatformRuntimeSystem } from './systems';
+import {
+	syncNotePlatformRuntimeSystem,
+	syncPreviewInteractionSystem,
+	syncSceneManipulationHandlesSystem
+} from './systems';
 
 describe('syncNotePlatformRuntimeSystem', () => {
 	it('requests a follow-up simulation sync when note anchors move a bound platform', () => {
@@ -98,5 +102,52 @@ describe('syncNotePlatformRuntimeSystem', () => {
 		expect(app.updateComponent).not.toHaveBeenCalled();
 		expect(app.markSimulationDirty).not.toHaveBeenCalled();
 		expect(app.requestSimulationSync).not.toHaveBeenCalled();
+	});
+
+	it('hides manipulation handles while preview mode is active', () => {
+		const handles = {
+			start: { visible: true, position: new THREE.Vector3() },
+			end: { visible: true, position: new THREE.Vector3() }
+		};
+
+		syncSceneManipulationHandlesSystem({
+			r: {
+				previewConfig: { enabled: true },
+				sceneSelection: { entityId: 12 },
+				sceneManipulationHandles: handles
+			}
+		} as never);
+
+		expect(handles.start.visible).toBe(false);
+		expect(handles.end.visible).toBe(false);
+	});
+
+	it('commits pending scene edits before clearing manipulation state for preview', () => {
+		const markSimulationDirty = vi.fn();
+		const requestSimulationSync = vi.fn();
+		const updateResource = vi.fn();
+
+		syncPreviewInteractionSystem({
+			r: {
+				previewConfig: { enabled: true },
+				sceneManipulationState: {
+					mode: 'resizeEnd',
+					entityId: 12,
+					pointerDownClient: { x: 10, y: 20 },
+					dragPlaneX: 0,
+					dragOffset: { x: 0, y: 0, z: 0 },
+					isDragging: true,
+					didEdit: true
+				}
+			},
+			wasResourceChanged: vi.fn((resource: string) => resource === 'previewConfig'),
+			markSimulationDirty,
+			requestSimulationSync,
+			updateResource
+		} as never);
+
+		expect(markSimulationDirty).toHaveBeenCalledOnce();
+		expect(requestSimulationSync).toHaveBeenCalledOnce();
+		expect(updateResource).toHaveBeenCalledTimes(2);
 	});
 });

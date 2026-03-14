@@ -1,5 +1,12 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import type { TVec3 } from '../../../types';
+
+export interface TCameraSnapshot {
+	position: TVec3;
+	target: TVec3;
+	fov: number;
+}
 
 export class Viewport {
 	private _container: HTMLDivElement | null = null;
@@ -76,6 +83,37 @@ export class Viewport {
 
 	public setControlsEnabled(enabled: boolean): void {
 		this._controls.enabled = enabled;
+	}
+
+	public getCameraSnapshot(): TCameraSnapshot {
+		return {
+			position: {
+				x: this._camera.position.x,
+				y: this._camera.position.y,
+				z: this._camera.position.z
+			},
+			target: {
+				x: this._controls.target.x,
+				y: this._controls.target.y,
+				z: this._controls.target.z
+			},
+			fov: this._camera.fov
+		};
+	}
+
+	public applyCameraSnapshot(snapshot: TCameraSnapshot): void {
+		this.setCameraPose(snapshot.position, snapshot.target, snapshot.fov);
+	}
+
+	public setCameraPose(position: TVec3, target: TVec3, fov?: number): void {
+		this._camera.position.set(position.x, position.y, position.z);
+		this._controls.target.set(target.x, target.y, target.z);
+		if (fov != null && this._camera.fov !== fov) {
+			this._camera.fov = fov;
+			this._camera.updateProjectionMatrix();
+		}
+		this._camera.lookAt(target.x, target.y, target.z);
+		this._controls.update();
 	}
 
 	public setContainer(container: HTMLDivElement | null): void {

@@ -3,6 +3,7 @@ import { FileUp, SlidersHorizontal, X } from 'lucide-react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
+import { PreviewCameraInspector } from './PreviewCameraInspector';
 import { SelectionInspector } from './SelectionInspector';
 import { Timeline } from './Timeline';
 
@@ -101,6 +102,7 @@ const InnerEditor: React.FC = () => {
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const midiImportError = useResource(app, 'midiImportError');
+	const previewConfig = useResource(app, 'previewConfig');
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 	const selectedTrack = React.useMemo(
 		() => midiSong?.tracks.find((track) => track.id === selectedTrackId) ?? null,
@@ -241,7 +243,11 @@ const InnerEditor: React.FC = () => {
 									Inspector
 								</h2>
 								<div className="min-h-0 flex-1 overflow-y-auto">
-									<SelectionInspector showTitle={false} />
+									{previewConfig.enabled ? (
+										<PreviewCameraInspector showTitle={false} />
+									) : (
+										<SelectionInspector showTitle={false} />
+									)}
 								</div>
 							</aside>
 						</Panel>

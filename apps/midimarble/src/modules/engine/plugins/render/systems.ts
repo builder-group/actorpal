@@ -1,4 +1,11 @@
 import { Added, Changed, Entity, Or, Removed } from 'ecsify';
+import {
+	areVec3Close,
+	computePreviewCameraPose,
+	getPreviewSideSign,
+	getPreviewSmoothingAlpha,
+	lerpVec3
+} from './lib/preview-camera';
 import { replaceMountedThreeObject, syncThreeObjectTransform } from './lib/three-object';
 import type { TRenderApp } from './types';
 
@@ -46,6 +53,55 @@ export function cleanupOrphanedThreeObjectsSystem(app: TRenderApp) {
 		}
 		app.r.viewport.disposeObject(object);
 		app.r.sceneObjects.delete(eid);
+	}
+}
+
+export function syncPreviewCameraSystem(app: TRenderApp, delta = 0) {
+	if (!app.r.previewConfig.enabled) {
+		return;
+	}
+
+	const targetEntityId = app.r.previewState.targetEntityId;
+	if (targetEntityId == null) {
+		return;
+	}
+
+	const body = app.r.rigidBodies.get(targetEntityId);
+	if (body == null) {
+		return;
+	}
+
+	const translation = body.translation();
+	const velocity = body.linvel();
+	const desiredPose = computePreviewCameraPose(
+		{
+			x: translation.x,
+			y: translation.y,
+			z: translation.z
+		},
+		{
+			x: velocity.x,
+			y: velocity.y,
+			z: velocity.z
+		},
+		app.r.previewState.lastFollowDirection,
+		app.r.previewConfig,
+		getPreviewSideSign(app.r.previewState.savedCameraSnapshot)
+	);
+	const currentSnapshot = app.r.viewport.getCameraSnapshot();
+	const alpha = getPreviewSmoothingAlpha(app.r.previewConfig.smoothing, delta);
+
+	app.r.viewport.setCameraPose(
+		lerpVec3(currentSnapshot.position, desiredPose.position, alpha),
+		lerpVec3(currentSnapshot.target, desiredPose.target, alpha),
+		app.r.previewConfig.fov
+	);
+
+	if (!areVec3Close(app.r.previewState.lastFollowDirection, desiredPose.forward)) {
+		app.updateResource('previewState', {
+			...app.r.previewState,
+			lastFollowDirection: desiredPose.forward
+		});
 	}
 }
 

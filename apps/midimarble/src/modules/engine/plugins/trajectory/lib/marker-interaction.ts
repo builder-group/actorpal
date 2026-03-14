@@ -57,7 +57,12 @@ function pickTrajectoryMarker(
 	raycaster: THREE.Raycaster,
 	event: PointerEvent
 ): TPointerTarget {
-	if (!app.r.isReady || !app.r.trajectoryConfig.enabled || app.r.simulationSync.mode !== 'idle') {
+	if (
+		!app.r.isReady ||
+		!app.r.trajectoryConfig.enabled ||
+		app.r.previewConfig.enabled ||
+		app.r.simulationSync.mode !== 'idle'
+	) {
 		return null;
 	}
 

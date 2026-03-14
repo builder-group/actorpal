@@ -38,7 +38,7 @@ Dependency graph:
 - `Transport` depends on `Midi`
 - `Audio` depends on `Midi` and `Transport`
 - `Physics` depends on `Core`, `Midi`, and `Transport`
-- `Render` depends on `Core`
+- `Render` depends on `Core` and `Physics`
 - `Trajectory` depends on `Core`, `Midi`, `Transport`, `Audio`, `Physics`, and `Render`
 - `Scene` depends on `Core`, `Midi`, `Physics`, `Render`, and `Trajectory`
 
@@ -233,7 +233,10 @@ Responsibilities:
 - `MeshMixin`
 - mounting Three objects
 - syncing live transforms to Three objects
+- preview camera state and follow-camera behavior
 - disposing orphaned render objects
+
+`Render` owns preview as viewport state, not authored scene state.
 
 `Render` does not know scene semantics.
 

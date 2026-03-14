@@ -220,3 +220,27 @@ That means:
 - the family name leaves room for more note-bound element types later without renaming the current object
 
 This is intentionally broader than a one-off name like `MusicPad`, but still concrete enough to describe the first real bound platform type.
+
+## Decision: The Viewport Mode Is Named `Preview`
+
+The temporary follow-camera mode is named `Preview`.
+
+Why:
+
+- it describes a viewport presentation mode, not transport
+- it avoids over-promising polished output implied by `Cinematic`
+- it can be enabled while paused, stepped, or playing
+
+This is intentionally separate from play/pause.
+
+## Decision: Preview Camera Is Global Viewport State
+
+The preview camera is global editor state owned by `Render`.
+
+That means:
+
+- it is not an ECS scene entity
+- it is not tied to the currently selected element
+- its controls replace the right-hand inspector while preview is active
+
+This keeps the first preview slice simple and avoids inventing authored camera shots too early.

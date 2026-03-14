@@ -30,7 +30,6 @@ export class Runtime {
 	private _frameId: number | null = null;
 	private _lastTime = 0;
 	private _isMounted = true;
-	private _hasPendingSceneEdit = false;
 
 	constructor() {
 		this._app = createApp({
@@ -66,7 +65,7 @@ export class Runtime {
 	public pause(): void {
 		updateSimulationResumeWhenReady(this._app, false);
 		this._app.pause();
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 	}
 
 	public reset(): void {
@@ -74,19 +73,36 @@ export class Runtime {
 			return;
 		}
 		this._app.resetTransport();
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 	}
 
 	public async loadMidiFile(file: File): Promise<void> {
 		await this._app.loadMidiFile(file);
 		this._app.resetTransport();
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 	}
 
 	public clearMidiSong(): void {
 		this._app.clearMidiSong();
 		this._app.resetTransport();
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
+	}
+
+	public setPreviewEnabled(enabled: boolean): void {
+		this._app.setPreviewEnabled(enabled);
+		this._flushImmediateUpdate();
+	}
+
+	public togglePreview(): void {
+		this._app.togglePreview();
+		this._flushImmediateUpdate();
+	}
+
+	public updatePreviewConfig(
+		patch: Partial<TRuntimeApp['r']['previewConfig']>
+	): void {
+		this._app.updatePreviewConfig(patch);
+		this._flushImmediateUpdate();
 	}
 
 	public selectNote(noteId: number, tick: number): void {
@@ -97,7 +113,7 @@ export class Runtime {
 		this._app.pause();
 		this._app.seekToTick(tick);
 		this._app.selectNote(noteId);
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 		void this._app.previewNotesAtTick(tick);
 	}
 
@@ -107,7 +123,7 @@ export class Runtime {
 		}
 
 		const entityId = this._app.createOrSelectNotePlatform(noteId);
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 		return entityId;
 	}
 
@@ -119,8 +135,8 @@ export class Runtime {
 			return;
 		}
 
-		this._hasPendingSceneEdit = true;
-		this._applyTransportChange();
+		this._setSceneEditPending(true);
+		this._flushImmediateUpdate();
 	}
 
 	public updateMarblePhysics(
@@ -131,19 +147,19 @@ export class Runtime {
 			return;
 		}
 
-		this._hasPendingSceneEdit = true;
-		this._applyTransportChange();
+		this._setSceneEditPending(true);
+		this._flushImmediateUpdate();
 	}
 
 	public commitSceneEdit(): void {
-		if (!this._hasPendingSceneEdit) {
+		if (!this._app.r.sceneEditState.pending) {
 			return;
 		}
 
 		this._app.markSimulationDirty();
 		this._app.requestSimulationSync();
-		this._hasPendingSceneEdit = false;
-		this._applyTransportChange();
+		this._setSceneEditPending(false);
+		this._flushImmediateUpdate();
 	}
 
 	public seekToTick(tick: number): void {
@@ -151,7 +167,7 @@ export class Runtime {
 			return;
 		}
 		this._app.seekToTick(tick);
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 	}
 
 	public stepBackwardTick(): void {
@@ -162,7 +178,7 @@ export class Runtime {
 		const wasPaused = this._app.r.transport.mode === 'paused';
 		const prevTick = this._app.r.transport.playheadTick;
 		this._app.stepBackwardTick();
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 		if (wasPaused && this._app.r.transport.playheadTick !== prevTick) {
 			void this._app.previewNotesAtTick(this._app.r.transport.playheadTick);
 		}
@@ -176,7 +192,7 @@ export class Runtime {
 		const wasPaused = this._app.r.transport.mode === 'paused';
 		const prevTick = this._app.r.transport.playheadTick;
 		this._app.stepForwardTick();
-		this._applyTransportChange();
+		this._flushImmediateUpdate();
 		if (wasPaused && this._app.r.transport.playheadTick !== prevTick) {
 			void this._app.previewNotesAtTick(this._app.r.transport.playheadTick);
 		}
@@ -236,8 +252,18 @@ export class Runtime {
 		this._frameId = window.requestAnimationFrame(this._loop);
 	};
 
-	private _applyTransportChange(): void {
+	private _flushImmediateUpdate(): void {
 		this._app.update(0);
+	}
+
+	private _setSceneEditPending(pending: boolean): void {
+		if (this._app.r.sceneEditState.pending === pending) {
+			return;
+		}
+
+		this._app.updateResource('sceneEditState', {
+			pending
+		});
 	}
 }
 

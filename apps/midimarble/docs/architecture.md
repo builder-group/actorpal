@@ -9,6 +9,8 @@ This document is the Midimarble-specific source of truth for:
 - state layering
 - where ECS stops and plain UI begins
 
+For stable naming and boundary choices, see `decisions.md`.
+
 The current architecture is intentionally optimized for the narrow prototype:
 
 - one marble
@@ -18,9 +20,10 @@ The current architecture is intentionally optimized for the narrow prototype:
 
 ## Plugin Graph
 
-The engine now uses five plugins:
+The engine now uses six plugins:
 
 - `Core`
+- `Transport`
 - `Physics`
 - `Render`
 - `Trajectory`
@@ -29,10 +32,11 @@ The engine now uses five plugins:
 Dependency graph:
 
 - `Core` has no app-specific dependencies
-- `Physics` depends on `Core`
+- `Transport` depends on `Default` only
+- `Physics` depends on `Core` and `Transport`
 - `Render` depends on `Core`
-- `Trajectory` depends on `Core`, `Physics`, and `Render`
-- `Scene` depends on `Core`, `Physics`, `Render`, and `Trajectory`
+- `Trajectory` depends on `Core`, `Transport`, `Physics`, and `Render`
+- `Scene` depends on `Core`, `Transport`, `Physics`, `Render`, and `Trajectory`
 
 This graph is intentionally one-way and acyclic.
 
@@ -60,7 +64,13 @@ That is intentional:
 - the UI reads engine state and calls runtime methods
 - the timeline does not need its own ECS plugin for the current scope
 
-Simulation transport and playhead state remain inside `Physics`, because they directly control physics stepping, seeking, checkpoint restore, and preload.
+Playback state now lives in `Transport`, not `Physics`.
+
+That split is intentional:
+
+- `Transport` owns play/pause and the current playhead step
+- `Physics` owns buffering, checkpoint restore, world replacement, and rebuild state
+- the timeline UI reads both, but still stays in React
 
 Midimarble uses this generic schedule:
 
@@ -133,7 +143,7 @@ Owns only shared runtime primitives:
 
 ### `Physics`
 
-Owns only physics semantics and simulation runtime control.
+Owns only physics semantics and physics-specific runtime control.
 
 Responsibilities:
 
@@ -141,7 +151,7 @@ Responsibilities:
 - rigid body and collider components
 - live world stepping
 - checkpoint and preload buffering
-- seek/reset support
+- following the transport playhead by restoring/swapping worlds
 - generic simulation invalidation and resync
 
 Public physics sync contract:
@@ -153,6 +163,21 @@ Important boundary:
 
 - `Physics` does not know scene editing
 - callers only tell physics that simulation is stale or should rebuild
+
+### `Transport`
+
+Owns the shared playback playhead.
+
+Responsibilities:
+
+- `transport`
+- play/pause
+- step-based seek/reset controls
+
+Important boundary:
+
+- `Transport` does not own buffering or world restore
+- other domains may follow transport later, but `Physics` is the only follower today
 
 ### `Render`
 
@@ -250,7 +275,7 @@ When authored scene data changes:
 3. `Physics` treats the buffered simulation as invalid from step `0`.
 4. The UI shows rebuild progress from `0` up to the current playhead.
 5. On commit, `Scene` calls `requestSimulationSync()`.
-6. `Physics` rebuilds exactly to the current playhead and swaps the rebuilt world in.
+6. `Physics` rebuilds exactly to the current transport playhead and swaps the rebuilt world in.
 
 This is intentionally honest.
 

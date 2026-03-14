@@ -2,6 +2,7 @@ import type * as RAPIER from '@dimforge/rapier3d-compat';
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type { TEngineSystemSet, TVec3 } from '../../types';
 import type { TCorePlugin } from '../core';
+import type { TTransportPlugin } from '../transport';
 
 export type TPhysicsPlugin = TPlugin<
 	{
@@ -17,7 +18,8 @@ export type TPhysicsPlugin = TPlugin<
 			isReady: boolean;
 			accumulatorSeconds: number;
 			fixedTimeStepSeconds: number;
-			simulationTransport: TSimulationTransport;
+			bufferedStep: number;
+			liveStep: number;
 			simulationConfig: TSimulationConfig;
 			checkpointStore: TCheckpointStore;
 			preloadStep: number;
@@ -31,20 +33,16 @@ export type TPhysicsPlugin = TPlugin<
 		};
 		systemSets: TEngineSystemSet;
 	},
-	[TDefaultPlugin, TCorePlugin]
+	[TDefaultPlugin, TCorePlugin, TTransportPlugin]
 >;
 
-export type TPhysicsApp = TApp<TAppContext<[TDefaultPlugin, TCorePlugin, TPhysicsPlugin]>>;
+export type TPhysicsApp = TApp<
+	TAppContext<[TDefaultPlugin, TCorePlugin, TTransportPlugin, TPhysicsPlugin]>
+>;
 
 export type TRRigidBodies = Map<number, RAPIER.RigidBody>;
 export type TRColliders = Map<number, RAPIER.Collider[]>;
 export type TCheckpointStore = Map<number, Uint8Array>;
-
-export interface TSimulationTransport {
-	mode: 'paused' | 'running';
-	playheadStep: number;
-	bufferedStep: number;
-}
 
 export interface TSimulationConfig {
 	checkpointIntervalSteps: number;

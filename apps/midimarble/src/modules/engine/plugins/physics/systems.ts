@@ -1,7 +1,11 @@
 import { Entity, With } from 'ecsify';
-import { replaceLiveWorld, storeCheckpoint, syncPreloadWorldToStep } from './lib/simulation';
+import {
+	replaceLiveWorld,
+	restoreWorldAtStep,
+	storeCheckpoint,
+	syncPreloadWorldToStep
+} from './lib/simulation';
 import { startSimulationSync } from './lib/simulation-sync';
-import { updateSimulationTransport } from './lib/transport';
 import {
 	createColliderDesc,
 	createQuaternionFromEuler,
@@ -10,6 +14,7 @@ import {
 	quaternionToEuler,
 	syncBodyTransform
 } from './lib/world';
+import { updateTransport } from '../transport';
 import type { TPhysicsApp } from './types';
 
 export function spawnRigidBodiesSystem(app: TPhysicsApp) {
@@ -71,6 +76,32 @@ export function beginSimulationSyncSystem(app: TPhysicsApp) {
 	startSimulationSync(app);
 }
 
+export function syncLiveWorldToTransportSystem(app: TPhysicsApp) {
+	if (app.r.world == null || app.r.simulationSync.mode !== 'idle') {
+		return;
+	}
+
+	ensureSimulationBaseInitialized(app);
+
+	const targetStep = Math.max(0, Math.min(app.r.transport.playheadStep, app.r.bufferedStep));
+	if (targetStep !== app.r.transport.playheadStep) {
+		updateTransport(app, { playheadStep: targetStep });
+	}
+	if (targetStep === app.r.liveStep) {
+		return;
+	}
+
+	const restoredWorld = restoreWorldAtStep(app, targetStep);
+	if (restoredWorld == null) {
+		return;
+	}
+
+	app.r.accumulatorSeconds = 0;
+	replaceLiveWorld(app, restoredWorld);
+	app.updateResource('liveStep', targetStep);
+	syncPreloadWorldToStep(app, app.r.bufferedStep);
+}
+
 export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 	const world = app.r.world;
 	if (world == null || app.r.simulationSync.mode !== 'idle') {
@@ -80,15 +111,15 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 	ensureSimulationBaseInitialized(app);
 
 	const config = app.r.simulationConfig;
-	const transport = app.r.simulationTransport;
+	const transport = app.r.transport;
 	if (transport.mode !== 'running') {
 		return;
 	}
 
 	app.r.accumulatorSeconds += Math.min(Math.max(dt, 0), config.maxDeltaSeconds);
 
-	let playheadStep = transport.playheadStep;
-	let bufferedStep = transport.bufferedStep;
+	let liveStep = app.r.liveStep;
+	let bufferedStep = app.r.bufferedStep;
 	let stepsRun = 0;
 
 	while (
@@ -97,11 +128,11 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 	) {
 		world.step();
 		app.r.accumulatorSeconds -= app.r.fixedTimeStepSeconds;
-		playheadStep++;
+		liveStep++;
 		stepsRun++;
 
-		if (playheadStep % config.checkpointIntervalSteps === 0) {
-			storeCheckpoint(app.r.checkpointStore, playheadStep, world.takeSnapshot());
+		if (liveStep % config.checkpointIntervalSteps === 0) {
+			storeCheckpoint(app.r.checkpointStore, liveStep, world.takeSnapshot());
 		}
 	}
 
@@ -109,11 +140,10 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 		return;
 	}
 
-	bufferedStep = Math.max(bufferedStep, playheadStep);
-	updateSimulationTransport(app, {
-		playheadStep,
-		bufferedStep
-	});
+	bufferedStep = Math.max(bufferedStep, liveStep);
+	app.updateResource('liveStep', liveStep);
+	app.updateResource('bufferedStep', bufferedStep);
+	updateTransport(app, { playheadStep: liveStep });
 }
 
 export function advanceSimulationSyncSystem(app: TPhysicsApp) {
@@ -145,9 +175,7 @@ export function advanceSimulationSyncSystem(app: TPhysicsApp) {
 			...simulationSync,
 			currentStep
 		});
-		updateSimulationTransport(app, {
-			bufferedStep: currentStep
-		});
+		app.updateResource('bufferedStep', currentStep);
 	}
 
 	if (currentStep < simulationSync.targetStep) {
@@ -179,10 +207,11 @@ export function advanceSimulationSyncSystem(app: TPhysicsApp) {
 	}
 	app.updateResource('preloadStep', currentStep);
 	app.updateResource('simulationSync', { mode: 'idle' });
-	updateSimulationTransport(app, {
+	app.updateResource('liveStep', currentStep);
+	app.updateResource('bufferedStep', currentStep);
+	updateTransport(app, {
 		mode: simulationSync.resumeWhenReady ? 'running' : 'paused',
-		playheadStep: currentStep,
-		bufferedStep: currentStep
+		playheadStep: currentStep
 	});
 }
 
@@ -194,22 +223,21 @@ export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
 	}
 
 	ensureSimulationBaseInitialized(app);
-	syncPreloadWorldToStep(app, app.r.simulationTransport.bufferedStep);
+	syncPreloadWorldToStep(app, app.r.bufferedStep);
 
 	const preloadWorld = app.r.preloadWorld;
 	if (preloadWorld == null) {
 		return;
 	}
 
-	const { simulationConfig, simulationTransport } = app.r;
-	const targetBufferedStep =
-		simulationTransport.playheadStep + simulationConfig.preloadHorizonSteps;
-	if (simulationTransport.bufferedStep >= targetBufferedStep) {
+	const { simulationConfig, transport } = app.r;
+	const targetBufferedStep = transport.playheadStep + simulationConfig.preloadHorizonSteps;
+	if (app.r.bufferedStep >= targetBufferedStep) {
 		return;
 	}
 
 	let preloadStep = app.r.preloadStep;
-	let bufferedStep = simulationTransport.bufferedStep;
+	let bufferedStep = app.r.bufferedStep;
 	let stepsRun = 0;
 
 	while (
@@ -231,7 +259,7 @@ export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
 	}
 
 	app.updateResource('preloadStep', preloadStep);
-	updateSimulationTransport(app, { bufferedStep });
+	app.updateResource('bufferedStep', bufferedStep);
 }
 
 export function syncDynamicBodiesToComponentsSystem(app: TPhysicsApp) {

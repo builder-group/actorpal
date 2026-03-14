@@ -5,6 +5,7 @@ import {
 	beginSimulationSyncSystem,
 	cleanupOrphanedPhysicsBodiesSystem,
 	preloadPhysicsWorldSystem,
+	syncLiveWorldToTransportSystem,
 	spawnRigidBodiesSystem,
 	stepPhysicsWorldSystem,
 	syncDynamicBodiesToComponentsSystem,
@@ -18,7 +19,7 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 	return {
 		// Physics owns simulation state, stepping, checkpoints, and resync.
 		name: 'Physics',
-		deps: ['Default', 'Core'],
+		deps: ['Default', 'Core', 'Transport'],
 		components: {
 			RigidBodyMixin: [],
 			ColliderMixin: []
@@ -30,11 +31,8 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 			isReady: false,
 			accumulatorSeconds: 0,
 			fixedTimeStepSeconds: 1 / 240,
-			simulationTransport: {
-				mode: 'paused',
-				playheadStep: 0,
-				bufferedStep: 0
-			},
+			bufferedStep: 0,
+			liveStep: 0,
 			simulationConfig: {
 				checkpointIntervalSteps: 60,
 				preloadHorizonSteps: 2400,
@@ -77,9 +75,13 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 				set: 'Update',
 				after: syncNonDynamicBodiesFromComponentsSystem
 			});
-			app.addSystem(stepPhysicsWorldSystem, {
+			app.addSystem(syncLiveWorldToTransportSystem, {
 				set: 'Update',
 				after: beginSimulationSyncSystem
+			});
+			app.addSystem(stepPhysicsWorldSystem, {
+				set: 'Update',
+				after: syncLiveWorldToTransportSystem
 			});
 			app.addSystem(advanceSimulationSyncSystem, {
 				set: 'Update',

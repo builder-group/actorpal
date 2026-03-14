@@ -9,7 +9,7 @@ export function rebuildPastTrajectory(app: TTrajectoryApp, marbleHandle: number)
 	}
 
 	const configPastSteps = Math.min(app.r.trajectoryConfig.pastSteps, MAX_TRAJECTORY_STEPS);
-	const endStep = app.r.simulationTransport.playheadStep;
+	const endStep = app.r.transport.playheadStep;
 	const startStep = Math.max(0, endStep - Math.max(configPastSteps - 1, 0));
 	const checkpointStep = findNearestCheckpointStep(app.r.checkpointStore, startStep);
 	if (checkpointStep == null) {

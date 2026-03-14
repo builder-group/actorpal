@@ -11,7 +11,7 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 	return {
 		// Trajectory is a separate debug/inspection layer driven by physics state.
 		name: 'Trajectory',
-		deps: ['Default', 'Core', 'Physics', 'Render'],
+		deps: ['Default', 'Core', 'Transport', 'Physics', 'Render'],
 		components: {
 			TrajectorySourceTag: []
 		},

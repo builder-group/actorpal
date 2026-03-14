@@ -9,7 +9,6 @@ type TPhysicsRestoreAccess = {
 		| 'preloadStep'
 		| 'fixedTimeStepSeconds'
 		| 'checkpointStore'
-		| 'simulationTransport'
 		| 'simulationConfig'
 	>;
 	updateResource: TPhysicsApp['updateResource'];

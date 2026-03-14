@@ -2,7 +2,7 @@ import type * as RAPIER from '@dimforge/rapier3d-compat';
 import { Entity } from 'ecsify';
 import type { TCRigidBodyMixin, TPhysicsApp, TPhysicsColliderDescriptor } from '../types';
 import { storeCheckpoint } from './simulation';
-import { updateSimulationTransport } from './transport';
+import { updateTransport } from '../../transport';
 
 export function createRigidBodyDesc(
 	rapier: typeof RAPIER,
@@ -144,7 +144,9 @@ export function ensureSimulationBaseInitialized(app: TPhysicsApp): void {
 
 	app.updateResource('preloadWorld', preloadWorld);
 	app.updateResource('preloadStep', 0);
-	updateSimulationTransport(app, { playheadStep: 0, bufferedStep: 0 });
+	app.updateResource('liveStep', 0);
+	app.updateResource('bufferedStep', 0);
+	updateTransport(app, { playheadStep: 0 });
 }
 
 export function createEditedWorldBase(app: TPhysicsApp): RAPIER.World | null {

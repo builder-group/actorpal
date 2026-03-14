@@ -1,19 +1,119 @@
 import React from 'react';
+import { Pause, Play, SkipBack, SkipForward, Square } from 'lucide-react';
 import { useResource } from '@/modules/engine';
 import { useEditorCx } from '../EditorCx';
 
 const TIMELINE_HEIGHT = 84;
 const RULER_HEIGHT = 28;
 const PIXELS_PER_SECOND = 80;
+const STEP_REPEAT_INITIAL_DELAY_MS = 260;
+const STEP_REPEAT_INTERVAL_MS = 70;
+
+const TimelineIconButton: React.FC<{
+	disabled: boolean;
+	icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+	title: string;
+	onClick: () => void;
+	repeatOnHold?: boolean;
+}> = ({ disabled, icon: Icon, title, onClick, repeatOnHold = false }) => {
+	const timeoutRef = React.useRef<number | null>(null);
+	const intervalRef = React.useRef<number | null>(null);
+	const suppressResetRef = React.useRef<number | null>(null);
+	const suppressClickRef = React.useRef(false);
+
+	const clearRepeat = React.useCallback(() => {
+		if (timeoutRef.current != null) {
+			window.clearTimeout(timeoutRef.current);
+			timeoutRef.current = null;
+		}
+		if (intervalRef.current != null) {
+			window.clearInterval(intervalRef.current);
+			intervalRef.current = null;
+		}
+		if (suppressResetRef.current != null) {
+			window.clearTimeout(suppressResetRef.current);
+			suppressResetRef.current = null;
+		}
+	}, []);
+
+	React.useEffect(() => clearRepeat, [clearRepeat]);
+
+	const handlePointerDown = React.useCallback(
+		(event: React.PointerEvent<HTMLButtonElement>) => {
+			if (!repeatOnHold || disabled || event.button !== 0) {
+				return;
+			}
+
+			suppressClickRef.current = true;
+			event.currentTarget.setPointerCapture(event.pointerId);
+			onClick();
+
+			timeoutRef.current = window.setTimeout(() => {
+				intervalRef.current = window.setInterval(() => {
+					onClick();
+				}, STEP_REPEAT_INTERVAL_MS);
+			}, STEP_REPEAT_INITIAL_DELAY_MS);
+		},
+		[disabled, onClick, repeatOnHold]
+	);
+
+	const handleClick = React.useCallback(() => {
+		if (suppressClickRef.current) {
+			suppressClickRef.current = false;
+			return;
+		}
+
+		onClick();
+	}, [onClick]);
+
+	const stopRepeat = React.useCallback(() => {
+		clearRepeat();
+		suppressResetRef.current = window.setTimeout(() => {
+			suppressClickRef.current = false;
+			suppressResetRef.current = null;
+		}, 0);
+	}, [clearRepeat]);
+
+	return (
+		<button
+			onClick={handleClick}
+			onPointerDown={handlePointerDown}
+			onPointerUp={stopRepeat}
+			onPointerCancel={stopRepeat}
+			onPointerLeave={stopRepeat}
+			onLostPointerCapture={stopRepeat}
+			disabled={disabled}
+			title={title}
+			className="text-base-500 hover:text-base-800 flex h-7 w-7 items-center justify-center rounded transition-colors disabled:opacity-30"
+		>
+			<Icon size={14} strokeWidth={1.8} />
+		</button>
+	);
+};
 
 const TimelineHeader: React.FC<{
 	isReady: boolean;
 	mode: 'paused' | 'running';
+	playheadStep: number;
+	preloadedSteps: number;
 	statusLabel: string | null;
+	onStepBackward: () => void;
+	onStepForward: () => void;
 	onPlay: () => void;
 	onPause: () => void;
 	onReset: () => void;
-}> = ({ isReady, mode, statusLabel, onPlay, onPause, onReset }) => (
+}> = ({
+	isReady,
+	mode,
+	playheadStep,
+	preloadedSteps,
+	statusLabel,
+	onStepBackward,
+	onStepForward,
+	onPlay,
+	onPause,
+	onReset
+}) => (
 	<div className="border-base-200 bg-base-50 flex shrink-0 items-center gap-2 border-b px-3 py-1.5">
 		<h3 className="text-base-700 text-xs font-semibold tracking-wide uppercase">Timeline</h3>
 
@@ -23,43 +123,53 @@ const TimelineHeader: React.FC<{
 			</span>
 		) : null}
 
+		<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase">
+			Step {playheadStep}
+		</span>
+
+		<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase">
+			Preloaded {preloadedSteps}
+		</span>
+
 		<div className="ml-auto flex items-center gap-1">
-			<button
-				onClick={onReset}
+			<TimelineIconButton
 				disabled={!isReady}
-				title="Reset"
-				className="text-base-500 hover:text-base-800 flex h-6 w-6 items-center justify-center rounded transition-colors disabled:opacity-30"
-			>
-				<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-					<rect x="0" y="1" width="2" height="10" rx="0.5" />
-					<polygon points="11,1 3,6 11,11" />
-				</svg>
-			</button>
+				icon={Square}
+				title="Reset to step 0"
+				onClick={onReset}
+			/>
+
+			<TimelineIconButton
+				disabled={!isReady}
+				icon={SkipBack}
+				title="Step backward"
+				onClick={onStepBackward}
+				repeatOnHold
+			/>
 
 			{mode === 'running' ? (
-				<button
-					onClick={onPause}
+				<TimelineIconButton
 					disabled={!isReady}
+					icon={Pause}
 					title="Pause"
-					className="text-base-500 hover:text-base-800 flex h-6 w-6 items-center justify-center rounded transition-colors disabled:opacity-30"
-				>
-					<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-						<rect x="1.5" y="1" width="3" height="10" rx="0.5" />
-						<rect x="7.5" y="1" width="3" height="10" rx="0.5" />
-					</svg>
-				</button>
+					onClick={onPause}
+				/>
 			) : (
-				<button
-					onClick={onPlay}
+				<TimelineIconButton
 					disabled={!isReady}
+					icon={Play}
 					title="Play"
-					className="text-base-500 hover:text-base-800 flex h-6 w-6 items-center justify-center rounded transition-colors disabled:opacity-30"
-				>
-					<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-						<polygon points="2,1 11,6 2,11" />
-					</svg>
-				</button>
+					onClick={onPlay}
+				/>
 			)}
+
+			<TimelineIconButton
+				disabled={!isReady}
+				icon={SkipForward}
+				title="Step forward"
+				onClick={onStepForward}
+				repeatOnHold
+			/>
 		</div>
 	</div>
 );
@@ -113,7 +223,8 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const cx = useEditorCx();
 	const app = cx.runtime.app;
 	const isReady = useResource(app, 'isReady');
-	const transport = useResource(app, 'simulationTransport');
+	const transport = useResource(app, 'transport');
+	const bufferedStep = useResource(app, 'bufferedStep');
 	const simulationSync = useResource(app, 'simulationSync');
 	const simulationConfig = useResource(app, 'simulationConfig');
 	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
@@ -121,10 +232,11 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 		simulationSync.mode === 'idle'
 			? null
 			: simulationSync.mode === 'dirty'
-				? 'Pending'
+			? 'Pending'
 				: 'Recomputing';
 	const playheadSeconds = transport.playheadStep * fixedTimeStepSeconds;
-	const bufferedSeconds = transport.bufferedStep * fixedTimeStepSeconds;
+	const bufferedSeconds = bufferedStep * fixedTimeStepSeconds;
+	const preloadedSteps = Math.max(0, bufferedStep - transport.playheadStep);
 	const totalDurationSeconds = Math.max(
 		simulationConfig.preloadHorizonSteps * fixedTimeStepSeconds,
 		bufferedSeconds
@@ -191,7 +303,11 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 			<TimelineHeader
 				isReady={isReady}
 				mode={transport.mode}
+				playheadStep={transport.playheadStep}
+				preloadedSteps={preloadedSteps}
 				statusLabel={statusLabel}
+				onStepBackward={() => cx.runtime.stepBackward()}
+				onStepForward={() => cx.runtime.stepForward()}
 				onPlay={() => cx.runtime.run()}
 				onPause={() => cx.runtime.pause()}
 				onReset={() => cx.runtime.reset()}

@@ -20,6 +20,7 @@ import {
 	type TScenePlugin,
 	type TTrajectoryPlugin
 } from './plugins';
+import { ENGINE_SYSTEM_SETS } from './types';
 
 export class Runtime {
 	private readonly _app: TRuntimeApp;
@@ -37,7 +38,7 @@ export class Runtime {
 				createTrajectoryPlugin(),
 				createScenePlugin()
 			] as const,
-			systemSets: ['First', 'PreUpdate', 'Update', 'PostUpdate', 'Last', 'Flush']
+			systemSets: [...ENGINE_SYSTEM_SETS]
 		});
 	}
 

@@ -1,5 +1,6 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type * as THREE from 'three';
+import type { TEngineSystemSet } from '../../types';
 import type { TCorePlugin } from '../core';
 import type { Viewport } from './lib/Viewport';
 
@@ -19,7 +20,7 @@ export type TRenderPlugin = TPlugin<
 			setRenderContainer(container: HTMLDivElement | null): void;
 			disposeRender(): void;
 		};
-		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
+		systemSets: TEngineSystemSet;
 	},
 	[TDefaultPlugin, TCorePlugin]
 >;

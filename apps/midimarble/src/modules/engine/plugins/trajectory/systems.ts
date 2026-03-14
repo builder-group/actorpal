@@ -1,7 +1,11 @@
 import { Entity, With } from 'ecsify';
 import * as THREE from 'three';
-import { clearTrajectoryLines, syncTrajectoryLineColors } from './lib/line-state';
-import { getMaxTrajectorySteps, rebuildPastTrajectory } from './lib/past-trajectory';
+import {
+	clearTrajectoryLines,
+	MAX_TRAJECTORY_STEPS,
+	syncTrajectoryLineColors
+} from './lib/line-state';
+import { rebuildPastTrajectory } from './lib/past-trajectory';
 import { shouldRefreshTrajectory } from './lib/refresh';
 import type { TTrajectoryApp } from './types';
 
@@ -28,14 +32,15 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 		return;
 	}
 
-	const firstSource = [
-		...app.queryComponents([Entity, app.c.PositionMixin] as const, With(app.c.TrajectorySourceTag))
-	][0];
-	if (firstSource == null) {
+	let sourceEid: number | null = null;
+	for (const [eid] of app.queryComponents([Entity] as const, With(app.c.TrajectorySourceTag))) {
+		sourceEid = eid;
+		break;
+	}
+	if (sourceEid == null) {
 		clearTrajectoryLines(app);
 		return;
 	}
-	const [marbleEid] = firstSource;
 
 	const world = app.r.world;
 	const rapier = app.r.rapier;
@@ -43,7 +48,7 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 		return;
 	}
 
-	const marbleBody = app.r.rigidBodies.get(marbleEid);
+	const marbleBody = app.r.rigidBodies.get(sourceEid);
 	if (marbleBody == null) {
 		clearTrajectoryLines(app);
 		return;
@@ -65,7 +70,7 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 		return;
 	}
 
-	const futureSteps = Math.min(config.futureSteps, getMaxTrajectorySteps());
+	const futureSteps = Math.min(config.futureSteps, MAX_TRAJECTORY_STEPS);
 
 	for (let i = 0; i < futureSteps; i++) {
 		shadow.step();

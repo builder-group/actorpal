@@ -1,16 +1,18 @@
 import * as THREE from 'three';
-import type { TVec3 } from '../../types';
+import type { TVec3 } from '../../../types';
+import type { TSceneApp } from '../types';
+import {
+	getLinearElement,
+	getLinearElementEntityIds,
+	getLinearElementHandlePositions
+} from './linear-element';
 import {
 	disposeSceneManipulationHandles,
-	editableLinearEntityIds,
-	getEditableLinearElement,
-	getLinearElementHandleKind,
-	getLinearElementHandlePositions,
-	resetSceneManipulationState
-} from './lib/manipulation';
-import { sameVec3 } from './lib/vec3';
+	getLinearElementHandleKind
+} from './manipulation-handles';
 import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
-import type { TSceneApp } from './types';
+import { resetSceneManipulationState } from './manipulation-state';
+import { sameVec3 } from './vec3';
 
 const dragPlaneNormal = new THREE.Vector3(1, 0, 0);
 
@@ -61,7 +63,7 @@ function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 	event.preventDefault();
 	app.r.viewport.setControlsEnabled(false);
 
-	const linearElement = getEditableLinearElement(app, pickedTarget.entityId);
+	const linearElement = getLinearElement(app, pickedTarget.entityId);
 	if (linearElement == null) {
 		app.updateResource('sceneManipulationState', resetSceneManipulationState());
 		app.r.viewport.setControlsEnabled(true);
@@ -137,7 +139,7 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 		return;
 	}
 
-	const linearElement = getEditableLinearElement(app, state.entityId);
+	const linearElement = getLinearElement(app, state.entityId);
 	if (linearElement == null) {
 		return;
 	}
@@ -252,7 +254,7 @@ function pickLinearElement(
 	pointer: THREE.Vector2
 ): { entityId: number; target: 'element' } | null {
 	const objectMap = new Map<THREE.Object3D, number>();
-	for (const eid of editableLinearEntityIds(app)) {
+	for (const eid of getLinearElementEntityIds(app)) {
 		const object = app.r.sceneObjects.get(eid);
 		if (object != null) {
 			objectMap.set(object, eid);

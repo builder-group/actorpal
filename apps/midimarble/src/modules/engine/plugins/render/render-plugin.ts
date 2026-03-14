@@ -32,8 +32,11 @@ export function createRenderPlugin(): TRenderPlugin {
 			}
 		},
 		setup(app: TRenderApp) {
-			app.addSystem(mountThreeObjectsSystem, { set: 'First' });
-			app.addSystem(syncThreeObjectTransformsSystem, { set: 'PostUpdate' });
+			app.addSystem(mountThreeObjectsSystem, { set: 'PostUpdate' });
+			app.addSystem(syncThreeObjectTransformsSystem, {
+				set: 'PostUpdate',
+				after: mountThreeObjectsSystem
+			});
 			app.addSystem(cleanupOrphanedThreeObjectsSystem, {
 				set: 'Last',
 				after: syncThreeObjectTransformsSystem

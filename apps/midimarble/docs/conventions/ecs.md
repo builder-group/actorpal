@@ -136,6 +136,11 @@ Good examples:
 - rendering
 - editor interaction
 
+Do not turn `Core` into a general utility dump.
+
+- shared ECS primitives or app-level scheduling types belong in `Core` or shared engine types
+- plain math or string helpers belong in the nearest plugin `lib/` or a plain engine utility module
+
 Bad examples:
 
 - a plugin that mostly stores React view state

@@ -1,5 +1,5 @@
 import type { TApp, TAppContext, TBundle, TDefaultPlugin, TPlugin } from 'ecsify';
-import type { TVec3 } from '../../types';
+import type { TEngineSystemSet, TVec3 } from '../../types';
 
 // MARK: - Plugin
 
@@ -14,7 +14,7 @@ export type TCorePlugin = TPlugin<
 		appExtensions: {
 			spawnBundle(bundle: TBundle): number;
 		};
-		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
+		systemSets: TEngineSystemSet;
 	},
 	[TDefaultPlugin]
 >;

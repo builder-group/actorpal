@@ -20,6 +20,7 @@ export function syncThreeObjectTransformsSystem(app: TRenderApp) {
 		[Entity, app.c.PositionMixin, app.c.RotationMixin, app.c.ScaleMixin] as const,
 		Or(
 			Added(app.c.MeshMixin),
+			Changed(app.c.MeshMixin),
 			Added(app.c.PositionMixin),
 			Changed(app.c.PositionMixin),
 			Added(app.c.RotationMixin),

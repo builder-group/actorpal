@@ -1,7 +1,7 @@
 import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import { TVec3 } from '../../../types';
-import type { TCAuthoredTransformMixin, TCPegboardMixin, TSceneApp } from '../types';
+import type { TCAuthoredTransformMixin, TSceneApp } from '../types';
 import type { TSceneBundle } from './types';
 
 export function createPegboardBundle(
@@ -22,23 +22,12 @@ export function createPegboardBundle(
 		rotation,
 		scale
 	} satisfies TCAuthoredTransformMixin;
-	const pegboard = {
-		width,
-		height,
-		repeatWorldSize
-	} satisfies TCPegboardMixin;
 
 	return defineBundle(
 		bundleEntry(app.c.PositionMixin, position),
 		bundleEntry(app.c.RotationMixin, rotation),
 		bundleEntry(app.c.ScaleMixin, scale),
 		bundleEntry(app.c.AuthoredTransformMixin, authoredTransform),
-		bundleEntry(app.c.SceneElementMixin, {
-			kind: 'pegboard',
-			label: 'Pegboard',
-			editable: false
-		}),
-		bundleEntry(app.c.PegboardMixin, pegboard),
 		bundleEntry(app.c.MeshMixin, {
 			type: 'three',
 			object: createPegboardObject(width, height, repeatWorldSize)

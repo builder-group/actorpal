@@ -50,11 +50,6 @@ export function createStraightTrackBundle(
 		bundleEntry(app.c.RotationMixin, rotation),
 		bundleEntry(app.c.ScaleMixin, scale),
 		bundleEntry(app.c.AuthoredTransformMixin, authoredTransform),
-		bundleEntry(app.c.SceneElementMixin, {
-			kind: 'straightTrack',
-			label: 'Straight track',
-			editable: true
-		}),
 		bundleEntry(app.c.StraightTrackMixin, track),
 		bundleEntry(app.c.LinearElementMixin, linearElement),
 		bundleEntry(app.c.MeshMixin, {

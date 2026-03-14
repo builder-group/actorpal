@@ -81,11 +81,9 @@ This is the scene document.
 
 Current examples:
 
-- `SceneElementMixin`
 - `AuthoredTransformMixin`
 - `StraightTrackMixin`
 - `LinearElementMixin`
-- `PegboardMixin`
 
 Authored state is what editing mutates.
 
@@ -218,7 +216,6 @@ That is composition, not ownership leakage.
 
 A straight track is composed from:
 
-- scene identity and editability via `SceneElementMixin`
 - authored placement via `AuthoredTransformMixin`
 - authored track shape via `StraightTrackMixin`
 - generic linear editing data via `LinearElementMixin`
@@ -233,8 +230,7 @@ That sync is driven by ECSify `Added(...)` and `Changed(...)` queries rather tha
 
 The marble is composed from:
 
-- scene identity via `SceneElementMixin`
-- marble config via `MarbleMixin`
+- app identity via `MarbleTag`
 - trajectory source capability via `TrajectorySourceTag`
 - render data via `MeshMixin`
 - physics setup via `RigidBodyMixin` and `ColliderMixin`

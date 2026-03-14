@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
+import { computeLinearResizeResult, getDraggedHandlePoint } from './lib/manipulation-math';
 
 const baseLinearElement = {
 	position: { x: -7.25, y: 16, z: -18 },

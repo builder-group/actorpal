@@ -1,11 +1,8 @@
 import { Added, Changed, Entity, Or } from 'ecsify';
 import * as THREE from 'three';
 import { createStraightTrackColliders, createStraightTrackGeometry } from './bundles';
-import {
-	getEditableLinearElement,
-	getLinearElementHandlePositions,
-	updateHandleAppearance
-} from './lib/manipulation';
+import { getLinearElement, getLinearElementHandlePositions } from './lib/linear-element';
+import { updateHandleAppearance } from './lib/manipulation-handles';
 import { sameVec3 } from './lib/vec3';
 import type { TSceneApp } from './types';
 
@@ -74,7 +71,7 @@ export function syncSceneManipulationHandlesSystem(app: TSceneApp) {
 		return;
 	}
 
-	const linearElement = getEditableLinearElement(app, selection.entityId);
+	const linearElement = getLinearElement(app, selection.entityId);
 	if (linearElement == null) {
 		app.updateResource('sceneSelection', { entityId: null });
 		handles.start.visible = false;

@@ -1,5 +1,6 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type * as THREE from 'three';
+import type { TEngineSystemSet } from '../../types';
 import type { TCorePlugin } from '../core';
 import type { TPhysicsPlugin } from '../physics';
 import type { TRenderPlugin } from '../render/types';
@@ -16,7 +17,7 @@ export type TTrajectoryPlugin = TPlugin<
 			trajectoryConfig: TTrajectoryConfig;
 			trajectoryLines: TTrajectoryLines;
 		};
-		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
+		systemSets: TEngineSystemSet;
 	},
 	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin]
 >;
@@ -41,8 +42,6 @@ export interface TTrajectoryLines {
 	pastLine: THREE.Line;
 	futureBuffer: Float32Array;
 	pastBuffer: Float32Array;
-	prevFutureColor: string;
-	prevPastColor: string;
 }
 
 // MARK: - Components

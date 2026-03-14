@@ -1,11 +1,6 @@
-import { findNearestCheckpointStep } from '../../physics/lib/simulation';
+import { findNearestCheckpointStep } from '../../physics';
 import type { TTrajectoryApp } from '../types';
-
-const MAX_STEPS = 1000;
-
-export function getMaxTrajectorySteps(): number {
-	return MAX_STEPS;
-}
+import { MAX_TRAJECTORY_STEPS } from './line-state';
 
 export function rebuildPastTrajectory(app: TTrajectoryApp, marbleHandle: number): number {
 	const rapier = app.r.rapier;
@@ -13,7 +8,7 @@ export function rebuildPastTrajectory(app: TTrajectoryApp, marbleHandle: number)
 		return 0;
 	}
 
-	const configPastSteps = Math.min(app.r.trajectoryConfig.pastSteps, MAX_STEPS);
+	const configPastSteps = Math.min(app.r.trajectoryConfig.pastSteps, MAX_TRAJECTORY_STEPS);
 	const endStep = app.r.simulationTransport.playheadStep;
 	const startStep = Math.max(0, endStep - Math.max(configPastSteps - 1, 0));
 	const checkpointStep = findNearestCheckpointStep(app.r.checkpointStore, startStep);

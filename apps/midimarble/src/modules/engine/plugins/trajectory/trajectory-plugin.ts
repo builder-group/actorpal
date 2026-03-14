@@ -1,21 +1,10 @@
-import * as THREE from 'three';
+import { buildTrajectoryLine, MAX_TRAJECTORY_STEPS } from './lib/line-state';
 import { updateTrajectorySystem } from './systems';
 import type { TTrajectoryApp, TTrajectoryPlugin } from './types';
 
-const MAX_STEPS = 1000;
-
-function buildLine(buffer: Float32Array, color: string): THREE.Line {
-	const geometry = new THREE.BufferGeometry();
-	const attr = new THREE.BufferAttribute(buffer, 3);
-	attr.setUsage(THREE.DynamicDrawUsage);
-	geometry.setAttribute('position', attr);
-	geometry.setDrawRange(0, 0);
-	return new THREE.Line(geometry, new THREE.LineBasicMaterial({ color, linewidth: 2 }));
-}
-
 export function createTrajectoryPlugin(): TTrajectoryPlugin {
-	const futureBuffer = new Float32Array(MAX_STEPS * 3);
-	const pastBuffer = new Float32Array(MAX_STEPS * 3);
+	const futureBuffer = new Float32Array(MAX_TRAJECTORY_STEPS * 3);
+	const pastBuffer = new Float32Array(MAX_TRAJECTORY_STEPS * 3);
 	const futureColor = '#4a90e2';
 	const pastColor = '#ff9943';
 
@@ -35,12 +24,10 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				pastColor
 			},
 			trajectoryLines: {
-				futureLine: buildLine(futureBuffer, futureColor),
-				pastLine: buildLine(pastBuffer, pastColor),
+				futureLine: buildTrajectoryLine(futureBuffer, futureColor),
+				pastLine: buildTrajectoryLine(pastBuffer, pastColor),
 				futureBuffer,
-				pastBuffer,
-				prevFutureColor: futureColor,
-				prevPastColor: pastColor
+				pastBuffer
 			}
 		},
 		setup(app: TTrajectoryApp) {

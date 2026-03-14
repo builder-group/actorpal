@@ -9,7 +9,6 @@ export class Viewport {
 	private readonly _controls: OrbitControls;
 	private _resizeObserver: ResizeObserver | null = null;
 	private readonly _trackedObjects = new Set<THREE.Object3D>();
-	private readonly _textureLoader = new THREE.TextureLoader();
 
 	constructor() {
 		this._scene = new THREE.Scene();
@@ -69,10 +68,6 @@ export class Viewport {
 
 	public get domElement(): HTMLCanvasElement {
 		return this._renderer.domElement;
-	}
-
-	public get textureLoader(): THREE.TextureLoader {
-		return this._textureLoader;
 	}
 
 	public get controlsEnabled(): boolean {

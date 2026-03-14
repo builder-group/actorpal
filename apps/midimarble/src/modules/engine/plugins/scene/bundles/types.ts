@@ -1,4 +1,4 @@
 import type { TBundle } from 'ecsify';
 import type { TSceneApp } from '../types';
 
-export type TSceneBundle = TBundle<TSceneApp>;
+export type TSceneBundle = TBundle<TSceneApp['c'][keyof TSceneApp['c']]>;

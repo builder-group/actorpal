@@ -1,6 +1,6 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
-import type { TVec3 } from '../../types';
+import type { TEngineSystemSet, TVec3 } from '../../types';
 import type { TCorePlugin } from '../core';
 
 export type TPhysicsPlugin = TPlugin<
@@ -29,7 +29,7 @@ export type TPhysicsPlugin = TPlugin<
 			markSimulationDirty(): void;
 			requestSimulationSync(): void;
 		};
-		systemSets: 'First' | 'PreUpdate' | 'Update' | 'PostUpdate' | 'Last' | 'Flush';
+		systemSets: TEngineSystemSet;
 	},
 	[TDefaultPlugin, TCorePlugin]
 >;

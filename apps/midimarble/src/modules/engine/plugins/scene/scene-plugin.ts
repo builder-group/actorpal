@@ -1,6 +1,7 @@
 import { createMarbleBundle, createPegboardBundle, createStraightTrackBundle } from './bundles';
-import { createSceneManipulationHandles, resetSceneManipulationState } from './lib/manipulation';
-import { setupSceneManipulation } from './manipulation';
+import { createSceneManipulationHandles } from './lib/manipulation-handles';
+import { resetSceneManipulationState } from './lib/manipulation-state';
+import { setupSceneManipulation } from './lib/scene-manipulation';
 import {
 	syncAuthoredTransformsToLiveSystem,
 	syncSceneManipulationHandleAppearanceSystem,
@@ -24,12 +25,10 @@ export function createScenePlugin(): TScenePlugin {
 		name: 'Scene',
 		deps: ['Default', 'Core', 'Physics', 'Render', 'Trajectory'],
 		components: {
-			SceneElementMixin: [],
+			MarbleTag: [],
 			AuthoredTransformMixin: [],
-			MarbleMixin: [],
 			StraightTrackMixin: [],
-			LinearElementMixin: [],
-			PegboardMixin: []
+			LinearElementMixin: []
 		},
 		resources: {
 			sceneSelection: {

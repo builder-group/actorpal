@@ -2,7 +2,7 @@ import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
-import { useSceneSummary } from '../hooks';
+import { useMarble } from '../hooks';
 import { Timeline } from './Timeline';
 
 export const Editor: React.FC = () => {
@@ -14,8 +14,8 @@ export const Editor: React.FC = () => {
 };
 
 const MarbleSection: React.FC = () => {
-	const scene = useSceneSummary();
-	const pos = scene.leadMarblePosition;
+	const marble = useMarble();
+	const pos = marble.position;
 
 	return (
 		<section>

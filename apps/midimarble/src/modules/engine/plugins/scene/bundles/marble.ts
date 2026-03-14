@@ -19,12 +19,7 @@ export function createMarbleBundle(
 		bundleEntry(app.c.PositionMixin, position),
 		bundleEntry(app.c.RotationMixin, rotation),
 		bundleEntry(app.c.ScaleMixin, scale),
-		bundleEntry(app.c.SceneElementMixin, {
-			kind: 'marble',
-			label: 'Marble',
-			editable: false
-		}),
-		bundleEntry(app.c.MarbleMixin, { radius }),
+		bundleEntry(app.c.MarbleTag, {}),
 		bundleEntry(app.c.TrajectorySourceTag, {}),
 		bundleEntry(app.c.MeshMixin, { type: 'three', object: createMarbleObject(radius) }),
 		bundleEntry(app.c.RigidBodyMixin, {

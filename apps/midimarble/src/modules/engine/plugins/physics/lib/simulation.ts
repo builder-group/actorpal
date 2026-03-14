@@ -1,33 +1,22 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
-import type {
-	TCheckpointStore,
-	TPhysicsApp,
-	TRColliders,
-	TRRigidBodies,
-	TSimulationConfig,
-	TSimulationTransport
-} from '../types';
+import type { TCheckpointStore, TPhysicsApp } from '../types';
 
-type TPhysicsSimulationRestoreAccess = {
-	r: {
-		rapier: TPhysicsApp['r']['rapier'];
-		preloadWorld: TPhysicsApp['r']['preloadWorld'];
-		preloadStep: number;
-		fixedTimeStepSeconds: number;
-		checkpointStore: TCheckpointStore;
-		simulationTransport: TSimulationTransport;
-		simulationConfig: TSimulationConfig;
-	};
+type TPhysicsRestoreAccess = {
+	r: Pick<
+		TPhysicsApp['r'],
+		| 'rapier'
+		| 'preloadWorld'
+		| 'preloadStep'
+		| 'fixedTimeStepSeconds'
+		| 'checkpointStore'
+		| 'simulationTransport'
+		| 'simulationConfig'
+	>;
 	updateResource: TPhysicsApp['updateResource'];
 };
 
-type TPhysicsWorldSwapAccess = {
-	r: TPhysicsSimulationRestoreAccess['r'] & {
-		world: TPhysicsApp['r']['world'];
-		rigidBodies: TRRigidBodies;
-		colliders: TRColliders;
-	};
-	updateResource: TPhysicsApp['updateResource'];
+type TPhysicsWorldSwapAccess = TPhysicsRestoreAccess & {
+	r: TPhysicsRestoreAccess['r'] & Pick<TPhysicsApp['r'], 'world' | 'rigidBodies' | 'colliders'>;
 };
 
 export function storeCheckpoint(
@@ -53,7 +42,7 @@ export function findNearestCheckpointStep(
 }
 
 export function restoreWorldAtStep(
-	app: TPhysicsSimulationRestoreAccess,
+	app: TPhysicsRestoreAccess,
 	targetStep: number
 ): RAPIER.World | null {
 	const rapier = app.r.rapier;
@@ -81,10 +70,7 @@ export function restoreWorldAtStep(
 	return restoredWorld;
 }
 
-export function syncPreloadWorldToStep(
-	app: TPhysicsSimulationRestoreAccess,
-	targetStep: number
-): void {
+export function syncPreloadWorldToStep(app: TPhysicsRestoreAccess, targetStep: number): void {
 	const rapier = app.r.rapier;
 	if (rapier == null || !app.r.checkpointStore.has(0)) {
 		return;

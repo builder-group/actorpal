@@ -2,18 +2,15 @@ import { Added, Changed, Entity, Or, Removed } from 'ecsify';
 import * as THREE from 'three';
 import { createStraightTrackColliders, createStraightTrackGeometry } from './bundles';
 import { getLinearElement, getLinearElementHandlePositions } from './lib/linear-element';
-import { createMarbleColliderDescriptors, getMarbleRadius } from './lib/marble';
 import { updateHandleAppearance } from './lib/manipulation-handles';
+import { resetSceneManipulationState } from './lib/manipulation-state';
+import { createMarbleColliderDescriptors, getMarbleRadius } from './lib/marble';
 import {
 	getNotePlatform,
 	getNotePlatformHandlePositions,
 	getPlacedNoteIds
 } from './lib/note-platform';
-import {
-	syncResolvedNotePlatform,
-	syncUnresolvedNotePlatform
-} from './lib/note-platform-runtime';
-import { resetSceneManipulationState } from './lib/manipulation-state';
+import { syncResolvedNotePlatform, syncUnresolvedNotePlatform } from './lib/note-platform-runtime';
 import { clearSceneEntitySelection } from './lib/scene-selection';
 import { sameVec3 } from './lib/vec3';
 import type { TSceneApp } from './types';
@@ -99,17 +96,15 @@ export function syncNotePlatformRuntimeSystem(app: TSceneApp) {
 	}
 	let didProjectionAffectSimulation = false;
 
-	for (const [eid, binding, platform, position, rotation, mesh, collider] of app.queryComponents(
-		[
-			Entity,
-			app.c.NoteBindingMixin,
-			app.c.NotePlatformMixin,
-			app.c.PositionMixin,
-			app.c.RotationMixin,
-			app.c.MeshMixin,
-			app.c.ColliderMixin
-		] as const
-	)) {
+	for (const [eid, binding, platform, position, rotation, mesh, collider] of app.queryComponents([
+		Entity,
+		app.c.NoteBindingMixin,
+		app.c.NotePlatformMixin,
+		app.c.PositionMixin,
+		app.c.RotationMixin,
+		app.c.MeshMixin,
+		app.c.ColliderMixin
+	] as const)) {
 		const anchor = app.r.trajectoryProjection.noteAnchorsById.get(binding.noteId);
 		if (anchor == null) {
 			const didRuntimeChange = syncUnresolvedNotePlatform(

@@ -48,7 +48,9 @@ describe('replaceLiveWorld', () => {
 		const liveCollider = { handle: 20 };
 		const rebuiltFixedBody = { handle: 71, kind: 'fixed' } as unknown as Parameters<
 			typeof replaceLiveWorld
-		>[0]['r']['rigidBodies'] extends Map<number, infer TBody> ? TBody : never;
+		>[0]['r']['rigidBodies'] extends Map<number, infer TBody>
+			? TBody
+			: never;
 		const rebuiltFixedCollider = { handle: 72, kind: 'fixed' } as unknown as Parameters<
 			typeof replaceLiveWorld
 		>[0]['r']['colliders'] extends Map<number, infer TColliderArray>
@@ -79,21 +81,13 @@ describe('replaceLiveWorld', () => {
 			updateResource
 		} as unknown as Parameters<typeof replaceLiveWorld>[0];
 
-		replaceLiveWorld(
-			app,
-			newWorld as unknown as Parameters<typeof replaceLiveWorld>[1],
-			{
-				rigidBodies: new Map([[7, rebuiltFixedBody]]),
-				colliders: new Map([[7, [rebuiltFixedCollider]]])
-			}
-		);
+		replaceLiveWorld(app, newWorld as unknown as Parameters<typeof replaceLiveWorld>[1], {
+			rigidBodies: new Map([[7, rebuiltFixedBody]]),
+			colliders: new Map([[7, [rebuiltFixedCollider]]])
+		});
 
-		const rigidBodies = updateResource.mock.calls.find(
-			(call) => call[0] === 'rigidBodies'
-		)?.[1];
-		const colliders = updateResource.mock.calls.find(
-			(call) => call[0] === 'colliders'
-		)?.[1];
+		const rigidBodies = updateResource.mock.calls.find((call) => call[0] === 'rigidBodies')?.[1];
+		const colliders = updateResource.mock.calls.find((call) => call[0] === 'colliders')?.[1];
 
 		expect(rigidBodies.get(1)).toBe(restoredBody);
 		expect(rigidBodies.get(7)).toBe(rebuiltFixedBody);

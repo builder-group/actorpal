@@ -3,15 +3,25 @@ import * as THREE from 'three';
 import type { TPhysicsColliderDescriptor } from '../../physics';
 import {
 	getDefaultNotePlatformColor,
-	resolveNotePlatformTransform,
-	NOTE_PLATFORM_DEFAULTS
+	resolveNotePlatformTransform
 } from '../lib/note-platform';
-import type {
-	TCNoteBindingMixin,
-	TCNotePlatformMixin,
-	TSceneApp
-} from '../types';
+import {
+	createTrackColliders,
+	createTrackGeometry,
+	getScaledTrackChannelDepth,
+	getScaledTrackChannelWidth
+} from '../lib/track-shape';
+import type { TCNoteBindingMixin, TCNotePlatformMixin, TSceneApp } from '../types';
 import type { TSceneBundle } from './types';
+
+const NOTE_PLATFORM_DEFAULTS = {
+	rotationX: 0,
+	length: 1.2,
+	width: 1.5,
+	thickness: 0.22,
+	bounce: 0.58,
+	color: '#2a5e92'
+} satisfies TCNotePlatformMixin;
 
 export function createNotePlatformBundle(
 	app: TSceneApp,
@@ -30,7 +40,8 @@ export function createNotePlatformBundle(
 	const transform = resolveNotePlatformTransform(
 		anchorPosition,
 		platform.rotationX,
-		platform.thickness
+		platform.thickness,
+		platform.width
 	);
 
 	return defineBundle(
@@ -50,7 +61,9 @@ export function createNotePlatformBundle(
 	);
 }
 
-export function createNotePlatformObject(platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness' | 'color'>): THREE.Object3D {
+export function createNotePlatformObject(
+	platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness' | 'color'>
+): THREE.Object3D {
 	const mesh = new THREE.Mesh(
 		createNotePlatformGeometry(platform),
 		new THREE.MeshStandardMaterial({
@@ -67,39 +80,32 @@ export function createNotePlatformObject(platform: Pick<TCNotePlatformMixin, 'le
 export function createNotePlatformGeometry(
 	platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness'>
 ): THREE.ExtrudeGeometry {
-	const shape = new THREE.Shape();
-	shape.moveTo(0, 0);
-	shape.lineTo(0, platform.thickness);
-	shape.lineTo(platform.width, platform.thickness);
-	shape.lineTo(platform.width, 0);
-	shape.lineTo(0, 0);
-
-	const geometry = new THREE.ExtrudeGeometry(shape, {
-		steps: 1,
-		depth: platform.length,
-		bevelEnabled: true,
-		bevelThickness: 0,
-		bevelSize: 0
-	});
-
-	geometry.translate(-platform.width / 2, -platform.thickness / 2, -platform.length / 2);
-	geometry.computeVertexNormals();
-	return geometry;
+	return createTrackGeometry(getNotePlatformShape(platform), 'wall-only-negative');
 }
 
 export function createNotePlatformColliders(
 	platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness' | 'bounce'>
 ): TPhysicsColliderDescriptor[] {
-	return [
-		{
-			shape: 'cuboid',
-			halfExtents: {
-				x: platform.width / 2,
-				y: platform.thickness / 2,
-				z: platform.length / 2
-			},
-			friction: 0.55,
-			restitution: platform.bounce
-		}
-	];
+	return createTrackColliders(getNotePlatformShape(platform), 'wall-only-negative', {
+		friction: 0.55,
+		restitution: platform.bounce
+	});
+}
+
+function getNotePlatformShape(
+	platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness'>
+): {
+	length: number;
+	width: number;
+	height: number;
+	channelWidth: number;
+	channelDepth: number;
+} {
+	return {
+		length: platform.length,
+		width: platform.width,
+		height: platform.thickness,
+		channelWidth: getScaledTrackChannelWidth(platform.width),
+		channelDepth: getScaledTrackChannelDepth(platform.thickness)
+	};
 }

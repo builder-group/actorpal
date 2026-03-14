@@ -1,5 +1,5 @@
-import React from 'react';
 import { Entity, With } from 'ecsify';
+import React from 'react';
 import { useMemoCleanup } from '@/hooks';
 import { useQueryComponents, useResource } from '@/modules/engine';
 import { clampMidiTick, findTrackById, stepToTick } from '@/modules/engine/plugins/midi';
@@ -83,7 +83,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const selectedNoteLabel =
 		selectedNote == null
 			? null
-				: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
+			: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
 	const placedNoteIds = React.useMemo(
 		() => new Set(notePlatforms.map(([, binding]) => binding.noteId)),
 		[notePlatforms]
@@ -275,10 +275,10 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 						playheadPx={playheadPx}
 						contentHeight={contentHeight}
 						noteRows={noteRows}
-							notes={selectedTrack?.notes ?? []}
-							selectedNoteId={selectedNoteId}
-							placedNoteIds={placedNoteIds}
-							canScrub={canControlPlayback}
+						notes={selectedTrack?.notes ?? []}
+						selectedNoteId={selectedNoteId}
+						placedNoteIds={placedNoteIds}
+						canScrub={canControlPlayback}
 						isDragging={isDragging}
 						onPointerDown={handlePointerDown}
 						onPointerMove={handlePointerMove}

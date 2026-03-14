@@ -1,18 +1,12 @@
 import { Entity, With } from 'ecsify';
 import * as THREE from 'three';
 import type { TVec3 } from '../../../types';
-import { DEFAULT_MARBLE_RADIUS } from './marble';
-import { getLinearElementHandlePositions } from './linear-element';
 import type { TSceneApp } from '../types';
+import { getLinearElementHandlePositions } from './linear-element';
+import { DEFAULT_MARBLE_RADIUS } from './marble';
+import { DEFAULT_TRACK_WIDTH } from './track-shape';
 
-export const NOTE_PLATFORM_DEFAULTS = {
-	rotationX: 0,
-	length: 1.2,
-	width: 0.84,
-	thickness: 0.22,
-	bounce: 0.58,
-	color: '#2a5e92'
-} as const;
+export const NOTE_PLATFORM_DEFAULT_COLOR = '#2a5e92';
 
 export const NOTE_PLATFORM_LIMITS = {
 	rotationX: {
@@ -58,7 +52,7 @@ export function getPlacedNoteIds(app: TSceneApp): Set<number> {
 }
 
 export function getDefaultNotePlatformColor(noteId: number): string {
-	return NOTE_PLATFORM_COLORS[Math.abs(noteId) % NOTE_PLATFORM_COLORS.length] ?? NOTE_PLATFORM_DEFAULTS.color;
+	return NOTE_PLATFORM_COLORS[Math.abs(noteId) % NOTE_PLATFORM_COLORS.length] ?? NOTE_PLATFORM_DEFAULT_COLOR;
 }
 
 export function getNotePlatform(
@@ -93,14 +87,16 @@ export function resolveNotePlatformTransform(
 	anchorPosition: TVec3,
 	rotationX: number,
 	thickness: number,
+	platformWidth: number,
 	marbleRadius: number = DEFAULT_MARBLE_RADIUS
 ): { position: TVec3; rotation: TVec3 } {
 	const normal = getNotePlatformSurfaceNormal(rotationX);
 	const centerOffset = marbleRadius + thickness / 2;
+	const wallMountOffsetX = (DEFAULT_TRACK_WIDTH - platformWidth) / 2;
 
 	return {
 		position: {
-			x: anchorPosition.x - normal.x * centerOffset,
+			x: anchorPosition.x - wallMountOffsetX - normal.x * centerOffset,
 			y: anchorPosition.y - normal.y * centerOffset,
 			z: anchorPosition.z - normal.z * centerOffset
 		},

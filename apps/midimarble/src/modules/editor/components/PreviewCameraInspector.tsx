@@ -20,9 +20,7 @@ export const PreviewCameraInspector: React.FC<{
 				<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
 					<div className="mb-3">
 						<p className="text-base-900 text-sm font-semibold">Preview Camera</p>
-						<p className="text-base-500 mt-1 text-xs tracking-wide uppercase">
-							Follow Marble
-						</p>
+						<p className="text-base-500 mt-1 text-xs tracking-wide uppercase">Follow Marble</p>
 					</div>
 
 					<SliderField

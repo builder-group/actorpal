@@ -11,10 +11,7 @@ import {
 	disposeSceneManipulationHandles,
 	getLinearElementHandleKind
 } from './manipulation-handles';
-import {
-	computeLinearResizeResult,
-	getDraggedHandlePoint
-} from './manipulation-math';
+import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
 import { resetSceneManipulationState } from './manipulation-state';
 import {
 	getNotePlatform,
@@ -408,18 +405,18 @@ function pickSceneElement(
 	raycaster.setFromCamera(pointer, app.r.viewport.camera);
 	const intersections = raycaster.intersectObjects([...objectMap.keys()], true);
 	for (const intersection of intersections) {
-			let current: THREE.Object3D | null = intersection.object;
-			while (current != null) {
-				const entityId = objectMap.get(current);
-				if (entityId != null) {
-					return app.hasComponent(entityId, app.c.MarbleTag)
-						? { entityId, target: 'marble' }
-						: app.hasComponent(entityId, app.c.NotePlatformMixin)
-							? { entityId, target: 'note-platform' }
+		let current: THREE.Object3D | null = intersection.object;
+		while (current != null) {
+			const entityId = objectMap.get(current);
+			if (entityId != null) {
+				return app.hasComponent(entityId, app.c.MarbleTag)
+					? { entityId, target: 'marble' }
+					: app.hasComponent(entityId, app.c.NotePlatformMixin)
+						? { entityId, target: 'note-platform' }
 						: { entityId, target: 'element' };
-				}
-				current = current.parent;
 			}
+			current = current.parent;
+		}
 	}
 
 	return null;

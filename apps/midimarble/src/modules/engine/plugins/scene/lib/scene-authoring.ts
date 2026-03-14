@@ -1,5 +1,5 @@
 import { Entity, With } from 'ecsify';
-import type { TSceneApp, TCMarblePhysicsMixin, TCNotePlatformMixin } from '../types';
+import type { TCMarblePhysicsMixin, TCNotePlatformMixin, TSceneApp } from '../types';
 
 export function updateNotePlatformAuthoring(
 	app: TSceneApp,
@@ -57,10 +57,7 @@ export function updateMarblePhysicsAuthoring(
 	return false;
 }
 
-function areNotePlatformsEqual(
-	left: TCNotePlatformMixin,
-	right: TCNotePlatformMixin
-): boolean {
+function areNotePlatformsEqual(left: TCNotePlatformMixin, right: TCNotePlatformMixin): boolean {
 	return (
 		left.rotationX === right.rotationX &&
 		left.length === right.length &&
@@ -71,9 +68,6 @@ function areNotePlatformsEqual(
 	);
 }
 
-function areMarblePhysicsEqual(
-	left: TCMarblePhysicsMixin,
-	right: TCMarblePhysicsMixin
-): boolean {
+function areMarblePhysicsEqual(left: TCMarblePhysicsMixin, right: TCMarblePhysicsMixin): boolean {
 	return left.bounce === right.bounce;
 }

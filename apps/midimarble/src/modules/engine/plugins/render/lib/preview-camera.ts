@@ -108,7 +108,11 @@ export function lerpVec3(from: TVec3, to: TVec3, alpha: number): TVec3 {
 	};
 }
 
-export function areVec3Close(left: TVec3 | null, right: TVec3 | null, epsilon: number = 1e-4): boolean {
+export function areVec3Close(
+	left: TVec3 | null,
+	right: TVec3 | null,
+	epsilon: number = 1e-4
+): boolean {
 	if (left == null || right == null) {
 		return left === right;
 	}

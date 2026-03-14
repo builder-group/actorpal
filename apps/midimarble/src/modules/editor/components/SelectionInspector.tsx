@@ -53,11 +53,7 @@ export const SelectionInspector: React.FC<{
 			app.c.PositionMixin
 		] as const,
 		queryOrFilter: With(app.c.NotePlatformMixin),
-		watchComponents: [
-			app.c.NoteBindingMixin,
-			app.c.NotePlatformMixin,
-			app.c.PositionMixin
-		]
+		watchComponents: [app.c.NoteBindingMixin, app.c.NotePlatformMixin, app.c.PositionMixin]
 	});
 
 	const selectedTrack = React.useMemo(
@@ -176,7 +172,9 @@ export const SelectionInspector: React.FC<{
 				{target.kind === 'note' ? (
 					<NoteInspector
 						target={target}
-						onCreateOrSelectNotePlatform={(noteId) => void runtime.createOrSelectNotePlatform(noteId)}
+						onCreateOrSelectNotePlatform={(noteId) =>
+							void runtime.createOrSelectNotePlatform(noteId)
+						}
 					/>
 				) : null}
 				{target.kind === 'note-platform' ? (
@@ -254,7 +252,8 @@ const NoteInspector: React.FC<{
 			</button>
 			{target.notePlatformEntityId == null && target.position == null ? (
 				<p className="text-base-500 mt-2 text-xs">
-					This note must be within the solved trajectory horizon before a note platform can be created.
+					This note must be within the solved trajectory horizon before a note platform can be
+					created.
 				</p>
 			) : null}
 		</div>

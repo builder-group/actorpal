@@ -40,12 +40,18 @@ const PianoKeyRow: React.FC<{ noteNumber: number; top: number }> = ({ noteNumber
 			style={{
 				top,
 				height: NOTE_ROW_HEIGHT,
-				background: blackKey ? '#ece8e2' : cNote ? '#f7f3ee' : '#fbf9f6'
+				background: blackKey
+					? '#f0f0f0'
+					: cNote
+						? '#f8f8f8'
+						: '#ffffff'
 			}}
 		>
 			<div
 				className="absolute inset-y-0 left-0 w-10"
-				style={{ background: blackKey ? '#3a3a3a' : 'transparent' }}
+				style={{
+					background: blackKey ? '#111111' : 'transparent'
+				}}
 			/>
 
 			{cNote ? (
@@ -69,8 +75,8 @@ const TimelineRuler: React.FC<{
 			style={{ height: RULER_HEIGHT }}
 		>
 			<div
-				className="pointer-events-none absolute inset-y-0 left-0 bg-slate-200"
-				style={{ width: bufferedPx }}
+				className="pointer-events-none absolute inset-y-0 left-0"
+				style={{ background: 'var(--color-base-100)', width: bufferedPx }}
 			/>
 
 			{beatTicks.majorBeats.map((beat) => (
@@ -138,10 +144,10 @@ const PianoRollGrid: React.FC<{
 						top: index * NOTE_ROW_HEIGHT,
 						height: NOTE_ROW_HEIGHT,
 						background: isBlackKey(noteNumber)
-							? 'rgba(161, 161, 170, 0.06)'
+							? 'var(--color-base-100)'
 							: index % 2 === 0
-								? 'rgba(255,255,255,0.9)'
-								: 'rgba(250,248,244,0.9)'
+								? 'var(--color-base-0)'
+								: 'var(--color-base-50)'
 					}}
 				/>
 			))}

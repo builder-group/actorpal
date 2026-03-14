@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { DEFAULT_TRACK_WIDTH } from './lib/track-shape';
 import {
 	syncNotePlatformRuntimeSystem,
 	syncPreviewInteractionSystem,
@@ -77,7 +78,7 @@ describe('syncNotePlatformRuntimeSystem', () => {
 		expect(updateComponent).toHaveBeenCalledWith(
 			12,
 			app.c.PositionMixin,
-			expect.objectContaining({ x: 1, z: 3 })
+			expect.objectContaining({ x: 1 - (DEFAULT_TRACK_WIDTH - 0.84) / 2, z: 3 })
 		);
 		expect(markSimulationDirty).toHaveBeenCalledOnce();
 		expect(requestSimulationSync).toHaveBeenCalledOnce();

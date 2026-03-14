@@ -7,19 +7,16 @@ import {
 import { createSceneManipulationHandles } from './lib/manipulation-handles';
 import { resetSceneManipulationState } from './lib/manipulation-state';
 import { findNotePlatformEntityId } from './lib/note-platform';
-import {
-	updateMarblePhysicsAuthoring,
-	updateNotePlatformAuthoring
-} from './lib/scene-authoring';
+import { updateMarblePhysicsAuthoring, updateNotePlatformAuthoring } from './lib/scene-authoring';
 import { setupSceneManipulation } from './lib/scene-manipulation';
 import { selectSceneEntity } from './lib/scene-selection';
 import {
-	syncPreviewInteractionSystem,
 	syncAuthoredTransformsToLiveSystem,
-	syncMarbleRuntimeMixinsSystem,
 	syncExclusiveSelectionSystem,
+	syncMarbleRuntimeMixinsSystem,
 	syncNotePlatformMarkerStateSystem,
 	syncNotePlatformRuntimeSystem,
+	syncPreviewInteractionSystem,
 	syncSceneManipulationHandleAppearanceSystem,
 	syncSceneManipulationHandlesSystem,
 	syncStraightTrackRuntimeMixinsSystem
@@ -136,7 +133,10 @@ export function createScenePlugin(): TScenePlugin {
 			app.addSystem(syncMarbleRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncExclusiveSelectionSystem, { set: 'Update' });
-			app.addSystem(syncPreviewInteractionSystem, { set: 'Update', after: syncExclusiveSelectionSystem });
+			app.addSystem(syncPreviewInteractionSystem, {
+				set: 'Update',
+				after: syncExclusiveSelectionSystem
+			});
 			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
 			app.addSystem(syncNotePlatformRuntimeSystem, { set: 'PostUpdate' });
 			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'PostUpdate' });

@@ -17,8 +17,8 @@ describe('scene note platform creation', () => {
 				spawnedBindings.set(entityId, entry?.value as { noteId: number });
 				return entityId;
 			}),
-			queryComponents: vi.fn(() =>
-				Array.from(spawnedBindings.entries()).map(([eid, binding]) => [eid, binding]) as never
+			queryComponents: vi.fn(
+				() => Array.from(spawnedBindings.entries()).map(([eid, binding]) => [eid, binding]) as never
 			)
 		});
 

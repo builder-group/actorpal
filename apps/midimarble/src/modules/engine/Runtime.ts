@@ -79,12 +79,14 @@ export class Runtime {
 	public async loadMidiFile(file: File): Promise<void> {
 		await this._app.loadMidiFile(file);
 		this._app.resetTransport();
+		this._setSceneEditPending(false);
 		this._flushImmediateUpdate();
 	}
 
 	public clearMidiSong(): void {
 		this._app.clearMidiSong();
 		this._app.resetTransport();
+		this._setSceneEditPending(false);
 		this._flushImmediateUpdate();
 	}
 
@@ -98,9 +100,7 @@ export class Runtime {
 		this._flushImmediateUpdate();
 	}
 
-	public updatePreviewConfig(
-		patch: Partial<TRuntimeApp['r']['previewConfig']>
-	): void {
+	public updatePreviewConfig(patch: Partial<TRuntimeApp['r']['previewConfig']>): void {
 		this._app.updatePreviewConfig(patch);
 		this._flushImmediateUpdate();
 	}

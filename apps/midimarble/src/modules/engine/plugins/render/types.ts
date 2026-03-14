@@ -3,8 +3,7 @@ import type * as THREE from 'three';
 import type { TEngineSystemSet, TVec3 } from '../../types';
 import type { TCorePlugin } from '../core';
 import type { TPhysicsPlugin } from '../physics';
-import type { Viewport } from './lib/Viewport';
-import type { TCameraSnapshot } from './lib/Viewport';
+import type { TCameraSnapshot, Viewport } from './lib/Viewport';
 
 // MARK: - Plugin
 

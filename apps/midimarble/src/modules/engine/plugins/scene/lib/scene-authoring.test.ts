@@ -1,8 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-	updateMarblePhysicsAuthoring,
-	updateNotePlatformAuthoring
-} from './scene-authoring';
+import { updateMarblePhysicsAuthoring, updateNotePlatformAuthoring } from './scene-authoring';
 
 describe('scene authoring helpers', () => {
 	it('updates note platforms only when authored values actually change', () => {

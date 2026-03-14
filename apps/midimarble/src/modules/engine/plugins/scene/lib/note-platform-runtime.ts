@@ -1,12 +1,9 @@
 import * as THREE from 'three';
 import type { TVec3 } from '../../../types';
-import {
-	createNotePlatformColliders,
-	createNotePlatformGeometry
-} from '../bundles/note-platform';
+import { createNotePlatformColliders, createNotePlatformGeometry } from '../bundles/note-platform';
+import type { TCNotePlatformMixin, TSceneApp } from '../types';
 import { resolveNotePlatformTransform } from './note-platform';
 import { sameVec3 } from './vec3';
-import type { TSceneApp, TCNotePlatformMixin } from '../types';
 
 export function syncResolvedNotePlatform(
 	app: TSceneApp,
@@ -22,7 +19,8 @@ export function syncResolvedNotePlatform(
 	const transform = resolveNotePlatformTransform(
 		anchorPosition,
 		platform.rotationX,
-		platform.thickness
+		platform.thickness,
+		platform.width
 	);
 	let didRuntimeChange = false;
 

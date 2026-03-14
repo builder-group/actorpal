@@ -1,4 +1,14 @@
-import { Eye, FileUp, Pause, Play, SkipBack, SkipForward, Square, ZoomIn, ZoomOut } from 'lucide-react';
+import {
+	Eye,
+	FileUp,
+	Pause,
+	Play,
+	SkipBack,
+	SkipForward,
+	Square,
+	ZoomIn,
+	ZoomOut
+} from 'lucide-react';
 import React from 'react';
 
 const TICK_REPEAT_INITIAL_DELAY_MS = 260;
@@ -81,9 +91,7 @@ const TimelineIconButton: React.FC<{
 			disabled={disabled}
 			title={title}
 			className={`flex h-7 w-7 items-center justify-center rounded transition-colors disabled:opacity-30 ${
-				pressed
-					? 'bg-base-900 text-base-0 hover:bg-base-900'
-					: 'text-base-500 hover:text-base-800'
+				pressed ? 'bg-base-900 text-base-0 hover:bg-base-900' : 'text-base-500 hover:text-base-800'
 			}`}
 		>
 			<Icon size={14} strokeWidth={1.8} />

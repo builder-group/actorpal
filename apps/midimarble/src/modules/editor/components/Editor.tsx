@@ -1,5 +1,5 @@
-import React from 'react';
 import { FileUp, SlidersHorizontal, X } from 'lucide-react';
+import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
@@ -181,85 +181,87 @@ const InnerEditor: React.FC = () => {
 					</div>
 				</section>
 			) : (
-			<Group orientation="vertical" className="h-full">
-				<Panel>
-					<Group className="h-full">
-						<Panel>
-							<section className="border-base-300 relative h-full min-w-0 overflow-hidden border-r">
-								<div ref={cx.setContainer} className="h-full w-full" />
-								<div className="absolute top-3 left-3 z-10">
-									<div className="flex w-fit min-w-full items-center gap-2">
-										<div className="bg-base-0/90 text-base-700 inline-flex h-9 items-center rounded-md px-3 text-xs font-medium tracking-wide uppercase shadow-sm">
-											{songLabel}
-											{selectedTrack != null ? (
-												<span className="text-base-500 ml-2">{selectedTrack.name}</span>
-											) : null}
+				<Group orientation="vertical" className="h-full">
+					<Panel>
+						<Group className="h-full">
+							<Panel>
+								<section className="border-base-300 relative h-full min-w-0 overflow-hidden border-r">
+									<div ref={cx.setContainer} className="h-full w-full" />
+									<div className="absolute top-3 left-3 z-10">
+										<div className="flex w-fit min-w-full items-center gap-2">
+											<div className="bg-base-0/90 text-base-700 inline-flex h-9 items-center rounded-md px-3 text-xs font-medium tracking-wide uppercase shadow-sm">
+												{songLabel}
+												{selectedTrack != null ? (
+													<span className="text-base-500 ml-2">{selectedTrack.name}</span>
+												) : null}
+											</div>
+											<button
+												type="button"
+												className={`focus-visible:ring-base-300 pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition focus-visible:ring-2 focus-visible:outline-none ${
+													isSettingsOpen
+														? 'bg-base-100 text-base-900 border-base-300 hover:bg-base-200'
+														: 'border-base-200 bg-base-0/90 text-base-600 hover:bg-base-100'
+												}`}
+												aria-pressed={isSettingsOpen}
+												aria-label={isSettingsOpen ? 'Close settings' : 'Open settings'}
+												title={isSettingsOpen ? 'Close settings' : 'Open settings'}
+												onClick={() => setIsSettingsOpen((current) => !current)}
+											>
+												<SlidersHorizontal className="h-4 w-4" />
+											</button>
 										</div>
-										<button
-											type="button"
-											className={`pointer-events-auto border-base-200 hover:bg-base-100 bg-base-0/90 inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition ${
-												isSettingsOpen ? 'bg-base-900 text-base-0 border-base-900 hover:bg-base-900' : 'text-base-600'
-											}`}
-											aria-pressed={isSettingsOpen}
-											aria-label={isSettingsOpen ? 'Close settings' : 'Open settings'}
-											title={isSettingsOpen ? 'Close settings' : 'Open settings'}
-											onClick={() => setIsSettingsOpen((current) => !current)}
-										>
-											<SlidersHorizontal className="h-4 w-4" />
-										</button>
+
+										{isSettingsOpen ? (
+											<div className="bg-base-0 border-base-200 pointer-events-auto mt-2 w-max max-w-[min(22rem,calc(100vw-2rem))] min-w-full rounded-lg border p-4 shadow-xl">
+												<div className="mb-4 flex items-center justify-between gap-3">
+													<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">
+														Settings
+													</h3>
+													<button
+														type="button"
+														className="border-base-200 text-base-500 hover:bg-base-100 focus-visible:ring-base-300 inline-flex h-8 w-8 items-center justify-center rounded-md border transition focus-visible:ring-2 focus-visible:outline-none"
+														aria-label="Close settings"
+														onClick={() => setIsSettingsOpen(false)}
+													>
+														<X className="h-4 w-4" />
+													</button>
+												</div>
+
+												<div className="flex flex-col gap-5">
+													<TrajectorySection />
+													<AudioSection />
+												</div>
+											</div>
+										) : null}
 									</div>
+								</section>
+							</Panel>
 
-									{isSettingsOpen ? (
-										<div className="pointer-events-auto bg-base-0 border-base-200 mt-2 w-max min-w-full max-w-[min(22rem,calc(100vw-2rem))] rounded-lg border p-4 shadow-xl">
-											<div className="mb-4 flex items-center justify-between gap-3">
-												<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">
-													Settings
-												</h3>
-												<button
-													type="button"
-													className="border-base-200 text-base-500 hover:bg-base-100 inline-flex h-8 w-8 items-center justify-center rounded-md border transition"
-													aria-label="Close settings"
-													onClick={() => setIsSettingsOpen(false)}
-												>
-													<X className="h-4 w-4" />
-												</button>
-											</div>
+							<Separator className="border-base-300 w-px shrink-0 cursor-col-resize border-r" />
 
-											<div className="flex flex-col gap-5">
-												<TrajectorySection />
-												<AudioSection />
-											</div>
-										</div>
-									) : null}
-								</div>
-							</section>
-						</Panel>
+							<Panel defaultSize="320px" minSize="200px" maxSize="500px">
+								<aside className="bg-base-50 flex h-full flex-col overflow-hidden p-4">
+									<h2 className="text-base-900 mb-4 text-xs font-semibold tracking-wide uppercase">
+										Inspector
+									</h2>
+									<div className="min-h-0 flex-1 overflow-y-auto">
+										{previewConfig.enabled ? (
+											<PreviewCameraInspector showTitle={false} />
+										) : (
+											<SelectionInspector showTitle={false} />
+										)}
+									</div>
+								</aside>
+							</Panel>
+						</Group>
+					</Panel>
 
-						<Separator className="border-base-300 w-px shrink-0 cursor-col-resize border-r" />
+					<Separator className="border-base-300 h-px shrink-0 cursor-row-resize border-t" />
 
-						<Panel defaultSize="320px" minSize="200px" maxSize="500px">
-							<aside className="bg-base-50 flex h-full flex-col overflow-hidden p-4">
-								<h2 className="text-base-900 mb-4 text-xs font-semibold tracking-wide uppercase">
-									Inspector
-								</h2>
-								<div className="min-h-0 flex-1 overflow-y-auto">
-									{previewConfig.enabled ? (
-										<PreviewCameraInspector showTitle={false} />
-									) : (
-										<SelectionInspector showTitle={false} />
-									)}
-								</div>
-							</aside>
-						</Panel>
-					</Group>
-				</Panel>
-
-				<Separator className="border-base-300 h-px shrink-0 cursor-row-resize border-t" />
-
-				<Panel defaultSize="280px" minSize="120px" maxSize="60%">
-					<Timeline className="h-full" />
-				</Panel>
-			</Group>
+					<Panel defaultSize="280px" minSize="120px" maxSize="60%">
+						<Timeline className="h-full" />
+					</Panel>
+				</Group>
 			)}
 		</main>
 	);

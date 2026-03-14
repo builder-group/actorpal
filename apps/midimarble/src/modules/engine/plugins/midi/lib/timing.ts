@@ -65,7 +65,10 @@ export function findTrackById(song: TMidiSong | null, trackId: number | null): T
 	return song.tracks.find((track) => track.id === trackId) ?? null;
 }
 
-export function findNoteById(song: TMidiSong | null, noteId: number | null): { note: TMidiNote; track: TMidiTrack } | null {
+export function findNoteById(
+	song: TMidiSong | null,
+	noteId: number | null
+): { note: TMidiNote; track: TMidiTrack } | null {
 	if (song == null || noteId == null) {
 		return null;
 	}

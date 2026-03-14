@@ -209,8 +209,7 @@ function reapplyAuthoredStaticScene(
 		}
 
 		const nextBody =
-			rebuiltBody ??
-			createRebuiltStaticBody(world, rapier, position, rotation, rigidBody);
+			rebuiltBody ?? createRebuiltStaticBody(world, rapier, position, rotation, rigidBody);
 		const rebuiltColliders = syncRebuiltBody(
 			world,
 			rapier,

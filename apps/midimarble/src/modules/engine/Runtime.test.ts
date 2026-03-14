@@ -26,16 +26,80 @@ describe('Runtime scene edit lifecycle', () => {
 		expect(runtime._setSceneEditPending).toHaveBeenCalledWith(false);
 		expect(runtime._flushImmediateUpdate).toHaveBeenCalledOnce();
 	});
+
+	it('does not create a straight track while simulation sync is active', () => {
+		const runtime = createRuntimeHarness({
+			_app: {
+				r: {
+					simulationSync: {
+						mode: 'dirty',
+						requested: false,
+						resumeWhenReady: true
+					}
+				}
+			}
+		});
+
+		const entityId = Runtime.prototype.createStraightTrack.call(runtime);
+
+		expect(entityId).toBeNull();
+		expect(runtime._app.createStraightTrack).not.toHaveBeenCalled();
+		expect(runtime._app.updateResource).toHaveBeenCalledWith('simulationSync', {
+			mode: 'dirty',
+			requested: false,
+			resumeWhenReady: false
+		});
+		expect(runtime._flushImmediateUpdate).not.toHaveBeenCalled();
+	});
+
+	it('does not delete a straight track while simulation sync is active', () => {
+		const runtime = createRuntimeHarness({
+			_app: {
+				r: {
+					simulationSync: {
+						mode: 'dirty',
+						requested: false,
+						resumeWhenReady: true
+					}
+				}
+			}
+		});
+
+		Runtime.prototype.deleteStraightTrack.call(runtime, 41);
+
+		expect(runtime._app.deleteStraightTrack).not.toHaveBeenCalled();
+		expect(runtime._app.updateResource).toHaveBeenCalledWith('simulationSync', {
+			mode: 'dirty',
+			requested: false,
+			resumeWhenReady: false
+		});
+		expect(runtime._flushImmediateUpdate).not.toHaveBeenCalled();
+	});
 });
 
-function createRuntimeHarness(): any {
+function createRuntimeHarness(
+	overrides: {
+		_app?: Record<string, unknown>;
+		_setSceneEditPending?: ReturnType<typeof vi.fn>;
+		_flushImmediateUpdate?: ReturnType<typeof vi.fn>;
+	} = {}
+): any {
 	return {
 		_app: {
 			loadMidiFile: vi.fn().mockResolvedValue(undefined),
 			clearMidiSong: vi.fn(),
-			resetTransport: vi.fn()
+			resetTransport: vi.fn(),
+			createStraightTrack: vi.fn(() => 41),
+			deleteStraightTrack: vi.fn(() => true),
+			updateResource: vi.fn(),
+			r: {
+				simulationSync: {
+					mode: 'idle'
+				}
+			},
+			...overrides._app
 		},
-		_setSceneEditPending: vi.fn(),
-		_flushImmediateUpdate: vi.fn()
+		_setSceneEditPending: overrides._setSceneEditPending ?? vi.fn(),
+		_flushImmediateUpdate: overrides._flushImmediateUpdate ?? vi.fn()
 	};
 }

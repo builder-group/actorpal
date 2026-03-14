@@ -1,3 +1,4 @@
+import { Entity, With } from 'ecsify';
 import {
 	createMarbleBundle,
 	createNotePlatformBundle,
@@ -9,7 +10,7 @@ import { resetSceneManipulationState } from './lib/manipulation-state';
 import { findNotePlatformEntityId } from './lib/note-platform';
 import { updateMarblePhysicsAuthoring, updateNotePlatformAuthoring } from './lib/scene-authoring';
 import { setupSceneManipulation } from './lib/scene-manipulation';
-import { selectSceneEntity } from './lib/scene-selection';
+import { clearSceneEntitySelection, selectSceneEntity } from './lib/scene-selection';
 import {
 	syncAuthoredTransformsToLiveSystem,
 	syncExclusiveSelectionSystem,
@@ -23,7 +24,10 @@ import {
 } from './systems';
 import type { TSceneApp, TScenePlugin } from './types';
 
-const MARBLE_SPAWN_POSITION = { x: -7.25, y: 18.4, z: -25.2 };
+const STRAIGHT_TRACK_WALL_LANE_X = -7.25;
+const NEW_STRAIGHT_TRACK_Y_OFFSET = -3;
+const NEW_STRAIGHT_TRACK_Z_OFFSET = 8;
+const MARBLE_SPAWN_POSITION = { x: STRAIGHT_TRACK_WALL_LANE_X, y: 18.4, z: -25.2 };
 
 export function createScenePlugin(): TScenePlugin {
 	const sceneManipulationConfig = {
@@ -65,6 +69,40 @@ export function createScenePlugin(): TScenePlugin {
 				disposeScene?.();
 				disposeScene = null;
 			},
+			createStraightTrack(this: TSceneApp): number | null {
+				const spawnPosition = resolveStraightTrackSpawnPosition(this);
+				if (spawnPosition == null) {
+					return null;
+				}
+
+				const entityId = this.spawnBundle(
+					createStraightTrackBundle(this, {
+						position: spawnPosition,
+						rotation: { x: 0, y: 0, z: 0 }
+					})
+				);
+				selectSceneEntity(this, entityId);
+				this.markSimulationDirty();
+				this.requestSimulationSync();
+				return entityId;
+			},
+			deleteStraightTrack(this: TSceneApp, entityId: number): boolean {
+				if (!this.hasComponent(entityId, this.c.StraightTrackMixin)) {
+					return false;
+				}
+
+				if (
+					this.r.sceneSelection.entityId === entityId ||
+					this.r.sceneManipulationState.entityId === entityId
+				) {
+					clearSceneEntitySelection(this);
+				}
+
+				this.destroyEntity(entityId);
+				this.markSimulationDirty();
+				this.requestSimulationSync();
+				return true;
+			},
 			createOrSelectNotePlatform(this: TSceneApp, noteId: number): number | null {
 				const existingEntityId = findNotePlatformEntityId(this, noteId);
 				if (existingEntityId != null) {
@@ -102,21 +140,21 @@ export function createScenePlugin(): TScenePlugin {
 			app.spawnBundle(createPegboardBundle(app));
 			app.spawnBundle(
 				createStraightTrackBundle(app, {
-					position: { x: -7.25, y: 16, z: -18 },
+					position: { x: STRAIGHT_TRACK_WALL_LANE_X, y: 16, z: -18 },
 					rotation: { x: 0.28, y: 0, z: 0 },
 					length: 16
 				})
 			);
 			app.spawnBundle(
 				createStraightTrackBundle(app, {
-					position: { x: -7.25, y: 10.9, z: -1.4 },
+					position: { x: STRAIGHT_TRACK_WALL_LANE_X, y: 10.9, z: -1.4 },
 					rotation: { x: -0.1, y: 0, z: 0 },
 					length: 14
 				})
 			);
 			app.spawnBundle(
 				createStraightTrackBundle(app, {
-					position: { x: -7.25, y: 4.2, z: 12.8 },
+					position: { x: STRAIGHT_TRACK_WALL_LANE_X, y: 4.2, z: 12.8 },
 					rotation: { x: 0.22, y: 0, z: 0 },
 					length: 12
 				})
@@ -144,4 +182,32 @@ export function createScenePlugin(): TScenePlugin {
 			disposeScene = setupSceneManipulation(app);
 		}
 	};
+}
+
+function resolveStraightTrackSpawnPosition(
+	app: TSceneApp
+): { x: number; y: number; z: number } | null {
+	for (const [eid, position] of app.queryComponents(
+		[Entity, app.c.PositionMixin] as const,
+		With(app.c.MarbleTag)
+	)) {
+		const liveBody = app.r.rigidBodies.get(eid);
+		const translation = liveBody?.translation();
+		const basePosition =
+			translation == null
+				? position
+				: {
+						x: translation.x,
+						y: translation.y,
+						z: translation.z
+					};
+
+		return {
+			x: STRAIGHT_TRACK_WALL_LANE_X,
+			y: basePosition.y + NEW_STRAIGHT_TRACK_Y_OFFSET,
+			z: basePosition.z + NEW_STRAIGHT_TRACK_Z_OFFSET
+		};
+	}
+
+	return null;
 }

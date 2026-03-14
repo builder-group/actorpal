@@ -46,7 +46,15 @@ export function syncThreeObjectTransformsSystem(app: TRenderApp) {
 }
 
 export function cleanupOrphanedThreeObjectsSystem(app: TRenderApp) {
-	for (const eid of app.queryEntities(Removed(app.c.MeshMixin))) {
+	const staleEntityIds = new Set<number>(app.queryEntities(Removed(app.c.MeshMixin)));
+
+	for (const [eid] of app.r.sceneObjects) {
+		if (!app.hasComponent(eid, app.c.MeshMixin)) {
+			staleEntityIds.add(eid);
+		}
+	}
+
+	for (const eid of staleEntityIds) {
 		const object = app.r.sceneObjects.get(eid);
 		if (object == null) {
 			continue;

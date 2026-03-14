@@ -1,4 +1,5 @@
 import { Entity, With } from 'ecsify';
+import { Trash2 } from 'lucide-react';
 import React from 'react';
 import { useQueryComponents, useResource } from '@/modules/engine';
 import { findNoteById, findTrackById, tickToStep } from '@/modules/engine/plugins/midi';
@@ -9,18 +10,19 @@ import {
 	buildEmptyInspectorTarget,
 	buildNoteInspectorTarget,
 	buildNotePlatformInspectorTarget,
+	buildStraightTrackInspectorTarget,
 	type TInspectorTarget
 } from '../lib/inspector-target';
+import { canDeleteStraightTrack, getInspectorDeleteEntityId } from '../lib/scene-ui';
 
-export const SelectionInspector: React.FC<{
-	showTitle?: boolean;
-}> = ({ showTitle = true }) => {
+export const SelectionInspector: React.FC = () => {
 	const runtime = useEditorCx().runtime;
 	const app = runtime.app;
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
 	const sceneSelection = useResource(app, 'sceneSelection');
+	const simulationSync = useResource(app, 'simulationSync');
 	const liveStep = useResource(app, 'liveStep');
 	const bufferedStep = useResource(app, 'bufferedStep');
 	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
@@ -108,10 +110,7 @@ export const SelectionInspector: React.FC<{
 			const selectedTrackEntity = tracks.find(([eid]) => eid === sceneSelection.entityId);
 			if (selectedTrackEntity != null) {
 				const [eid, transform, linear, track] = selectedTrackEntity;
-				return {
-					kind: 'straight-track',
-					title: 'Straight Track',
-					entityId: eid,
+				return buildStraightTrackInspectorTarget(eid, {
 					position: transform.position,
 					rotation: transform.rotation,
 					length: linear.length,
@@ -119,7 +118,7 @@ export const SelectionInspector: React.FC<{
 					channelWidth: track.channelWidth,
 					channelDepth: track.channelDepth,
 					color: track.color
-				};
+				});
 			}
 
 			const selectedMarble = marbles.find(([eid]) => eid === sceneSelection.entityId);
@@ -160,14 +159,36 @@ export const SelectionInspector: React.FC<{
 		tracks,
 		trajectoryProjection.noteAnchorsById
 	]);
+	const deleteEntityId = React.useMemo(() => getInspectorDeleteEntityId(target), [target]);
+	const canDelete = React.useMemo(
+		() => deleteEntityId != null && canDeleteStraightTrack(simulationSync.mode),
+		[deleteEntityId, simulationSync.mode]
+	);
+	const handleDelete = React.useCallback(() => {
+		if (canDelete && deleteEntityId != null) {
+			runtime.deleteStraightTrack(deleteEntityId);
+		}
+	}, [canDelete, deleteEntityId, runtime]);
 
 	return (
 		<section>
-			{showTitle ? (
+			<div className="mb-4 flex items-center justify-between gap-3">
 				<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Inspector</h3>
-			) : null}
+				{deleteEntityId != null ? (
+					<button
+						type="button"
+						className="border-base-200 text-base-500 hover:bg-base-100 focus-visible:ring-base-300 disabled:border-base-200 disabled:text-base-400 inline-flex h-8 w-8 items-center justify-center rounded-md border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+						disabled={!canDelete}
+						aria-label="Delete straight track"
+						title="Delete straight track"
+						onClick={handleDelete}
+					>
+						<Trash2 className="h-4 w-4" />
+					</button>
+				) : null}
+			</div>
 
-			<div className={showTitle ? 'mt-3' : ''}>
+			<div>
 				{target.kind === 'empty' ? <EmptyState message={target.message} /> : null}
 				{target.kind === 'note' ? (
 					<NoteInspector
@@ -334,10 +355,15 @@ const MarbleInspector: React.FC<{
 	</div>
 );
 
-const InspectorTitle: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => (
+const InspectorTitle: React.FC<{
+	title: string;
+	subtitle: string;
+}> = ({ title, subtitle }) => (
 	<div className="mb-3">
-		<p className="text-base-900 text-sm font-medium">{title}</p>
-		<p className="text-base-500 mt-1 text-xs tracking-wide uppercase">{subtitle}</p>
+		<div className="min-w-0">
+			<p className="text-base-900 text-sm font-medium">{title}</p>
+			<p className="text-base-500 mt-1 text-xs tracking-wide uppercase">{subtitle}</p>
+		</div>
 	</div>
 );
 

@@ -40,11 +40,7 @@ const PianoKeyRow: React.FC<{ noteNumber: number; top: number }> = ({ noteNumber
 			style={{
 				top,
 				height: NOTE_ROW_HEIGHT,
-				background: blackKey
-					? '#f0f0f0'
-					: cNote
-						? '#f8f8f8'
-						: '#ffffff'
+				background: blackKey ? '#f0f0f0' : cNote ? '#f8f8f8' : '#ffffff'
 			}}
 		>
 			<div

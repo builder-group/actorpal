@@ -1,8 +1,9 @@
-import { FileUp, SlidersHorizontal, X } from 'lucide-react';
+import { FileUp, Plus, SlidersHorizontal, X } from 'lucide-react';
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
+import { canCreateStraightTrack } from '../lib/scene-ui';
 import { PreviewCameraInspector } from './PreviewCameraInspector';
 import { SelectionInspector } from './SelectionInspector';
 import { Timeline } from './Timeline';
@@ -97,12 +98,14 @@ const AudioSection: React.FC = () => {
 const InnerEditor: React.FC = () => {
 	const cx = useEditorCx();
 	const app = cx.runtime.app;
+	const [isAddMenuOpen, setIsAddMenuOpen] = React.useState(false);
 	const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 	const [isImporting, setIsImporting] = React.useState(false);
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const midiImportError = useResource(app, 'midiImportError');
 	const previewConfig = useResource(app, 'previewConfig');
+	const simulationSync = useResource(app, 'simulationSync');
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 	const selectedTrack = React.useMemo(
 		() => midiSong?.tracks.find((track) => track.id === selectedTrackId) ?? null,
@@ -110,6 +113,10 @@ const InnerEditor: React.FC = () => {
 	);
 	const songLabel = midiSong?.name ?? 'No MIDI';
 	const needsMidiStart = midiSong == null || selectedTrack == null;
+	const canAddStraightTrack = React.useMemo(
+		() => canCreateStraightTrack(previewConfig.enabled, simulationSync.mode),
+		[previewConfig.enabled, simulationSync.mode]
+	);
 
 	const openMidiPicker = React.useCallback(() => {
 		if (!isImporting) {
@@ -134,6 +141,21 @@ const InnerEditor: React.FC = () => {
 		},
 		[cx.runtime]
 	);
+
+	const handleCreateStraightTrack = React.useCallback(() => {
+		if (!canAddStraightTrack) {
+			return;
+		}
+
+		setIsAddMenuOpen(false);
+		void cx.runtime.createStraightTrack();
+	}, [canAddStraightTrack, cx.runtime]);
+
+	React.useEffect(() => {
+		if (!canAddStraightTrack) {
+			setIsAddMenuOpen(false);
+		}
+	}, [canAddStraightTrack]);
 
 	return (
 		<main className="bg-base-100 h-screen overflow-hidden">
@@ -195,6 +217,41 @@ const InnerEditor: React.FC = () => {
 													<span className="text-base-500 ml-2">{selectedTrack.name}</span>
 												) : null}
 											</div>
+											<div className="relative">
+												<button
+													type="button"
+													className="focus-visible:ring-base-300 border-base-200 bg-base-0/90 text-base-600 hover:bg-base-100 disabled:border-base-200 disabled:text-base-400 pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+													disabled={!canAddStraightTrack}
+													aria-expanded={isAddMenuOpen}
+													aria-haspopup="menu"
+													aria-label="Add scene element"
+													title="Add Scene Element"
+													onClick={() => {
+														if (!canAddStraightTrack) {
+															return;
+														}
+
+														setIsSettingsOpen(false);
+														setIsAddMenuOpen((current) => !current);
+													}}
+												>
+													<Plus className="h-4 w-4" />
+												</button>
+
+												{isAddMenuOpen ? (
+													<div className="bg-base-0 border-base-200 pointer-events-auto absolute top-full left-0 mt-2 min-w-44 rounded-lg border p-1.5 shadow-xl">
+														<button
+															type="button"
+															role="menuitem"
+															className="text-base-800 hover:bg-base-100 focus-visible:ring-base-300 flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-sm transition focus-visible:ring-2 focus-visible:outline-none"
+															onClick={handleCreateStraightTrack}
+														>
+															<Plus className="text-base-500 h-4 w-4" />
+															<span>Straight Track</span>
+														</button>
+													</div>
+												) : null}
+											</div>
 											<button
 												type="button"
 												className={`focus-visible:ring-base-300 pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition focus-visible:ring-2 focus-visible:outline-none ${
@@ -205,7 +262,10 @@ const InnerEditor: React.FC = () => {
 												aria-pressed={isSettingsOpen}
 												aria-label={isSettingsOpen ? 'Close settings' : 'Open settings'}
 												title={isSettingsOpen ? 'Close settings' : 'Open settings'}
-												onClick={() => setIsSettingsOpen((current) => !current)}
+												onClick={() => {
+													setIsAddMenuOpen(false);
+													setIsSettingsOpen((current) => !current);
+												}}
 											>
 												<SlidersHorizontal className="h-4 w-4" />
 											</button>
@@ -241,15 +301,8 @@ const InnerEditor: React.FC = () => {
 
 							<Panel defaultSize="320px" minSize="200px" maxSize="500px">
 								<aside className="bg-base-50 flex h-full flex-col overflow-hidden p-4">
-									<h2 className="text-base-900 mb-4 text-xs font-semibold tracking-wide uppercase">
-										Inspector
-									</h2>
 									<div className="min-h-0 flex-1 overflow-y-auto">
-										{previewConfig.enabled ? (
-											<PreviewCameraInspector showTitle={false} />
-										) : (
-											<SelectionInspector showTitle={false} />
-										)}
+										{previewConfig.enabled ? <PreviewCameraInspector /> : <SelectionInspector />}
 									</div>
 								</aside>
 							</Panel>

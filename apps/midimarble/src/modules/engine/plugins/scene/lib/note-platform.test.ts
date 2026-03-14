@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createNotePlatformColliders } from '../bundles/note-platform';
-import { DEFAULT_TRACK_WIDTH } from './track-shape';
 import { getPlacedNoteIds, resolveNotePlatformTransform } from './note-platform';
+import { DEFAULT_TRACK_WIDTH } from './track-shape';
 
 describe('note platform helpers', () => {
 	it('derives the platform center from the note anchor and platform normal', () => {

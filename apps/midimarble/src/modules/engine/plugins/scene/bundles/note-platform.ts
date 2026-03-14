@@ -1,10 +1,7 @@
 import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import type { TPhysicsColliderDescriptor } from '../../physics';
-import {
-	getDefaultNotePlatformColor,
-	resolveNotePlatformTransform
-} from '../lib/note-platform';
+import { getDefaultNotePlatformColor, resolveNotePlatformTransform } from '../lib/note-platform';
 import {
 	createTrackColliders,
 	createTrackGeometry,

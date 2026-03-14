@@ -2,21 +2,17 @@ import React from 'react';
 import { useResource } from '@/modules/engine';
 import { useEditorCx } from '../EditorCx';
 
-export const PreviewCameraInspector: React.FC<{
-	showTitle?: boolean;
-}> = ({ showTitle = true }) => {
+export const PreviewCameraInspector: React.FC = () => {
 	const runtime = useEditorCx().runtime;
 	const config = useResource(runtime.app, 'previewConfig');
 
 	return (
 		<section>
-			{showTitle ? (
-				<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">
-					Preview Camera
-				</h3>
-			) : null}
+			<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">
+				Preview Camera
+			</h3>
 
-			<div className={showTitle ? 'mt-3' : ''}>
+			<div className="mt-3">
 				<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
 					<div className="mb-3">
 						<p className="text-base-900 text-sm font-semibold">Preview Camera</p>

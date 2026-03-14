@@ -142,6 +142,32 @@ export function buildNotePlatformInspectorTarget(
 	};
 }
 
+export function buildStraightTrackInspectorTarget(
+	entityId: number,
+	track: {
+		position: TVec3;
+		rotation: TVec3;
+		length: number;
+		width: number;
+		channelWidth: number;
+		channelDepth: number;
+		color: string;
+	}
+): TStraightTrackInspectorTarget {
+	return {
+		kind: 'straight-track',
+		title: 'Straight Track',
+		entityId,
+		position: track.position,
+		rotation: track.rotation,
+		length: track.length,
+		width: track.width,
+		channelWidth: track.channelWidth,
+		channelDepth: track.channelDepth,
+		color: track.color
+	};
+}
+
 export function buildEmptyInspectorTarget(): TEmptyInspectorTarget {
 	return {
 		kind: 'empty',

@@ -52,7 +52,10 @@ export function getPlacedNoteIds(app: TSceneApp): Set<number> {
 }
 
 export function getDefaultNotePlatformColor(noteId: number): string {
-	return NOTE_PLATFORM_COLORS[Math.abs(noteId) % NOTE_PLATFORM_COLORS.length] ?? NOTE_PLATFORM_DEFAULT_COLOR;
+	return (
+		NOTE_PLATFORM_COLORS[Math.abs(noteId) % NOTE_PLATFORM_COLORS.length] ??
+		NOTE_PLATFORM_DEFAULT_COLOR
+	);
 }
 
 export function getNotePlatform(

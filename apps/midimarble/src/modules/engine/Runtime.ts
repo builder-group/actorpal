@@ -127,6 +127,32 @@ export class Runtime {
 		return entityId;
 	}
 
+	public createStraightTrack(): number | null {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return null;
+		}
+
+		const entityId = this._app.createStraightTrack();
+		if (entityId == null) {
+			return null;
+		}
+
+		this._flushImmediateUpdate();
+		return entityId;
+	}
+
+	public deleteStraightTrack(entityId: number): void {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return;
+		}
+
+		if (!this._app.deleteStraightTrack(entityId)) {
+			return;
+		}
+
+		this._flushImmediateUpdate();
+	}
+
 	public updateNotePlatform(
 		entityId: number,
 		patch: Partial<TRuntimeApp['c']['NotePlatformMixin'][number]>

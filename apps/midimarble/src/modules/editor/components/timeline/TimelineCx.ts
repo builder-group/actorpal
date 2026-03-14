@@ -46,7 +46,10 @@ export class TimelineCx {
 		return this.$pixelsPerBeat.get() / DEFAULT_PIXELS_PER_BEAT;
 	}
 
-	public getTickAtClientX(song: Pick<TMidiSong, 'totalTicks' | 'ticksPerBeat'>, clientX: number): number {
+	public getTickAtClientX(
+		song: Pick<TMidiSong, 'totalTicks' | 'ticksPerBeat'>,
+		clientX: number
+	): number {
 		const scrollContainer = this.scrollContainerRef.current;
 		const pixelsPerTick = this.getPixelsPerTick(song);
 		if (scrollContainer == null || pixelsPerTick <= 0) {

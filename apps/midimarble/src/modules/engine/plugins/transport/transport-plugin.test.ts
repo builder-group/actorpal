@@ -81,10 +81,7 @@ function createTransportApp() {
 	});
 }
 
-function setTestSong(
-	app: ReturnType<typeof createTransportApp>,
-	totalTicks = 960
-): void {
+function setTestSong(app: ReturnType<typeof createTransportApp>, totalTicks = 960): void {
 	app.updateResource('midiSong', {
 		name: 'Test Song',
 		bpm: 120,

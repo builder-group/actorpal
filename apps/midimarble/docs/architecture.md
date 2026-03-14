@@ -20,11 +20,12 @@ The current architecture is intentionally optimized for the narrow prototype:
 
 ## Plugin Graph
 
-The engine now uses seven plugins:
+The engine now uses eight plugins:
 
 - `Core`
 - `Midi`
 - `Transport`
+- `Audio`
 - `Physics`
 - `Render`
 - `Trajectory`
@@ -35,10 +36,11 @@ Dependency graph:
 - `Core` has no app-specific dependencies
 - `Midi` depends on `Default` only
 - `Transport` depends on `Midi`
+- `Audio` depends on `Midi` and `Transport`
 - `Physics` depends on `Core`, `Midi`, and `Transport`
 - `Render` depends on `Core`
-- `Trajectory` depends on `Core`, `Physics`, and `Render`
-- `Scene` depends on `Core`, `Physics`, `Render`, and `Trajectory`
+- `Trajectory` depends on `Core`, `Midi`, `Transport`, `Audio`, `Physics`, and `Render`
+- `Scene` depends on `Core`, `Midi`, `Physics`, `Render`, and `Trajectory`
 
 This graph is intentionally one-way and acyclic.
 
@@ -67,14 +69,15 @@ That is intentional:
 - the timeline does not need its own ECS plugin for the current scope
 - a small React-side `TimelineCx` may own zoom, scroll, and viewport layout only
 
-Playback state now lives across `Midi`, `Transport`, and `Physics`.
+Playback state now lives across `Midi`, `Transport`, `Audio`, and `Physics`.
 
 That split is intentional:
 
 - `Midi` owns the imported song and first selected track
 - `Transport` owns play/pause and the current playhead tick
+- `Audio` owns sound output for the selected track
 - `Physics` owns live steps, buffered steps, checkpoint restore, world replacement, and rebuild state
-- the timeline UI reads all three, but still stays in React
+- the timeline UI reads the relevant state but still stays in React
 
 Midimarble uses this generic schedule:
 
@@ -131,6 +134,7 @@ Current examples:
 - manipulation handles
 
 This state lives in `Scene` because the current editor interaction is entirely scene-specific.
+Note selection remains in `Midi`, and `Scene` clears its own entity selection whenever note selection becomes active.
 
 ## Plugin Ownership
 
@@ -200,6 +204,24 @@ Important boundary:
 
 - `Transport` does not own buffering or world restore
 - it follows `Midi` for song timing, and `Physics` follows it for simulation state
+
+### `Audio`
+
+Owns only sound output.
+
+Responsibilities:
+
+- `audioState`
+- `audioConfig`
+- simple built-in synthesis for the selected track
+- note previews on step controls and note clicks
+- transport-driven note playback while running
+
+Important boundary:
+
+- `Audio` does not own playhead state
+- it follows `Midi` and `Transport`
+- it intentionally does not implement a heavy scheduler or SoundFont pipeline yet
 
 ### `Render`
 

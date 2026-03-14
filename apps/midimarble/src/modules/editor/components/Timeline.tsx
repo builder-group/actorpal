@@ -4,11 +4,11 @@ import { useResource } from '@/modules/engine';
 import { clampMidiTick, findTrackById, stepToTick } from '@/modules/engine/plugins/midi';
 import { useEditorCx } from '../EditorCx';
 import {
+	buildNoteRows,
+	getNoteName,
 	MIN_ROLL_HEIGHT,
 	NOTE_ROW_HEIGHT,
-	ZOOM_STEP_FACTOR,
-	buildNoteRows,
-	getNoteName
+	ZOOM_STEP_FACTOR
 } from '../lib/timeline-layout';
 import { TimelineCx, useTimelineState } from './timeline/TimelineCx';
 import { TimelineHeader } from './timeline/TimelineHeader';
@@ -75,7 +75,8 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 			? null
 			: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
 	const contentHeight = Math.max(noteRows.length * NOTE_ROW_HEIGHT, MIN_ROLL_HEIGHT);
-	const timelineWidth = midiSong == null ? Math.max(containerWidth, 1) : timelineCx.getTimelineWidth(midiSong);
+	const timelineWidth =
+		midiSong == null ? Math.max(containerWidth, 1) : timelineCx.getTimelineWidth(midiSong);
 	const zoomLabel = `${timelineCx.getZoomRatio().toFixed(2)}x`;
 
 	const [isDragging, setIsDragging] = React.useState(false);

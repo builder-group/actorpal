@@ -17,7 +17,7 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 	return {
 		// Trajectory is a separate authoring surface driven by physics state.
 		name: 'Trajectory',
-		deps: ['Default', 'Core', 'Midi', 'Transport', 'Physics', 'Render'],
+		deps: ['Default', 'Core', 'Midi', 'Transport', 'Audio', 'Physics', 'Render'],
 		components: {
 			TrajectorySourceTag: []
 		},

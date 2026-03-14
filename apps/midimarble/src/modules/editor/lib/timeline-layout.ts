@@ -23,7 +23,10 @@ export function getPixelsPerTick(
 	return pixelsPerBeat / Math.max(1, song.ticksPerBeat);
 }
 
-export function buildBeatTicks(totalTicks: number, ticksPerBeat: number): {
+export function buildBeatTicks(
+	totalTicks: number,
+	ticksPerBeat: number
+): {
 	majorBeats: number[];
 	minorBeats: number[];
 } {
@@ -42,9 +45,10 @@ export function buildBeatTicks(totalTicks: number, ticksPerBeat: number): {
 							: 1;
 
 	return {
-		majorBeats: Array.from({ length: Math.ceil(totalBeats / beatStride) + 1 }, (_, index) => index * beatStride).filter(
-			(beat) => beat * ticksPerBeat <= totalTicks
-		),
+		majorBeats: Array.from(
+			{ length: Math.ceil(totalBeats / beatStride) + 1 },
+			(_, index) => index * beatStride
+		).filter((beat) => beat * ticksPerBeat <= totalTicks),
 		minorBeats:
 			beatStride === 1
 				? Array.from({ length: totalBeats }, (_, index) => index + 0.5).filter(

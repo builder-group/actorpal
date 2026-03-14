@@ -2,21 +2,21 @@ import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type { TEngineSystemSet } from '../../types';
 
 export type TMidiPlugin = TPlugin<
-		{
-			name: 'Midi';
-			resources: {
-				midiSong: TMidiSong | null;
-				selectedTrackId: number | null;
-				selectedNoteId: number | null;
-				midiImportError: string | null;
-			};
-			appExtensions: {
-				loadMidiFile(file: File): Promise<void>;
-				clearMidiSong(): void;
-				selectNote(noteId: number | null): void;
-			};
-			systemSets: TEngineSystemSet;
-		},
+	{
+		name: 'Midi';
+		resources: {
+			midiSong: TMidiSong | null;
+			selectedTrackId: number | null;
+			selectedNoteId: number | null;
+			midiImportError: string | null;
+		};
+		appExtensions: {
+			loadMidiFile(file: File): Promise<void>;
+			clearMidiSong(): void;
+			selectNote(noteId: number | null): void;
+		};
+		systemSets: TEngineSystemSet;
+	},
 	[TDefaultPlugin]
 >;
 

@@ -2,6 +2,7 @@ import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type * as THREE from 'three';
 import type { TEngineSystemSet, TVec3 } from '../../types';
 import type { TCorePlugin } from '../core/types';
+import type { TMidiPlugin } from '../midi';
 import type { TPhysicsPlugin } from '../physics/types';
 import type { TRenderPlugin } from '../render/types';
 import type { TTrajectoryPlugin } from '../trajectory/types';
@@ -9,13 +10,13 @@ import type { TTrajectoryPlugin } from '../trajectory/types';
 // MARK: - Plugin
 
 export type TScenePlugin = TPlugin<
-		{
-			name: 'Scene';
-			components: {
-				MarbleTag: TCMarbleTag[];
-				AuthoredTransformMixin: TCAuthoredTransformMixin[];
-				StraightTrackMixin: TCStraightTrackMixin[];
-				LinearElementMixin: TCLinearElementMixin[];
+	{
+		name: 'Scene';
+		components: {
+			MarbleTag: TCMarbleTag[];
+			AuthoredTransformMixin: TCAuthoredTransformMixin[];
+			StraightTrackMixin: TCStraightTrackMixin[];
+			LinearElementMixin: TCLinearElementMixin[];
 		};
 		resources: {
 			sceneSelection: TSceneSelection;
@@ -28,7 +29,7 @@ export type TScenePlugin = TPlugin<
 		};
 		systemSets: TEngineSystemSet;
 	},
-	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin]
+	[TDefaultPlugin, TCorePlugin, TMidiPlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin]
 >;
 
 export type TSceneApp = TApp<
@@ -36,6 +37,7 @@ export type TSceneApp = TApp<
 		[
 			TDefaultPlugin,
 			TCorePlugin,
+			TMidiPlugin,
 			TPhysicsPlugin,
 			TRenderPlugin,
 			TTrajectoryPlugin,

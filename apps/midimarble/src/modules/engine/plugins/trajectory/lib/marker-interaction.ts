@@ -31,7 +31,7 @@ export function setupTrajectoryMarkerInteraction(app: TTrajectoryApp): () => voi
 export function applyTrajectoryMarkerSelection(
 	app: Pick<
 		TTrajectoryApp,
-		'pause' | 'seekToTick' | 'selectNote' | 'update' | 'updateResource'
+		'pause' | 'seekToTick' | 'selectNote' | 'previewNotesAtTick' | 'update' | 'updateResource'
 	> & {
 		r: Pick<TTrajectoryApp['r'], 'simulationSync'>;
 	},
@@ -49,6 +49,7 @@ export function applyTrajectoryMarkerSelection(
 	app.seekToTick(tick);
 	app.selectNote(noteId);
 	app.update(0);
+	void app.previewNotesAtTick(tick);
 }
 
 function pickTrajectoryMarker(
@@ -71,7 +72,10 @@ function pickTrajectoryMarker(
 	}
 
 	raycaster.setFromCamera(pointer, app.r.viewport.camera);
-	const intersections = raycaster.intersectObjects(app.r.trajectoryState.noteMarkerGroup.children, true);
+	const intersections = raycaster.intersectObjects(
+		app.r.trajectoryState.noteMarkerGroup.children,
+		true
+	);
 	for (const intersection of intersections) {
 		let current: THREE.Object3D | null = intersection.object;
 		while (current != null) {

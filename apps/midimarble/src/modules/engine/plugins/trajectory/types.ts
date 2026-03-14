@@ -1,6 +1,7 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type * as THREE from 'three';
 import type { TEngineSystemSet } from '../../types';
+import type { TAudioPlugin } from '../audio';
 import type { TCorePlugin } from '../core';
 import type { TMidiPlugin } from '../midi';
 import type { TPhysicsPlugin } from '../physics';
@@ -10,21 +11,29 @@ import type { TTransportPlugin } from '../transport';
 // MARK: - Plugin
 
 export type TTrajectoryPlugin = TPlugin<
-		{
-			name: 'Trajectory';
-			components: {
-				TrajectorySourceTag: TCTrajectorySourceTag[];
-			};
-			resources: {
-				trajectoryConfig: TTrajectoryConfig;
-				trajectoryState: TTrajectoryState;
-			};
-			appExtensions: {
-				disposeTrajectory(): void;
-			};
-			systemSets: TEngineSystemSet;
-		},
-	[TDefaultPlugin, TCorePlugin, TMidiPlugin, TTransportPlugin, TPhysicsPlugin, TRenderPlugin]
+	{
+		name: 'Trajectory';
+		components: {
+			TrajectorySourceTag: TCTrajectorySourceTag[];
+		};
+		resources: {
+			trajectoryConfig: TTrajectoryConfig;
+			trajectoryState: TTrajectoryState;
+		};
+		appExtensions: {
+			disposeTrajectory(): void;
+		};
+		systemSets: TEngineSystemSet;
+	},
+	[
+		TDefaultPlugin,
+		TCorePlugin,
+		TMidiPlugin,
+		TTransportPlugin,
+		TAudioPlugin,
+		TPhysicsPlugin,
+		TRenderPlugin
+	]
 >;
 
 export type TTrajectoryApp = TApp<
@@ -34,6 +43,7 @@ export type TTrajectoryApp = TApp<
 			TCorePlugin,
 			TMidiPlugin,
 			TTransportPlugin,
+			TAudioPlugin,
 			TPhysicsPlugin,
 			TRenderPlugin,
 			TTrajectoryPlugin

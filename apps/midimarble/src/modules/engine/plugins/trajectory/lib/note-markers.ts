@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { findTrackById, tickToStep, type TMidiNote, type TMidiSong } from '../../midi';
 import type { TVec3 } from '../../../types';
+import { findTrackById, tickToStep, type TMidiNote, type TMidiSong } from '../../midi';
 
 const MARKER_SCALE = 0.22;
 const SELECTED_MARKER_SCALE = 0.3;

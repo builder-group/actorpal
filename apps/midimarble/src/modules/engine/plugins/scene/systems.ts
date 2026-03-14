@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { createStraightTrackColliders, createStraightTrackGeometry } from './bundles';
 import { getLinearElement, getLinearElementHandlePositions } from './lib/linear-element';
 import { updateHandleAppearance } from './lib/manipulation-handles';
+import { clearSceneEntitySelection } from './lib/scene-selection';
 import { sameVec3 } from './lib/vec3';
 import type { TSceneApp } from './types';
 
@@ -73,7 +74,6 @@ export function syncSceneManipulationHandlesSystem(app: TSceneApp) {
 
 	const linearElement = getLinearElement(app, selection.entityId);
 	if (linearElement == null) {
-		app.updateResource('sceneSelection', { entityId: null });
 		handles.start.visible = false;
 		handles.end.visible = false;
 		return;
@@ -107,4 +107,12 @@ export function syncSceneManipulationHandleAppearanceSystem(app: TSceneApp) {
 		app.r.sceneManipulationConfig.handleRadius,
 		app.r.sceneManipulationConfig.handleColor
 	);
+}
+
+export function syncExclusiveSelectionSystem(app: TSceneApp) {
+	if (app.r.selectedNoteId == null || app.r.sceneSelection.entityId == null) {
+		return;
+	}
+
+	clearSceneEntitySelection(app);
 }

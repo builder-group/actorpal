@@ -1,4 +1,5 @@
 import { Entity, With } from 'ecsify';
+import { updateTransport } from '../transport';
 import {
 	replaceLiveWorld,
 	restoreWorldAtStep,
@@ -6,6 +7,7 @@ import {
 	syncPreloadWorldToStep
 } from './lib/simulation';
 import { startSimulationSync } from './lib/simulation-sync';
+import { getTransportTargetStep } from './lib/transport-step';
 import {
 	createColliderDesc,
 	createQuaternionFromEuler,
@@ -14,8 +16,6 @@ import {
 	quaternionToEuler,
 	syncBodyTransform
 } from './lib/world';
-import { updateTransport } from '../transport';
-import { getTransportTargetStep } from './lib/transport-step';
 import type { TPhysicsApp } from './types';
 
 export function spawnRigidBodiesSystem(app: TPhysicsApp) {

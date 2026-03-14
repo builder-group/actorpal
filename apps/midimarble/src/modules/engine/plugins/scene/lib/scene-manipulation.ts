@@ -1,3 +1,4 @@
+import { With } from 'ecsify';
 import * as THREE from 'three';
 import type { TVec3 } from '../../../types';
 import type { TSceneApp } from '../types';
@@ -12,6 +13,7 @@ import {
 } from './manipulation-handles';
 import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
 import { resetSceneManipulationState } from './manipulation-state';
+import { clearSceneEntitySelection, selectSceneEntity } from './scene-selection';
 import { sameVec3 } from './vec3';
 
 const dragPlaneNormal = new THREE.Vector3(1, 0, 0);
@@ -50,17 +52,24 @@ function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 	}
 
 	const pickedHandle = pickHandle(app, raycaster, pointer);
-	const pickedElement = pickLinearElement(app, raycaster, pointer);
+	const pickedElement = pickSceneElement(app, raycaster, pointer);
 	const pickedTarget = pickedHandle ?? pickedElement;
 
 	if (pickedTarget == null) {
-		app.updateResource('sceneSelection', { entityId: null });
+		app.selectNote(null);
+		clearSceneEntitySelection(app);
+		return;
+	}
+
+	event.preventDefault();
+
+	if (pickedTarget.target === 'marble') {
+		selectSceneEntity(app, pickedTarget.entityId);
 		app.updateResource('sceneManipulationState', resetSceneManipulationState());
 		app.r.viewport.setControlsEnabled(true);
 		return;
 	}
 
-	event.preventDefault();
 	app.r.viewport.setControlsEnabled(false);
 
 	const linearElement = getLinearElement(app, pickedTarget.entityId);
@@ -70,9 +79,7 @@ function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 		return;
 	}
 
-	app.updateResource('sceneSelection', {
-		entityId: pickedTarget.entityId
-	});
+	selectSceneEntity(app, pickedTarget.entityId);
 
 	const planePoint = raycastScenePlane(app, raycaster, pointer, linearElement.transform.position.x);
 	if (planePoint == null) {
@@ -248,13 +255,19 @@ function pickHandle(
 	};
 }
 
-function pickLinearElement(
+function pickSceneElement(
 	app: TSceneApp,
 	raycaster: THREE.Raycaster,
 	pointer: THREE.Vector2
-): { entityId: number; target: 'element' } | null {
+): { entityId: number; target: 'element' | 'marble' } | null {
 	const objectMap = new Map<THREE.Object3D, number>();
 	for (const eid of getLinearElementEntityIds(app)) {
+		const object = app.r.sceneObjects.get(eid);
+		if (object != null) {
+			objectMap.set(object, eid);
+		}
+	}
+	for (const eid of app.queryEntities(With(app.c.MarbleTag))) {
 		const object = app.r.sceneObjects.get(eid);
 		if (object != null) {
 			objectMap.set(object, eid);
@@ -272,7 +285,9 @@ function pickLinearElement(
 		while (current != null) {
 			const entityId = objectMap.get(current);
 			if (entityId != null) {
-				return { entityId, target: 'element' };
+				return app.hasComponent(entityId, app.c.MarbleTag)
+					? { entityId, target: 'marble' }
+					: { entityId, target: 'element' };
 			}
 			current = current.parent;
 		}

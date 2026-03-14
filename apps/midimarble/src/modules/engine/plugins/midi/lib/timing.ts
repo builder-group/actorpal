@@ -16,10 +16,7 @@ export function getTicksPerSecond(song: Pick<TMidiSong, 'ticksPerBeat' | 'bpm'>)
 	return (song.ticksPerBeat * song.bpm) / 60;
 }
 
-export function tickToSeconds(
-	tick: number,
-	song: Pick<TMidiSong, 'ticksPerBeat' | 'bpm'>
-): number {
+export function tickToSeconds(tick: number, song: Pick<TMidiSong, 'ticksPerBeat' | 'bpm'>): number {
 	const ticksPerSecond = getTicksPerSecond(song);
 	if (ticksPerSecond <= 0) {
 		return 0;

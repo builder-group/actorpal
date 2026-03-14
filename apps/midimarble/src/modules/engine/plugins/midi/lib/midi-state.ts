@@ -1,6 +1,6 @@
-import { findFirstTrackWithNotes } from './timing';
-import { parseMidi } from './midi-parser';
 import type { TMidiApp } from '../types';
+import { parseMidi } from './midi-parser';
+import { findFirstTrackWithNotes } from './timing';
 
 type TMidiStateAccess = {
 	r?: Pick<TMidiApp['r'], 'midiSong'>;
@@ -34,10 +34,7 @@ export function clearMidiSongState(app: TMidiStateAccess): void {
 	app.updateResource('midiImportError', null);
 }
 
-export function selectMidiNote(
-	app: TMidiStateAccess,
-	noteId: number | null
-): void {
+export function selectMidiNote(app: TMidiStateAccess, noteId: number | null): void {
 	if (noteId == null) {
 		app.updateResource('selectedNoteId', null);
 		return;

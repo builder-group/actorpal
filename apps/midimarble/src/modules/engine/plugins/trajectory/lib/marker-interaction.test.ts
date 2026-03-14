@@ -6,6 +6,7 @@ describe('applyTrajectoryMarkerSelection', () => {
 		const pause = vi.fn();
 		const seekToTick = vi.fn();
 		const selectNote = vi.fn();
+		const previewNotesAtTick = vi.fn();
 		const update = vi.fn();
 		const updateResource = vi.fn();
 
@@ -17,6 +18,7 @@ describe('applyTrajectoryMarkerSelection', () => {
 				pause,
 				seekToTick,
 				selectNote,
+				previewNotesAtTick,
 				update,
 				updateResource
 			} as never,
@@ -29,12 +31,14 @@ describe('applyTrajectoryMarkerSelection', () => {
 		expect(seekToTick).toHaveBeenCalledWith(960);
 		expect(selectNote).toHaveBeenCalledWith(4);
 		expect(update).toHaveBeenCalledWith(0);
+		expect(previewNotesAtTick).toHaveBeenCalledWith(960);
 	});
 
 	it('clears resumeWhenReady before selecting while sync is active', () => {
 		const pause = vi.fn();
 		const seekToTick = vi.fn();
 		const selectNote = vi.fn();
+		const previewNotesAtTick = vi.fn();
 		const update = vi.fn();
 		const updateResource = vi.fn();
 		const world = {} as never;
@@ -55,6 +59,7 @@ describe('applyTrajectoryMarkerSelection', () => {
 				pause,
 				seekToTick,
 				selectNote,
+				previewNotesAtTick,
 				update,
 				updateResource
 			} as never,
@@ -74,5 +79,6 @@ describe('applyTrajectoryMarkerSelection', () => {
 		expect(seekToTick).toHaveBeenCalledWith(480);
 		expect(selectNote).toHaveBeenCalledWith(7);
 		expect(update).toHaveBeenCalledWith(0);
+		expect(previewNotesAtTick).toHaveBeenCalledWith(480);
 	});
 });

@@ -41,11 +41,13 @@ The current editor now supports:
 - importing one MIDI file
 - auto-selecting the first parsed track with notes
 - a shared tick-first transport playhead
+- simple built-in sound playback for the selected track
 - a timeline whose length comes from the imported song
 - tick navigation with reset, back one tick, play/pause, and forward one tick
 - note markers rendered on the marble trajectory for the selected track
 - clicking a note marker to pause if needed, seek, and select that note
 - clicking a timeline note to select the same note and jump there
+- a read-only inspector for the current selected note, straight track, or marble
 
 This slice intentionally stops before note-bound platform creation.
 
@@ -70,6 +72,8 @@ The user should never feel like there is:
 There is one playhead.
 
 Internally that playhead may map between simulation step and MIDI tick, but the UX should present it as one coherent position.
+
+That same playhead should also drive what the user hears.
 
 ### Trajectory as authoring UI
 
@@ -162,6 +166,12 @@ Selecting a note from either surface should select the same note everywhere:
 - click a timeline note: the 3D marker becomes selected
 - click a 3D marker: the matching timeline note becomes selected
 - the shared selection should still point at one note, not two parallel UI-local selections
+
+The right sidebar should also follow that same current target:
+
+- selected note
+- selected straight track
+- selected marble
 
 ## Trajectory And Marker UX
 

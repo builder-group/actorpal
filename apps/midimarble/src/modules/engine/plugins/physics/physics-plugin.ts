@@ -5,10 +5,10 @@ import {
 	beginSimulationSyncSystem,
 	cleanupOrphanedPhysicsBodiesSystem,
 	preloadPhysicsWorldSystem,
-	syncLiveWorldToTransportSystem,
 	spawnRigidBodiesSystem,
 	stepPhysicsWorldSystem,
 	syncDynamicBodiesToComponentsSystem,
+	syncLiveWorldToTransportSystem,
 	syncNonDynamicBodiesFromComponentsSystem
 } from './systems';
 import type { TPhysicsApp, TPhysicsPlugin } from './types';

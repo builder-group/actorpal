@@ -1,5 +1,5 @@
-import type { TPhysicsApp } from '../types';
 import { updateTransport } from '../../transport';
+import type { TPhysicsApp } from '../types';
 import { getTransportTargetStep } from './transport-step';
 import { createEditedWorldBase, ensureSimulationBaseInitialized } from './world';
 
@@ -8,9 +8,7 @@ export function markSimulationDirty(app: TPhysicsApp): void {
 
 	const currentSync = app.r.simulationSync;
 	const resumeWhenReady =
-		currentSync.mode === 'idle'
-			? app.r.transport.mode === 'running'
-			: currentSync.resumeWhenReady;
+		currentSync.mode === 'idle' ? app.r.transport.mode === 'running' : currentSync.resumeWhenReady;
 
 	if (currentSync.mode === 'rebuilding') {
 		currentSync.world.free();

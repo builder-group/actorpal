@@ -5,10 +5,7 @@ import {
 	setTrajectoryLinePoints,
 	syncTrajectoryLineColors
 } from './lib/line-state';
-import {
-	buildTrajectoryMarkerDescriptors,
-	syncTrajectoryMarkers
-} from './lib/note-markers';
+import { buildTrajectoryMarkerDescriptors, syncTrajectoryMarkers } from './lib/note-markers';
 import { shouldRefreshTrajectory } from './lib/refresh';
 import { rebuildTrajectorySamples } from './lib/trajectory-samples';
 import type { TTrajectoryApp } from './types';

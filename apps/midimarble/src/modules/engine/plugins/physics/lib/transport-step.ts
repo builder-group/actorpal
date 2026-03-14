@@ -10,9 +10,5 @@ export function getTransportTargetStep(app: TTransportStepAccess): number {
 		return 0;
 	}
 
-	return tickToStep(
-		app.r.transport.playheadTick,
-		app.r.midiSong,
-		app.r.fixedTimeStepSeconds
-	);
+	return tickToStep(app.r.transport.playheadTick, app.r.midiSong, app.r.fixedTimeStepSeconds);
 }

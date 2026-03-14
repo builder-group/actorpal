@@ -2,7 +2,7 @@ import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
-import { useMarble } from '../hooks';
+import { SelectionInspector } from './SelectionInspector';
 import { Timeline } from './Timeline';
 
 export const Editor: React.FC = () => {
@@ -10,20 +10,6 @@ export const Editor: React.FC = () => {
 		<EditorCxProvider>
 			<InnerEditor />
 		</EditorCxProvider>
-	);
-};
-
-const MarbleSection: React.FC = () => {
-	const marble = useMarble();
-	const pos = marble.position;
-
-	return (
-		<section>
-			<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Marble</h3>
-			<p className="text-base-600 mt-2 font-mono text-xs">
-				{pos == null ? '—' : `${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}`}
-			</p>
-		</section>
 	);
 };
 
@@ -66,6 +52,46 @@ const TrajectorySection: React.FC = () => {
 	);
 };
 
+const AudioSection: React.FC = () => {
+	const app = useEditorCx().runtime.app;
+	const config = useResource(app, 'audioConfig');
+	const state = useResource(app, 'audioState');
+	const update = (patch: Partial<typeof config>) =>
+		app.updateResource('audioConfig', { ...config, ...patch });
+
+	const status = !config.enabled
+		? 'Muted'
+		: state.isEnabled && state.context != null
+			? 'Ready'
+			: 'Waiting for gesture';
+
+	return (
+		<section>
+			<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Audio</h3>
+			<label className="text-base-700 mt-3 flex items-center gap-2 text-sm">
+				<input
+					type="checkbox"
+					checked={config.enabled}
+					onChange={(e) => update({ enabled: e.target.checked })}
+				/>
+				Enabled
+			</label>
+			<label className="text-base-700 mt-3 block text-sm">
+				Volume: {Math.round(config.masterVolume * 100)}%
+				<input
+					type="range"
+					min={0}
+					max={100}
+					value={Math.round(config.masterVolume * 100)}
+					className="mt-1 block w-full"
+					onChange={(e) => update({ masterVolume: Number(e.target.value) / 100 })}
+				/>
+			</label>
+			<p className="text-base-500 mt-2 text-xs tracking-wide uppercase">{status}</p>
+		</section>
+	);
+};
+
 const InnerEditor: React.FC = () => {
 	const cx = useEditorCx();
 
@@ -87,9 +113,11 @@ const InnerEditor: React.FC = () => {
 
 						<Panel defaultSize="320px" minSize="200px" maxSize="500px">
 							<aside className="bg-base-50 flex h-full flex-col gap-6 overflow-y-auto p-4">
-								<MarbleSection />
+								<SelectionInspector />
 								<hr className="border-base-200" />
 								<TrajectorySection />
+								<hr className="border-base-200" />
+								<AudioSection />
 							</aside>
 						</Panel>
 					</Group>

@@ -1,19 +1,27 @@
-import { createApp, createDefaultPlugin, type TApp, type TAppContext, type TDefaultPlugin } from 'ecsify';
 import {
+	createApp,
+	createDefaultPlugin,
+	type TApp,
+	type TAppContext,
+	type TDefaultPlugin
+} from 'ecsify';
+import {
+	createAudioPlugin,
 	createCorePlugin,
 	createMidiPlugin,
 	createPhysicsPlugin,
 	createRenderPlugin,
 	createScenePlugin,
-	createTransportPlugin,
 	createTrajectoryPlugin,
+	createTransportPlugin,
+	type TAudioPlugin,
 	type TCorePlugin,
 	type TMidiPlugin,
 	type TPhysicsPlugin,
 	type TRenderPlugin,
 	type TScenePlugin,
-	type TTransportPlugin,
-	type TTrajectoryPlugin
+	type TTrajectoryPlugin,
+	type TTransportPlugin
 } from './plugins';
 import { ENGINE_SYSTEM_SETS } from './types';
 
@@ -30,6 +38,7 @@ export class Runtime {
 				createCorePlugin(),
 				createMidiPlugin(),
 				createTransportPlugin(),
+				createAudioPlugin(),
 				createPhysicsPlugin(),
 				createRenderPlugin(),
 				createTrajectoryPlugin(),
@@ -45,6 +54,7 @@ export class Runtime {
 
 	public run(): void {
 		const app = this._app;
+		void app.resumeAudio();
 		if (updateSimulationResumeWhenReady(app, true)) {
 			return;
 		}
@@ -55,6 +65,7 @@ export class Runtime {
 	public pause(): void {
 		updateSimulationResumeWhenReady(this._app, false);
 		this._app.pause();
+		this._applyTransportChange();
 	}
 
 	public reset(): void {
@@ -86,6 +97,7 @@ export class Runtime {
 		this._app.seekToTick(tick);
 		this._app.selectNote(noteId);
 		this._applyTransportChange();
+		void this._app.previewNotesAtTick(tick);
 	}
 
 	public seekToTick(tick: number): void {
@@ -101,8 +113,13 @@ export class Runtime {
 			return;
 		}
 
+		const wasPaused = this._app.r.transport.mode === 'paused';
+		const prevTick = this._app.r.transport.playheadTick;
 		this._app.stepBackwardTick();
 		this._applyTransportChange();
+		if (wasPaused && this._app.r.transport.playheadTick !== prevTick) {
+			void this._app.previewNotesAtTick(this._app.r.transport.playheadTick);
+		}
 	}
 
 	public stepForwardTick(): void {
@@ -110,8 +127,13 @@ export class Runtime {
 			return;
 		}
 
+		const wasPaused = this._app.r.transport.mode === 'paused';
+		const prevTick = this._app.r.transport.playheadTick;
 		this._app.stepForwardTick();
 		this._applyTransportChange();
+		if (wasPaused && this._app.r.transport.playheadTick !== prevTick) {
+			void this._app.previewNotesAtTick(this._app.r.transport.playheadTick);
+		}
 	}
 
 	public start(): void {
@@ -152,6 +174,7 @@ export class Runtime {
 		}
 		this._app.disposeScene();
 		this._app.disposeTrajectory();
+		this._app.disposeAudio();
 		this._app.setRenderContainer(null);
 		this._app.disposeRender();
 		this._app.flush();
@@ -191,6 +214,7 @@ export type TRuntimeApp = TApp<
 			TCorePlugin,
 			TMidiPlugin,
 			TTransportPlugin,
+			TAudioPlugin,
 			TPhysicsPlugin,
 			TRenderPlugin,
 			TTrajectoryPlugin,

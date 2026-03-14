@@ -59,7 +59,11 @@ function ensureLineCapacity(line: THREE.Line, pointCount: number): Float32Array 
 		return current;
 	}
 
-	const nextCapacity = Math.max(pointCount, Math.ceil(current.length / 3) * 2, INITIAL_POINT_CAPACITY);
+	const nextCapacity = Math.max(
+		pointCount,
+		Math.ceil(current.length / 3) * 2,
+		INITIAL_POINT_CAPACITY
+	);
 	const next = new Float32Array(nextCapacity * 3);
 	next.set(current);
 	const nextAttribute = new THREE.BufferAttribute(next, 3);

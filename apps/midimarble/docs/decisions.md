@@ -168,6 +168,20 @@ It is intended to become:
 
 This decision should guide future trajectory and MIDI work.
 
+## Decision: First Audio Slice Uses A Simple Built-In Synth
+
+Midimarble should use a simple Web Audio synth first.
+
+That means:
+
+- no SoundFont loading yet
+- no heavy event scheduler yet
+- selected-track-only playback for now
+- step controls and note clicks preview notes
+- drag scrubbing stays silent
+
+Signal's heavier `Player` + `SoundFontSynth` stack remains a useful reference, but it is intentionally not the first Midimarble audio implementation.
+
 ## Decision: Note-Bound Elements Are Parametric By Default
 
 Platforms created from note moments should be bound to that note chain by default.

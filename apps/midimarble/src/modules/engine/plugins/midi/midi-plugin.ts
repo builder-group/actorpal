@@ -1,8 +1,4 @@
-import {
-	clearMidiSongState,
-	loadMidiFileIntoState,
-	selectMidiNote
-} from './lib/midi-state';
+import { clearMidiSongState, loadMidiFileIntoState, selectMidiNote } from './lib/midi-state';
 import type { TMidiApp, TMidiPlugin } from './types';
 
 export function createMidiPlugin(): TMidiPlugin {

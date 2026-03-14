@@ -4,6 +4,7 @@ import { resetSceneManipulationState } from './lib/manipulation-state';
 import { setupSceneManipulation } from './lib/scene-manipulation';
 import {
 	syncAuthoredTransformsToLiveSystem,
+	syncExclusiveSelectionSystem,
 	syncSceneManipulationHandleAppearanceSystem,
 	syncSceneManipulationHandlesSystem,
 	syncStraightTrackRuntimeMixinsSystem
@@ -23,7 +24,7 @@ export function createScenePlugin(): TScenePlugin {
 	return {
 		// Scene is Midimarble's app-specific composition root and editing domain.
 		name: 'Scene',
-		deps: ['Default', 'Core', 'Physics', 'Render', 'Trajectory'],
+		deps: ['Default', 'Core', 'Midi', 'Physics', 'Render', 'Trajectory'],
 		components: {
 			MarbleTag: [],
 			AuthoredTransformMixin: [],
@@ -74,6 +75,7 @@ export function createScenePlugin(): TScenePlugin {
 
 			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'PreUpdate' });
 			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'PreUpdate' });
+			app.addSystem(syncExclusiveSelectionSystem, { set: 'Update' });
 			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
 			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'PostUpdate' });
 			disposeScene = setupSceneManipulation(app);

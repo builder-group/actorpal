@@ -33,12 +33,12 @@ Rejected names:
 Use this vocabulary consistently:
 
 - `playhead` = the generic current-position concept
-- `step` = the current concrete unit in the implemented transport slice
-- `tick` = the future MIDI-facing unit once MIDI is integrated
+- `tick` = the current concrete unit in the shared transport slice
+- `step` = the physics-facing derived unit used by simulation
 
 So today the state is:
 
-- `transport.playheadStep`
+- `transport.playheadTick`
 
 Not:
 
@@ -76,21 +76,57 @@ Why:
 - these are still Rapier and simulation invariants
 - they are not generic transport concerns
 
-## Decision: Current Transport Slice Is Step-Based
+## Decision: Current Transport Slice Is Tick-First
 
-The current implementation uses simulation steps as the concrete playhead unit.
+The current implementation uses MIDI ticks as the concrete playhead unit.
 
 That means:
 
-- timeline controls are step-based today
-- the timeline UI can display `Step` and `Preloaded`
-- the transport plugin does not model MIDI ticks yet
+- timeline controls are tick-based today
+- the timeline UI still displays `Step` and `Preloaded` as physics debugging state
+- `Physics` derives step targets from the transport tick playhead
 
-This is an intentional staging decision, not the final product model.
+This is the first real cross-domain transport slice, not a placeholder.
+
+## Decision: Step Is Derived From Tick
+
+The current time model is:
+
+- `Transport` owns `playheadTick`
+- `Physics` derives `liveStep` and `bufferedStep` from that tick-based playhead
+
+The conversion is deterministic for the currently loaded song:
+
+- `ticksPerSecond = (ticksPerBeat * bpm) / 60`
+- `step = floor(seconds / fixedTimeStepSeconds)`
+
+That means tick and step are related, but not identical.
+
+## Decision: First MIDI Slice Is First-Track-Only
+
+The current engine MIDI slice selects the first parsed track with notes.
+
+That means:
+
+- there is no multi-track UI yet
+- there is no track switching UI yet
+- the selected track is established at import time
+
+This is intentional scope control for the prototype.
+
+## Decision: Timeline Length Comes From The Imported Song
+
+Once a MIDI file is loaded:
+
+- the timeline width comes from `midiSong.totalTicks`
+- beat markers come from `midiSong.ticksPerBeat`
+- the red playhead is positioned from `transport.playheadTick`
+
+The preload region is still physics-derived and remains a separate concept from song length.
 
 ## Decision: One Shared Playhead In The UX
 
-Even though the current implementation is step-based, the intended UX is still one shared playhead.
+Even though the engine now exposes both transport ticks and physics steps, the intended UX is still one shared playhead.
 
 The user should experience:
 
@@ -109,6 +145,16 @@ Why:
 - it is presentation and interaction UI
 - it reads engine state and calls runtime actions
 - it does not yet need its own plugin boundary
+
+The timeline may use a small React-side `TimelineCx` for viewport behavior such as:
+
+- zoom
+- scroll position
+- container width
+- tick-to-pixel conversion
+
+That context is view-state only.
+It must not become a second owner of transport, MIDI, or physics domain state.
 
 ## Decision: Trajectory Is A Real Authoring Surface
 

@@ -1,25 +1,20 @@
-import {
-	createApp,
-	createDefaultPlugin,
-	type TApp,
-	type TAppContext,
-	type TDefaultPlugin
-} from 'ecsify';
+import { createApp, createDefaultPlugin, type TApp, type TAppContext, type TDefaultPlugin } from 'ecsify';
 import {
 	createCorePlugin,
+	createMidiPlugin,
 	createPhysicsPlugin,
 	createRenderPlugin,
 	createScenePlugin,
 	createTransportPlugin,
 	createTrajectoryPlugin,
 	type TCorePlugin,
+	type TMidiPlugin,
 	type TPhysicsPlugin,
 	type TRenderPlugin,
 	type TScenePlugin,
 	type TTransportPlugin,
 	type TTrajectoryPlugin
 } from './plugins';
-import { clampPlayheadStep } from './lib/playhead-step';
 import { ENGINE_SYSTEM_SETS } from './types';
 
 export class Runtime {
@@ -33,6 +28,7 @@ export class Runtime {
 			plugins: [
 				createDefaultPlugin(),
 				createCorePlugin(),
+				createMidiPlugin(),
 				createTransportPlugin(),
 				createPhysicsPlugin(),
 				createRenderPlugin(),
@@ -69,37 +65,41 @@ export class Runtime {
 		this._applyTransportChange();
 	}
 
-	public seekToStep(step: number): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return;
-		}
-		const targetStep = clampPlayheadStep(step, this._app.r.bufferedStep);
-		this._app.seekToStep(targetStep);
+	public async loadMidiFile(file: File): Promise<void> {
+		await this._app.loadMidiFile(file);
+		this._app.resetTransport();
 		this._applyTransportChange();
 	}
 
-	public seekToSeconds(seconds: number): void {
-		const targetStep = Math.round(seconds / this._app.r.fixedTimeStepSeconds);
-		this.seekToStep(targetStep);
-	}
-
-	public stepBackward(): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return;
-		}
-
-		const targetStep = clampPlayheadStep(this._app.r.transport.playheadStep - 1, this._app.r.bufferedStep);
-		this._app.seekToStep(targetStep);
+	public clearMidiSong(): void {
+		this._app.clearMidiSong();
+		this._app.resetTransport();
 		this._applyTransportChange();
 	}
 
-	public stepForward(): void {
+	public seekToTick(tick: number): void {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return;
+		}
+		this._app.seekToTick(tick);
+		this._applyTransportChange();
+	}
+
+	public stepBackwardTick(): void {
 		if (updateSimulationResumeWhenReady(this._app, false)) {
 			return;
 		}
 
-		const targetStep = clampPlayheadStep(this._app.r.transport.playheadStep + 1, this._app.r.bufferedStep);
-		this._app.seekToStep(targetStep);
+		this._app.stepBackwardTick();
+		this._applyTransportChange();
+	}
+
+	public stepForwardTick(): void {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return;
+		}
+
+		this._app.stepForwardTick();
 		this._applyTransportChange();
 	}
 
@@ -177,6 +177,7 @@ export type TRuntimeApp = TApp<
 		[
 			TDefaultPlugin,
 			TCorePlugin,
+			TMidiPlugin,
 			TTransportPlugin,
 			TPhysicsPlugin,
 			TRenderPlugin,

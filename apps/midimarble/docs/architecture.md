@@ -20,9 +20,10 @@ The current architecture is intentionally optimized for the narrow prototype:
 
 ## Plugin Graph
 
-The engine now uses six plugins:
+The engine now uses seven plugins:
 
 - `Core`
+- `Midi`
 - `Transport`
 - `Physics`
 - `Render`
@@ -32,11 +33,12 @@ The engine now uses six plugins:
 Dependency graph:
 
 - `Core` has no app-specific dependencies
-- `Transport` depends on `Default` only
-- `Physics` depends on `Core` and `Transport`
+- `Midi` depends on `Default` only
+- `Transport` depends on `Midi`
+- `Physics` depends on `Core`, `Midi`, and `Transport`
 - `Render` depends on `Core`
-- `Trajectory` depends on `Core`, `Transport`, `Physics`, and `Render`
-- `Scene` depends on `Core`, `Transport`, `Physics`, `Render`, and `Trajectory`
+- `Trajectory` depends on `Core`, `Physics`, and `Render`
+- `Scene` depends on `Core`, `Physics`, `Render`, and `Trajectory`
 
 This graph is intentionally one-way and acyclic.
 
@@ -63,14 +65,16 @@ That is intentional:
 - timeline controls are editor presentation
 - the UI reads engine state and calls runtime methods
 - the timeline does not need its own ECS plugin for the current scope
+- a small React-side `TimelineCx` may own zoom, scroll, and viewport layout only
 
-Playback state now lives in `Transport`, not `Physics`.
+Playback state now lives across `Midi`, `Transport`, and `Physics`.
 
 That split is intentional:
 
-- `Transport` owns play/pause and the current playhead step
-- `Physics` owns buffering, checkpoint restore, world replacement, and rebuild state
-- the timeline UI reads both, but still stays in React
+- `Midi` owns the imported song and first selected track
+- `Transport` owns play/pause and the current playhead tick
+- `Physics` owns live steps, buffered steps, checkpoint restore, world replacement, and rebuild state
+- the timeline UI reads all three, but still stays in React
 
 Midimarble uses this generic schedule:
 
@@ -151,7 +155,7 @@ Responsibilities:
 - rigid body and collider components
 - live world stepping
 - checkpoint and preload buffering
-- following the transport playhead by restoring/swapping worlds
+- following the transport tick playhead by mapping ticks to steps
 - generic simulation invalidation and resync
 
 Public physics sync contract:
@@ -164,6 +168,22 @@ Important boundary:
 - `Physics` does not know scene editing
 - callers only tell physics that simulation is stale or should rebuild
 
+### `Midi`
+
+Owns imported song data for the editor.
+
+Responsibilities:
+
+- `midiSong`
+- `selectedTrackId`
+- MIDI import and parse errors
+- first-track-only selection for the current slice
+
+Important boundary:
+
+- `Midi` does not own playback
+- it is the source of song timing, not the source of the playhead
+
 ### `Transport`
 
 Owns the shared playback playhead.
@@ -172,12 +192,13 @@ Responsibilities:
 
 - `transport`
 - play/pause
-- step-based seek/reset controls
+- tick-based seek/reset controls
+- advancing the tick playhead from song BPM and ticks-per-beat
 
 Important boundary:
 
 - `Transport` does not own buffering or world restore
-- other domains may follow transport later, but `Physics` is the only follower today
+- it follows `Midi` for song timing, and `Physics` follows it for simulation state
 
 ### `Render`
 
@@ -208,6 +229,9 @@ Responsibilities:
 It does not need to know what a marble is.
 
 Trajectory refresh should be keyed off ECSify resource/component change tracking, not a duplicated shadow sync resource.
+
+For the current slice, trajectory still visualizes the current live simulation path only.
+Note markers are the next slice, not part of the current engine state yet.
 
 ### `Scene`
 

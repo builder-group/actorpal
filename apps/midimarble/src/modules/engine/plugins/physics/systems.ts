@@ -15,6 +15,7 @@ import {
 	syncBodyTransform
 } from './lib/world';
 import { updateTransport } from '../transport';
+import { getTransportTargetStep } from './lib/transport-step';
 import type { TPhysicsApp } from './types';
 
 export function spawnRigidBodiesSystem(app: TPhysicsApp) {
@@ -83,11 +84,11 @@ export function syncLiveWorldToTransportSystem(app: TPhysicsApp) {
 
 	ensureSimulationBaseInitialized(app);
 
-	const targetStep = Math.max(0, Math.min(app.r.transport.playheadStep, app.r.bufferedStep));
-	if (targetStep !== app.r.transport.playheadStep) {
-		updateTransport(app, { playheadStep: targetStep });
-	}
+	const targetStep = getTransportTargetStep(app);
 	if (targetStep === app.r.liveStep) {
+		return;
+	}
+	if (targetStep > app.r.liveStep && app.r.transport.mode === 'running') {
 		return;
 	}
 
@@ -96,13 +97,14 @@ export function syncLiveWorldToTransportSystem(app: TPhysicsApp) {
 		return;
 	}
 
-	app.r.accumulatorSeconds = 0;
 	replaceLiveWorld(app, restoredWorld);
+	const nextBufferedStep = Math.max(app.r.bufferedStep, targetStep);
 	app.updateResource('liveStep', targetStep);
-	syncPreloadWorldToStep(app, app.r.bufferedStep);
+	app.updateResource('bufferedStep', nextBufferedStep);
+	syncPreloadWorldToStep(app, nextBufferedStep);
 }
 
-export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
+export function stepPhysicsWorldSystem(app: TPhysicsApp) {
 	const world = app.r.world;
 	if (world == null || app.r.simulationSync.mode !== 'idle') {
 		return;
@@ -110,24 +112,18 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 
 	ensureSimulationBaseInitialized(app);
 
-	const config = app.r.simulationConfig;
-	const transport = app.r.transport;
-	if (transport.mode !== 'running') {
+	if (app.r.transport.mode !== 'running') {
 		return;
 	}
 
-	app.r.accumulatorSeconds += Math.min(Math.max(dt, 0), config.maxDeltaSeconds);
-
+	const config = app.r.simulationConfig;
+	const targetStep = getTransportTargetStep(app);
 	let liveStep = app.r.liveStep;
 	let bufferedStep = app.r.bufferedStep;
 	let stepsRun = 0;
 
-	while (
-		app.r.accumulatorSeconds >= app.r.fixedTimeStepSeconds &&
-		stepsRun < config.maxLiveStepsPerUpdate
-	) {
+	while (liveStep < targetStep && stepsRun < config.maxLiveStepsPerUpdate) {
 		world.step();
-		app.r.accumulatorSeconds -= app.r.fixedTimeStepSeconds;
 		liveStep++;
 		stepsRun++;
 
@@ -143,7 +139,6 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp, dt = 0) {
 	bufferedStep = Math.max(bufferedStep, liveStep);
 	app.updateResource('liveStep', liveStep);
 	app.updateResource('bufferedStep', bufferedStep);
-	updateTransport(app, { playheadStep: liveStep });
 }
 
 export function advanceSimulationSyncSystem(app: TPhysicsApp) {
@@ -195,7 +190,6 @@ export function advanceSimulationSyncSystem(app: TPhysicsApp) {
 		storeCheckpoint(app.r.checkpointStore, step, snapshot);
 	}
 
-	app.r.accumulatorSeconds = 0;
 	replaceLiveWorld(app, simulationSync.world);
 
 	app.r.preloadWorld?.free();
@@ -210,8 +204,7 @@ export function advanceSimulationSyncSystem(app: TPhysicsApp) {
 	app.updateResource('liveStep', currentStep);
 	app.updateResource('bufferedStep', currentStep);
 	updateTransport(app, {
-		mode: simulationSync.resumeWhenReady ? 'running' : 'paused',
-		playheadStep: currentStep
+		mode: simulationSync.resumeWhenReady ? 'running' : 'paused'
 	});
 }
 
@@ -230,8 +223,8 @@ export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
 		return;
 	}
 
-	const { simulationConfig, transport } = app.r;
-	const targetBufferedStep = transport.playheadStep + simulationConfig.preloadHorizonSteps;
+	const { simulationConfig } = app.r;
+	const targetBufferedStep = getTransportTargetStep(app) + simulationConfig.preloadHorizonSteps;
 	if (app.r.bufferedStep >= targetBufferedStep) {
 		return;
 	}

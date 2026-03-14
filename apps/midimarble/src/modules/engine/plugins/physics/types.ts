@@ -2,6 +2,7 @@ import type * as RAPIER from '@dimforge/rapier3d-compat';
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type { TEngineSystemSet, TVec3 } from '../../types';
 import type { TCorePlugin } from '../core';
+import type { TMidiPlugin } from '../midi';
 import type { TTransportPlugin } from '../transport';
 
 export type TPhysicsPlugin = TPlugin<
@@ -16,7 +17,6 @@ export type TPhysicsPlugin = TPlugin<
 			world: RAPIER.World | null;
 			preloadWorld: RAPIER.World | null;
 			isReady: boolean;
-			accumulatorSeconds: number;
 			fixedTimeStepSeconds: number;
 			bufferedStep: number;
 			liveStep: number;
@@ -33,11 +33,11 @@ export type TPhysicsPlugin = TPlugin<
 		};
 		systemSets: TEngineSystemSet;
 	},
-	[TDefaultPlugin, TCorePlugin, TTransportPlugin]
+	[TDefaultPlugin, TCorePlugin, TMidiPlugin, TTransportPlugin]
 >;
 
 export type TPhysicsApp = TApp<
-	TAppContext<[TDefaultPlugin, TCorePlugin, TTransportPlugin, TPhysicsPlugin]>
+	TAppContext<[TDefaultPlugin, TCorePlugin, TMidiPlugin, TTransportPlugin, TPhysicsPlugin]>
 >;
 
 export type TRRigidBodies = Map<number, RAPIER.RigidBody>;
@@ -50,7 +50,6 @@ export interface TSimulationConfig {
 	maxPreloadStepsPerUpdate: number;
 	maxLiveStepsPerUpdate: number;
 	maxSyncStepsPerUpdate: number;
-	maxDeltaSeconds: number;
 }
 
 export type TSimulationSync =

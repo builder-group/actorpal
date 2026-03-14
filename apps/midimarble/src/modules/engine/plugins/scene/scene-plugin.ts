@@ -23,7 +23,7 @@ export function createScenePlugin(): TScenePlugin {
 	return {
 		// Scene is Midimarble's app-specific composition root and editing domain.
 		name: 'Scene',
-		deps: ['Default', 'Core', 'Transport', 'Physics', 'Render', 'Trajectory'],
+		deps: ['Default', 'Core', 'Physics', 'Render', 'Trajectory'],
 		components: {
 			MarbleTag: [],
 			AuthoredTransformMixin: [],

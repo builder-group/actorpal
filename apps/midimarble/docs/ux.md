@@ -34,6 +34,18 @@ The core experience should feel like:
 The trajectory is not just debug visualization.
 It is the main authoring surface.
 
+## Current Implemented Slice
+
+The current editor now supports:
+
+- importing one MIDI file
+- auto-selecting the first parsed track with notes
+- a shared tick-first transport playhead
+- a timeline whose length comes from the imported song
+- tick navigation with reset, back one tick, play/pause, and forward one tick
+
+This slice intentionally stops before note markers and note-bound platform creation.
+
 ## Core UX Model
 
 ### One shared playhead
@@ -86,7 +98,7 @@ Free elements are not bound to a note moment and should remain directly movable 
 The intended workflow is:
 
 1. The user imports a MIDI track.
-2. The editor enters build mode for one selected track.
+2. The editor enters build mode for the first parsed track with notes.
 3. The user drags the marble start position to define tick `0`.
 4. The user advances through time either:
    - one tick at a time
@@ -106,6 +118,12 @@ The user should be able to build the run note by note.
 The timeline should visualize the same playhead the 3D viewport uses.
 
 Its job is to make time legible and controllable, not to become a second editor.
+
+The timeline viewport itself should support:
+
+- seeking from the ruler as well as the note body
+- zooming in and out without changing the underlying playhead model
+- expanding to the available panel width even when the song is short
 
 ### Timeline controls
 
@@ -257,8 +275,8 @@ Dragging, rotating, stepping, and playing should make the future understandable 
 
 The staged UX evolution should be:
 
-1. Shared playhead with timeline controls.
-2. MIDI import and a selected track driving note markers.
+1. Shared tick-first playhead with imported song length and first-track selection.
+2. Note markers rendered on the trajectory for the selected track.
 3. Clickable note markers on the trajectory.
 4. Note-bound platform creation from markers.
 5. Downstream reflow of later note-bound platforms after upstream edits.

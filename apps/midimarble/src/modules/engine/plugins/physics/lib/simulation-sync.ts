@@ -1,5 +1,6 @@
 import type { TPhysicsApp } from '../types';
 import { updateTransport } from '../../transport';
+import { getTransportTargetStep } from './transport-step';
 import { createEditedWorldBase, ensureSimulationBaseInitialized } from './world';
 
 export function markSimulationDirty(app: TPhysicsApp): void {
@@ -15,10 +16,9 @@ export function markSimulationDirty(app: TPhysicsApp): void {
 		currentSync.world.free();
 	}
 
-	app.r.accumulatorSeconds = 0;
 	app.r.preloadWorld?.free();
 	app.updateResource('preloadWorld', null);
-	app.updateResource('preloadStep', app.r.transport.playheadStep);
+	app.updateResource('preloadStep', getTransportTargetStep(app));
 	app.updateResource('simulationSync', {
 		mode: 'dirty',
 		resumeWhenReady,
@@ -52,7 +52,7 @@ export function startSimulationSync(app: TPhysicsApp): void {
 
 	app.updateResource('simulationSync', {
 		mode: 'rebuilding',
-		targetStep: app.r.transport.playheadStep,
+		targetStep: getTransportTargetStep(app),
 		currentStep: 0,
 		resumeWhenReady: simulationSync.resumeWhenReady,
 		world: rebuiltWorld,

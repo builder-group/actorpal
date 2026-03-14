@@ -19,7 +19,7 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 	return {
 		// Physics owns simulation state, stepping, checkpoints, and resync.
 		name: 'Physics',
-		deps: ['Default', 'Core', 'Transport'],
+		deps: ['Default', 'Core', 'Midi', 'Transport'],
 		components: {
 			RigidBodyMixin: [],
 			ColliderMixin: []
@@ -29,7 +29,6 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 			world: null,
 			preloadWorld: null,
 			isReady: false,
-			accumulatorSeconds: 0,
 			fixedTimeStepSeconds: 1 / 240,
 			bufferedStep: 0,
 			liveStep: 0,
@@ -38,8 +37,7 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 				preloadHorizonSteps: 2400,
 				maxPreloadStepsPerUpdate: 120,
 				maxLiveStepsPerUpdate: 12,
-				maxSyncStepsPerUpdate: 240,
-				maxDeltaSeconds: 0.05
+				maxSyncStepsPerUpdate: 240
 			},
 			checkpointStore: new Map(),
 			preloadStep: 0,

@@ -1,7 +1,8 @@
+import { clampMidiTick, getSongMaxTick } from '../../midi';
 import type { TTransportApp } from '../types';
 
 type TTransportAccess = {
-	r: Pick<TTransportApp['r'], 'transport'>;
+	r: Pick<TTransportApp['r'], 'midiSong' | 'transport'>;
 	updateResource: TTransportApp['updateResource'];
 };
 
@@ -16,6 +17,18 @@ export function updateTransport(
 }
 
 export function runTransport(app: TTransportAccess): void {
+	if (app.r.midiSong == null || getSongMaxTick(app.r.midiSong) <= 0) {
+		return;
+	}
+
+	if (app.r.transport.playheadTick >= getSongMaxTick(app.r.midiSong)) {
+		updateTransport(app, {
+			mode: 'paused',
+			playheadTick: getSongMaxTick(app.r.midiSong)
+		});
+		return;
+	}
+
 	updateTransport(app, { mode: 'running' });
 }
 
@@ -26,20 +39,20 @@ export function pauseTransport(app: TTransportAccess): void {
 export function resetTransport(app: TTransportAccess): void {
 	updateTransport(app, {
 		mode: 'paused',
-		playheadStep: 0
+		playheadTick: 0
 	});
 }
 
-export function seekTransportToStep(app: TTransportAccess, step: number): void {
+export function seekTransportToTick(app: TTransportAccess, tick: number): void {
 	updateTransport(app, {
-		playheadStep: Math.max(0, Math.round(step))
+		playheadTick: clampMidiTick(tick, getSongMaxTick(app.r.midiSong))
 	});
 }
 
-export function stepTransportBackward(app: TTransportAccess): void {
-	seekTransportToStep(app, app.r.transport.playheadStep - 1);
+export function stepTransportBackwardTick(app: TTransportAccess): void {
+	seekTransportToTick(app, app.r.transport.playheadTick - 1);
 }
 
-export function stepTransportForward(app: TTransportAccess): void {
-	seekTransportToStep(app, app.r.transport.playheadStep + 1);
+export function stepTransportForwardTick(app: TTransportAccess): void {
+	seekTransportToTick(app, app.r.transport.playheadTick + 1);
 }

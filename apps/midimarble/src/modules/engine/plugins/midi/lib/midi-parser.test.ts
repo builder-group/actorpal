@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest';
+import { parseMidi } from './midi-parser';
+
+describe('parseMidi', () => {
+	it('parses a valid midi file with one playable track', () => {
+		const song = parseMidi(createTestMidiBuffer(), 'demo.mid');
+
+		expect(song.name).toBe('Demo');
+		expect(song.bpm).toBe(120);
+		expect(song.ticksPerBeat).toBe(480);
+		expect(song.totalTicks).toBe(720);
+		expect(song.tracks).toHaveLength(1);
+		expect(song.tracks[0]?.name).toBe('Lead');
+		expect(song.tracks[0]?.notes).toHaveLength(2);
+	});
+
+	it('rejects invalid files', () => {
+		expect(() => parseMidi(new Uint8Array([0x00, 0x01, 0x02]).buffer)).toThrow(
+			'Not a valid MIDI file. Missing MThd header.'
+		);
+	});
+});
+
+function createTestMidiBuffer(): ArrayBuffer {
+	const header = [
+		0x4d, 0x54, 0x68, 0x64,
+		0x00, 0x00, 0x00, 0x06,
+		0x00, 0x01,
+		0x00, 0x02,
+		0x01, 0xe0
+	];
+
+	const metaTrackData = [
+		0x00, 0xff, 0x03, 0x04, 0x44, 0x65, 0x6d, 0x6f,
+		0x00, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20,
+		0x00, 0xff, 0x2f, 0x00
+	];
+	const noteTrackData = [
+		0x00, 0xff, 0x03, 0x04, 0x4c, 0x65, 0x61, 0x64,
+		0x00, 0x90, 0x3c, 0x64,
+		0x83, 0x60, 0x80, 0x3c, 0x40,
+		0x00, 0x90, 0x40, 0x64,
+		0x81, 0x70, 0x80, 0x40, 0x40,
+		0x00, 0xff, 0x2f, 0x00
+	];
+
+	const bytes = Uint8Array.from([
+		...header,
+		0x4d, 0x54, 0x72, 0x6b,
+		0x00, 0x00, 0x00, metaTrackData.length,
+		...metaTrackData,
+		0x4d, 0x54, 0x72, 0x6b,
+		0x00, 0x00, 0x00, noteTrackData.length,
+		...noteTrackData
+	]);
+
+	return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+}

@@ -2,21 +2,22 @@ import {
 	pauseTransport,
 	resetTransport,
 	runTransport,
-	seekTransportToStep,
-	stepTransportBackward,
-	stepTransportForward
+	seekTransportToTick,
+	stepTransportBackwardTick,
+	stepTransportForwardTick
 } from './lib/transport';
+import { advanceTransportSystem } from './systems';
 import type { TTransportApp, TTransportPlugin } from './types';
 
 export function createTransportPlugin(): TTransportPlugin {
 	return {
-		// Transport owns the shared playback mode and playhead step.
+		// Transport owns shared playback mode and the tick-first playhead.
 		name: 'Transport',
-		deps: ['Default'],
+		deps: ['Default', 'Midi'],
 		resources: {
 			transport: {
 				mode: 'paused',
-				playheadStep: 0
+				playheadTick: 0
 			}
 		},
 		appExtensions: {
@@ -29,15 +30,18 @@ export function createTransportPlugin(): TTransportPlugin {
 			resetTransport(this: TTransportApp): void {
 				resetTransport(this);
 			},
-			stepBackward(this: TTransportApp): void {
-				stepTransportBackward(this);
+			stepBackwardTick(this: TTransportApp): void {
+				stepTransportBackwardTick(this);
 			},
-			stepForward(this: TTransportApp): void {
-				stepTransportForward(this);
+			stepForwardTick(this: TTransportApp): void {
+				stepTransportForwardTick(this);
 			},
-			seekToStep(this: TTransportApp, step: number): void {
-				seekTransportToStep(this, step);
+			seekToTick(this: TTransportApp, tick: number): void {
+				seekTransportToTick(this, tick);
 			}
+		},
+		setup(app: TTransportApp) {
+			app.addSystem(advanceTransportSystem, { set: 'Update' });
 		}
 	};
 }

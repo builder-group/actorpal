@@ -4,7 +4,6 @@ import type { TEngineSystemSet, TVec3 } from '../../types';
 import type { TCorePlugin } from '../core/types';
 import type { TPhysicsPlugin } from '../physics/types';
 import type { TRenderPlugin } from '../render/types';
-import type { TTransportPlugin } from '../transport';
 import type { TTrajectoryPlugin } from '../trajectory/types';
 
 // MARK: - Plugin
@@ -29,7 +28,7 @@ export type TScenePlugin = TPlugin<
 		};
 		systemSets: TEngineSystemSet;
 	},
-	[TDefaultPlugin, TCorePlugin, TTransportPlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin]
+	[TDefaultPlugin, TCorePlugin, TPhysicsPlugin, TRenderPlugin, TTrajectoryPlugin]
 >;
 
 export type TSceneApp = TApp<
@@ -37,7 +36,6 @@ export type TSceneApp = TApp<
 		[
 			TDefaultPlugin,
 			TCorePlugin,
-			TTransportPlugin,
 			TPhysicsPlugin,
 			TRenderPlugin,
 			TTrajectoryPlugin,

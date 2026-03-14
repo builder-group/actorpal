@@ -109,15 +109,13 @@ export const TimelineHeader: React.FC<{
 	importLabel: string;
 	importError: string | null;
 	mode: 'paused' | 'running';
-	songName: string | null;
 	trackName: string | null;
 	bpm: number | null;
 	playheadTick: number;
 	liveStep: number;
-	preloadedSteps: number;
+	preloadedLabel: string;
 	selectedNoteLabel: string | null;
 	zoomLabel: string;
-	statusLabel: string | null;
 	onOpenMidi: () => void;
 	onStepBackwardTick: () => void;
 	onStepForwardTick: () => void;
@@ -133,15 +131,13 @@ export const TimelineHeader: React.FC<{
 	importLabel,
 	importError,
 	mode,
-	songName,
 	trackName,
 	bpm,
 	playheadTick,
 	liveStep,
-	preloadedSteps,
+	preloadedLabel,
 	selectedNoteLabel,
 	zoomLabel,
-	statusLabel,
 	onOpenMidi,
 	onStepBackwardTick,
 	onStepForwardTick,
@@ -155,27 +151,11 @@ export const TimelineHeader: React.FC<{
 		<div className="flex items-center gap-2">
 			<h3 className="text-base-700 text-xs font-semibold tracking-wide uppercase">Timeline</h3>
 
-			{statusLabel != null ? (
-				<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase">
-					{statusLabel}
-				</span>
-			) : null}
-
 			{importError != null ? (
 				<span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700 uppercase">
 					{importError}
 				</span>
 			) : null}
-
-			{songName != null ? (
-				<span className="text-base-600 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium uppercase">
-					{songName}
-				</span>
-			) : (
-				<span className="text-base-400 rounded-full bg-white px-2 py-0.5 text-[10px] font-medium uppercase">
-					No MIDI
-				</span>
-			)}
 
 			{trackName != null ? (
 				<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase">
@@ -198,7 +178,7 @@ export const TimelineHeader: React.FC<{
 			</span>
 
 			<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase">
-				Preloaded {preloadedSteps}
+				{preloadedLabel}
 			</span>
 
 			{selectedNoteLabel != null ? (

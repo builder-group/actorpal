@@ -23,7 +23,8 @@ describe('inspector target helpers', () => {
 				1,
 				3,
 				1 / 240,
-				{ x: 1, y: 2, z: 3 }
+				{ x: 1, y: 2, z: 3 },
+				null
 			)
 		).toMatchObject({
 			kind: 'note',

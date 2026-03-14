@@ -1,6 +1,7 @@
 import React from 'react';
+import { Entity, With } from 'ecsify';
 import { useMemoCleanup } from '@/hooks';
-import { useResource } from '@/modules/engine';
+import { useQueryComponents, useResource } from '@/modules/engine';
 import { clampMidiTick, findTrackById, stepToTick } from '@/modules/engine/plugins/midi';
 import { useEditorCx } from '../EditorCx';
 import {
@@ -38,6 +39,11 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const bufferedStep = useResource(app, 'bufferedStep');
 	const simulationSync = useResource(app, 'simulationSync');
 	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
+	const notePlatforms = useQueryComponents(app, {
+		components: [Entity, app.c.NoteBindingMixin] as const,
+		queryOrFilter: With(app.c.NotePlatformMixin),
+		watchComponents: [app.c.NoteBindingMixin, app.c.NotePlatformMixin]
+	});
 
 	const containerWidth = useTimelineState(timelineCx.$containerWidth);
 	const pixelsPerBeat = useTimelineState(timelineCx.$pixelsPerBeat);
@@ -48,12 +54,6 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	);
 	const canControlPlayback =
 		isReady && midiSong != null && selectedTrack != null && midiSong.totalTicks > 0;
-	const statusLabel =
-		simulationSync.mode === 'idle'
-			? null
-			: simulationSync.mode === 'dirty'
-				? 'Pending'
-				: 'Recomputing';
 
 	const pixelsPerTick = timelineCx.getPixelsPerTick(midiSong);
 	const playheadTick =
@@ -63,6 +63,12 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 			? 0
 			: Math.min(stepToTick(bufferedStep, midiSong, fixedTimeStepSeconds), midiSong.totalTicks);
 	const preloadedSteps = Math.max(0, bufferedStep - liveStep);
+	const preloadedLabel =
+		simulationSync.mode === 'dirty'
+			? 'Preloaded Pending'
+			: simulationSync.mode === 'rebuilding'
+				? 'Preloaded Recomputing'
+				: `Preloaded ${preloadedSteps}`;
 	const playheadPx = playheadTick * pixelsPerTick;
 	const bufferedPx = bufferedTick * pixelsPerTick;
 	const noteRows = React.useMemo(() => buildNoteRows(selectedTrack?.notes ?? []), [selectedTrack]);
@@ -73,7 +79,11 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const selectedNoteLabel =
 		selectedNote == null
 			? null
-			: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
+				: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
+	const placedNoteIds = React.useMemo(
+		() => new Set(notePlatforms.map(([, binding]) => binding.noteId)),
+		[notePlatforms]
+	);
 	const contentHeight = Math.max(noteRows.length * NOTE_ROW_HEIGHT, MIN_ROLL_HEIGHT);
 	const timelineWidth =
 		midiSong == null ? Math.max(containerWidth, 1) : timelineCx.getTimelineWidth(midiSong);
@@ -227,15 +237,13 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				importLabel={isImporting ? 'Importing…' : 'Open MIDI'}
 				importError={midiImportError}
 				mode={transport.mode}
-				songName={midiSong?.name ?? null}
 				trackName={selectedTrack?.name ?? null}
 				bpm={midiSong?.bpm ?? null}
 				playheadTick={playheadTick}
 				liveStep={liveStep}
-				preloadedSteps={preloadedSteps}
+				preloadedLabel={preloadedLabel}
 				selectedNoteLabel={selectedNoteLabel}
 				zoomLabel={zoomLabel}
-				statusLabel={statusLabel}
 				onOpenMidi={openMidiPicker}
 				onStepBackwardTick={() => cx.runtime.stepBackwardTick()}
 				onStepForwardTick={() => cx.runtime.stepForwardTick()}
@@ -263,9 +271,10 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 						playheadPx={playheadPx}
 						contentHeight={contentHeight}
 						noteRows={noteRows}
-						notes={selectedTrack?.notes ?? []}
-						selectedNoteId={selectedNoteId}
-						canScrub={canControlPlayback}
+							notes={selectedTrack?.notes ?? []}
+							selectedNoteId={selectedNoteId}
+							placedNoteIds={placedNoteIds}
+							canScrub={canControlPlayback}
 						isDragging={isDragging}
 						onPointerDown={handlePointerDown}
 						onPointerMove={handlePointerMove}

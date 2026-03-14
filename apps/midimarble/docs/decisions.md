@@ -192,3 +192,31 @@ That means:
 - their own authored properties, such as rotation, should remain stable where possible
 
 Free elements are a separate category and should remain freely movable.
+
+## Decision: MIDI Notes Stay Resource Data
+
+Imported MIDI notes stay in `Midi` resource data.
+
+That means:
+
+- notes are not ECS entities in the current architecture
+- `selectedNoteId` is the shared note-selection seam
+- note-bound world objects become ECS entities and reference `noteId`
+
+Why:
+
+- imported notes are authored song data, not world objects
+- the engine does not need per-note ECS lifecycle yet
+- note-bound platforms are the actual world entities that physics and rendering care about
+
+## Decision: First Note-Bound Element Family Is `NotePlatform`
+
+The first note-bound scene object family is named `NotePlatform`.
+
+That means:
+
+- the current slice uses one simple flat pad type
+- one `NotePlatform` per note is a policy for now
+- the family name leaves room for more note-bound element types later without renaming the current object
+
+This is intentionally broader than a one-off name like `MusicPad`, but still concrete enough to describe the first real bound platform type.

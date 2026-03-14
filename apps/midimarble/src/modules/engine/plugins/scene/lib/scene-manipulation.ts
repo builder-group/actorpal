@@ -11,8 +11,17 @@ import {
 	disposeSceneManipulationHandles,
 	getLinearElementHandleKind
 } from './manipulation-handles';
-import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
+import {
+	computeLinearResizeResult,
+	getDraggedHandlePoint
+} from './manipulation-math';
 import { resetSceneManipulationState } from './manipulation-state';
+import {
+	getNotePlatform,
+	getNotePlatformHandlePositions,
+	NOTE_PLATFORM_HANDLE_OFFSET,
+	NOTE_PLATFORM_LIMITS
+} from './note-platform';
 import { clearSceneEntitySelection, selectSceneEntity } from './scene-selection';
 import { sameVec3 } from './vec3';
 
@@ -70,10 +79,72 @@ function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 		return;
 	}
 
+	if (pickedTarget.target === 'note-platform') {
+		selectSceneEntity(app, pickedTarget.entityId);
+		app.updateResource('sceneManipulationState', resetSceneManipulationState());
+		app.r.viewport.setControlsEnabled(true);
+		return;
+	}
+
 	app.r.viewport.setControlsEnabled(false);
 
 	const linearElement = getLinearElement(app, pickedTarget.entityId);
-	if (linearElement == null) {
+	if (linearElement != null) {
+		selectSceneEntity(app, pickedTarget.entityId);
+
+		const planePoint = raycastScenePlane(
+			app,
+			raycaster,
+			pointer,
+			linearElement.transform.position.x
+		);
+		if (planePoint == null) {
+			app.updateResource('sceneManipulationState', resetSceneManipulationState());
+			app.r.viewport.setControlsEnabled(true);
+			return;
+		}
+
+		const mode =
+			pickedTarget.target === 'handle-start'
+				? 'resizeStart'
+				: pickedTarget.target === 'handle-end'
+					? 'resizeEnd'
+					: 'move';
+		const handlePositions = getLinearElementHandlePositions(
+			linearElement.transform.position,
+			linearElement.transform.rotation.x,
+			linearElement.linear.length,
+			linearElement.linear.handleOffset
+		);
+		const dragAnchor =
+			mode === 'move'
+				? linearElement.transform.position
+				: mode === 'resizeStart'
+					? toVec3(handlePositions.start)
+					: toVec3(handlePositions.end);
+
+		app.updateResource(
+			'sceneManipulationState',
+			resetSceneManipulationState({
+				mode,
+				entityId: pickedTarget.entityId,
+				pointerDownClient: { x: event.clientX, y: event.clientY },
+				dragPlaneX: linearElement.transform.position.x,
+				dragOffset: {
+					x: 0,
+					y: planePoint.y - dragAnchor.y,
+					z: planePoint.z - dragAnchor.z
+				}
+			})
+		);
+		return;
+	}
+
+	const notePlatform = getNotePlatform(app, pickedTarget.entityId);
+	if (
+		notePlatform == null ||
+		(pickedTarget.target !== 'handle-start' && pickedTarget.target !== 'handle-end')
+	) {
 		app.updateResource('sceneManipulationState', resetSceneManipulationState());
 		app.r.viewport.setControlsEnabled(true);
 		return;
@@ -81,39 +152,30 @@ function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 
 	selectSceneEntity(app, pickedTarget.entityId);
 
-	const planePoint = raycastScenePlane(app, raycaster, pointer, linearElement.transform.position.x);
+	const planePoint = raycastScenePlane(app, raycaster, pointer, notePlatform.position.x);
 	if (planePoint == null) {
 		app.updateResource('sceneManipulationState', resetSceneManipulationState());
 		app.r.viewport.setControlsEnabled(true);
 		return;
 	}
 
-	const mode =
-		pickedTarget.target === 'handle-start'
-			? 'resizeStart'
-			: pickedTarget.target === 'handle-end'
-				? 'resizeEnd'
-				: 'move';
-	const handlePositions = getLinearElementHandlePositions(
-		linearElement.transform.position,
-		linearElement.transform.rotation.x,
-		linearElement.linear.length,
-		linearElement.linear.handleOffset
+	const handlePositions = getNotePlatformHandlePositions(
+		notePlatform.position,
+		notePlatform.platform.rotationX,
+		notePlatform.platform.length
 	);
 	const dragAnchor =
-		mode === 'move'
-			? linearElement.transform.position
-			: mode === 'resizeStart'
-				? toVec3(handlePositions.start)
-				: toVec3(handlePositions.end);
+		pickedTarget.target === 'handle-start'
+			? toVec3(handlePositions.start)
+			: toVec3(handlePositions.end);
 
 	app.updateResource(
 		'sceneManipulationState',
 		resetSceneManipulationState({
-			mode,
+			mode: pickedTarget.target === 'handle-start' ? 'resizeStart' : 'resizeEnd',
 			entityId: pickedTarget.entityId,
 			pointerDownClient: { x: event.clientX, y: event.clientY },
-			dragPlaneX: linearElement.transform.position.x,
+			dragPlaneX: notePlatform.position.x,
 			dragOffset: {
 				x: 0,
 				y: planePoint.y - dragAnchor.y,
@@ -146,16 +208,53 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 		return;
 	}
 
-	const linearElement = getLinearElement(app, state.entityId);
-	if (linearElement == null) {
-		return;
-	}
-
 	if (!state.isDragging) {
 		app.updateResource('sceneManipulationState', {
 			...state,
 			isDragging: true
 		});
+	}
+
+	const notePlatform = getNotePlatform(app, state.entityId);
+	if (notePlatform != null && (state.mode === 'resizeStart' || state.mode === 'resizeEnd')) {
+		const draggedPoint = getDraggedHandlePoint(state.dragPlaneX, planePoint, state.dragOffset);
+		const resized = computeLinearResizeResult(
+			{
+				position: notePlatform.position,
+				rotation: {
+					x: notePlatform.platform.rotationX,
+					y: 0,
+					z: 0
+				},
+				minLength: NOTE_PLATFORM_LIMITS.length.min,
+				maxLength: NOTE_PLATFORM_LIMITS.length.max,
+				handleOffset: NOTE_PLATFORM_HANDLE_OFFSET
+			},
+			state.mode,
+			draggedPoint
+		);
+		if (
+			Math.abs(resized.rotation.x - notePlatform.platform.rotationX) < 1e-4 &&
+			Math.abs(resized.length - notePlatform.platform.length) < 1e-4
+		) {
+			return;
+		}
+
+		app.updateComponent(state.entityId, app.c.NotePlatformMixin, {
+			...notePlatform.platform,
+			rotationX: resized.rotation.x,
+			length: resized.length
+		});
+		app.updateResource('sceneManipulationState', {
+			...app.r.sceneManipulationState,
+			didEdit: true
+		});
+		return;
+	}
+
+	const linearElement = getLinearElement(app, state.entityId);
+	if (linearElement == null) {
+		return;
 	}
 
 	if (state.mode === 'move' && state.dragOffset != null) {
@@ -169,7 +268,10 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 				...linearElement.transform,
 				position: nextPosition
 			});
-			app.markSimulationDirty();
+			app.updateResource('sceneManipulationState', {
+				...app.r.sceneManipulationState,
+				didEdit: true
+			});
 		}
 		return;
 	}
@@ -212,7 +314,10 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 	}
 
 	if (didChange) {
-		app.markSimulationDirty();
+		app.updateResource('sceneManipulationState', {
+			...app.r.sceneManipulationState,
+			didEdit: true
+		});
 	}
 }
 
@@ -222,8 +327,12 @@ function handlePointerUp(app: TSceneApp): void {
 		return;
 	}
 
+	if (state.didEdit) {
+		app.markSimulationDirty();
+		app.requestSimulationSync();
+	}
+
 	app.updateResource('sceneManipulationState', resetSceneManipulationState());
-	app.requestSimulationSync();
 	app.r.viewport.setControlsEnabled(true);
 }
 
@@ -259,9 +368,15 @@ function pickSceneElement(
 	app: TSceneApp,
 	raycaster: THREE.Raycaster,
 	pointer: THREE.Vector2
-): { entityId: number; target: 'element' | 'marble' } | null {
+): { entityId: number; target: 'element' | 'marble' | 'note-platform' } | null {
 	const objectMap = new Map<THREE.Object3D, number>();
 	for (const eid of getLinearElementEntityIds(app)) {
+		const object = app.r.sceneObjects.get(eid);
+		if (object != null) {
+			objectMap.set(object, eid);
+		}
+	}
+	for (const eid of app.queryEntities(With(app.c.NotePlatformMixin))) {
 		const object = app.r.sceneObjects.get(eid);
 		if (object != null) {
 			objectMap.set(object, eid);
@@ -281,16 +396,18 @@ function pickSceneElement(
 	raycaster.setFromCamera(pointer, app.r.viewport.camera);
 	const intersections = raycaster.intersectObjects([...objectMap.keys()], true);
 	for (const intersection of intersections) {
-		let current: THREE.Object3D | null = intersection.object;
-		while (current != null) {
-			const entityId = objectMap.get(current);
-			if (entityId != null) {
-				return app.hasComponent(entityId, app.c.MarbleTag)
-					? { entityId, target: 'marble' }
-					: { entityId, target: 'element' };
+			let current: THREE.Object3D | null = intersection.object;
+			while (current != null) {
+				const entityId = objectMap.get(current);
+				if (entityId != null) {
+					return app.hasComponent(entityId, app.c.MarbleTag)
+						? { entityId, target: 'marble' }
+						: app.hasComponent(entityId, app.c.NotePlatformMixin)
+							? { entityId, target: 'note-platform' }
+						: { entityId, target: 'element' };
+				}
+				current = current.parent;
 			}
-			current = current.parent;
-		}
 	}
 
 	return null;

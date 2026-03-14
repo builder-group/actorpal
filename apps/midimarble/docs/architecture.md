@@ -246,6 +246,7 @@ Responsibilities:
 - `TrajectorySourceTag`
 - past and future line objects
 - note marker objects and picking
+- `trajectoryProjection` as the shared note-anchor seam
 - simulation-derived path rendering
 - note selection and seek interactions routed through shared engine state
 - clipping the visible future to the imported song horizon
@@ -263,6 +264,7 @@ For the current slice, trajectory is now the first real authoring surface:
 - it renders selected-track MIDI note markers on that path
 - clicking a marker pauses if needed, seeks the shared playhead, and selects the note
 - timeline note selection and trajectory marker selection meet at shared `selectedNoteId`
+- note anchors are exposed through `trajectoryProjection`, not through Three marker objects
 
 ### `Scene`
 
@@ -275,6 +277,7 @@ Responsibilities:
 - direct manipulation state and systems
 - entity bundle factories
 - authored-to-runtime sync for scene-authored track meshes and collider descriptors
+- note-bound platform creation and runtime sync
 
 `Scene` is allowed to attach mixins owned by other plugins when it creates entities:
 
@@ -289,6 +292,9 @@ It may also attach tags owned by extension plugins that this app wires in:
 That is composition, not ownership leakage.
 
 `Scene` does not define what those mixins mean. It only decides that a Midimarble entity uses them.
+
+`Scene` also owns note-bound world entities that reference MIDI note ids.
+The note data itself still stays in `Midi`.
 
 ## Current Entity Model
 
@@ -316,6 +322,27 @@ The marble is composed from:
 - physics setup via `RigidBodyMixin` and `ColliderMixin`
 
 The marble is not modeled as authored transform state after spawn. Its live position comes from physics.
+
+### Note platform
+
+The first note-bound platform is composed from:
+
+- note identity via `NoteBindingMixin`
+- authored local shape via `NotePlatformMixin`
+- live transform via `PositionMixin` and `RotationMixin`
+- render data via `MeshMixin`
+- physics setup via `RigidBodyMixin` and `ColliderMixin`
+
+It is intentionally not a `LinearElementMixin` and not a free-move scene element in this slice.
+
+Its world placement is derived from `trajectoryProjection`:
+
+- `Midi` owns the note
+- `Trajectory` solves and exposes the note anchor
+- `Scene` owns the entity that binds to that note id
+
+If the anchor is unresolved, the platform hides its mesh and clears its colliders.
+If upstream path changes move the anchor, the platform reflows to the new solved position without losing its authored local properties.
 
 ### Pegboard
 

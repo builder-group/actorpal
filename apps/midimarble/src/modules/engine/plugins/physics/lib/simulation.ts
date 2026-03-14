@@ -1,5 +1,5 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
-import type { TCheckpointStore, TPhysicsApp } from '../types';
+import type { TCheckpointStore, TPhysicsApp, TPhysicsWorldHandles } from '../types';
 
 type TPhysicsRestoreAccess = {
 	r: Pick<
@@ -91,31 +91,60 @@ export function syncPreloadWorldToStep(app: TPhysicsRestoreAccess, targetStep: n
 
 export function replaceLiveWorld(
 	app: TPhysicsWorldSwapAccess,
-	world: NonNullable<TPhysicsWorldSwapAccess['r']['world']>
+	world: NonNullable<TPhysicsWorldSwapAccess['r']['world']>,
+	fixedHandles: TPhysicsWorldHandles | null = null
 ): void {
-	refreshPhysicsHandles(app, world);
+	const nextHandles = createSwappedPhysicsHandles(app, world, fixedHandles);
 	const oldWorld = app.r.world;
 	app.updateResource('world', world);
+	app.updateResource('rigidBodies', nextHandles.rigidBodies);
+	app.updateResource('colliders', nextHandles.colliders);
 	oldWorld?.free();
 }
 
-function refreshPhysicsHandles(
+function createSwappedPhysicsHandles(
 	app: TPhysicsWorldSwapAccess,
-	world: NonNullable<TPhysicsWorldSwapAccess['r']['world']>
-): void {
+	world: NonNullable<TPhysicsWorldSwapAccess['r']['world']>,
+	fixedHandles: TPhysicsWorldHandles | null
+): TPhysicsWorldHandles {
+	const nextRigidBodies: TPhysicsApp['r']['rigidBodies'] = new Map();
+	const nextColliders: TPhysicsApp['r']['colliders'] = new Map();
+
+	if (fixedHandles != null) {
+		for (const [eid, body] of fixedHandles.rigidBodies) {
+			nextRigidBodies.set(eid, body);
+		}
+		for (const [eid, colliders] of fixedHandles.colliders) {
+			nextColliders.set(eid, colliders);
+		}
+	}
+
 	for (const [eid, body] of app.r.rigidBodies) {
+		if (fixedHandles?.rigidBodies.has(eid)) {
+			continue;
+		}
+
 		const restoredBody = world.getRigidBody(body.handle);
 		if (restoredBody != null) {
-			app.r.rigidBodies.set(eid, restoredBody);
+			nextRigidBodies.set(eid, restoredBody);
 		}
 	}
 
 	for (const [eid, colliders] of app.r.colliders) {
-		app.r.colliders.set(
-			eid,
-			colliders
-				.map((collider) => world.getCollider(collider.handle))
-				.filter((collider): collider is NonNullable<typeof collider> => collider != null)
-		);
+		if (fixedHandles?.colliders.has(eid)) {
+			continue;
+		}
+
+		const restoredColliders = colliders
+			.map((collider) => world.getCollider(collider.handle))
+			.filter((collider): collider is NonNullable<typeof collider> => collider != null);
+		if (restoredColliders.length > 0) {
+			nextColliders.set(eid, restoredColliders);
+		}
 	}
+
+	return {
+		rigidBodies: nextRigidBodies,
+		colliders: nextColliders
+	};
 }

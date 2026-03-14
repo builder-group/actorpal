@@ -37,6 +37,11 @@ export function clearTrajectoryVisuals(app: TTrajectoryApp): void {
 	state.pastLine.geometry.setDrawRange(0, 0);
 	state.futureLine.geometry.setDrawRange(0, 0);
 	clearNoteMarkers(state.noteMarkerGroup, state.noteIdToMarker, state.markerToNoteId);
+	if (app.r.trajectoryProjection.noteAnchorsById.size > 0) {
+		app.updateResource('trajectoryProjection', {
+			noteAnchorsById: new Map()
+		});
+	}
 }
 
 export function clearNoteMarkers(

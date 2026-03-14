@@ -5,6 +5,7 @@ import { getNoteName } from './timeline-layout';
 export type TInspectorTarget =
 	| TEmptyInspectorTarget
 	| TNoteInspectorTarget
+	| TNotePlatformInspectorTarget
 	| TStraightTrackInspectorTarget
 	| TMarbleInspectorTarget;
 
@@ -27,6 +28,25 @@ export interface TNoteInspectorTarget {
 	trackName: string;
 	pathState: 'past' | 'future' | 'unresolved';
 	position: TVec3 | null;
+	notePlatformEntityId: number | null;
+}
+
+export interface TNotePlatformInspectorTarget {
+	kind: 'note-platform';
+	title: string;
+	entityId: number;
+	noteId: number;
+	noteName: string;
+	tick: number;
+	step: number;
+	pathState: 'past' | 'future' | 'unresolved';
+	position: TVec3 | null;
+	rotationX: number;
+	length: number;
+	width: number;
+	thickness: number;
+	bounce: number;
+	color: string;
 }
 
 export interface TStraightTrackInspectorTarget {
@@ -48,6 +68,7 @@ export interface TMarbleInspectorTarget {
 	entityId: number;
 	position: TVec3;
 	velocity: TVec3 | null;
+	bounce: number;
 }
 
 export function buildNoteInspectorTarget(
@@ -57,7 +78,8 @@ export function buildNoteInspectorTarget(
 	liveStep: number,
 	bufferedStep: number,
 	fixedTimeStepSeconds: number,
-	position: TVec3 | null
+	position: TVec3 | null,
+	notePlatformEntityId: number | null
 ): TNoteInspectorTarget {
 	const step = tickToStep(note.tick, song, fixedTimeStepSeconds);
 	return {
@@ -80,7 +102,43 @@ export function buildNoteInspectorTarget(
 					: step <= bufferedStep
 						? 'future'
 						: 'unresolved',
-		position
+		position,
+		notePlatformEntityId
+	};
+}
+
+export function buildNotePlatformInspectorTarget(
+	trackName: string,
+	note: TMidiNote,
+	entityId: number,
+	step: number,
+	pathState: 'past' | 'future' | 'unresolved',
+	position: TVec3 | null,
+	platform: {
+		rotationX: number;
+		length: number;
+		width: number;
+		thickness: number;
+		bounce: number;
+		color: string;
+	}
+): TNotePlatformInspectorTarget {
+	return {
+		kind: 'note-platform',
+		title: 'Note Platform',
+		entityId,
+		noteId: note.id,
+		noteName: `${getNoteName(note.noteNumber)} · ${trackName}`,
+		tick: note.tick,
+		step,
+		pathState,
+		position,
+		rotationX: platform.rotationX,
+		length: platform.length,
+		width: platform.width,
+		thickness: platform.thickness,
+		bounce: platform.bounce,
+		color: platform.color
 	};
 }
 

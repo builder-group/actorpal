@@ -1,10 +1,24 @@
-import { createMarbleBundle, createPegboardBundle, createStraightTrackBundle } from './bundles';
+import {
+	createMarbleBundle,
+	createNotePlatformBundle,
+	createPegboardBundle,
+	createStraightTrackBundle
+} from './bundles';
 import { createSceneManipulationHandles } from './lib/manipulation-handles';
 import { resetSceneManipulationState } from './lib/manipulation-state';
+import { findNotePlatformEntityId } from './lib/note-platform';
+import {
+	updateMarblePhysicsAuthoring,
+	updateNotePlatformAuthoring
+} from './lib/scene-authoring';
 import { setupSceneManipulation } from './lib/scene-manipulation';
+import { selectSceneEntity } from './lib/scene-selection';
 import {
 	syncAuthoredTransformsToLiveSystem,
+	syncMarbleRuntimeMixinsSystem,
 	syncExclusiveSelectionSystem,
+	syncNotePlatformMarkerStateSystem,
+	syncNotePlatformRuntimeSystem,
 	syncSceneManipulationHandleAppearanceSystem,
 	syncSceneManipulationHandlesSystem,
 	syncStraightTrackRuntimeMixinsSystem
@@ -27,9 +41,12 @@ export function createScenePlugin(): TScenePlugin {
 		deps: ['Default', 'Core', 'Midi', 'Physics', 'Render', 'Trajectory'],
 		components: {
 			MarbleTag: [],
+			MarblePhysicsMixin: [],
 			AuthoredTransformMixin: [],
 			StraightTrackMixin: [],
-			LinearElementMixin: []
+			LinearElementMixin: [],
+			NoteBindingMixin: [],
+			NotePlatformMixin: []
 		},
 		resources: {
 			sceneSelection: {
@@ -46,6 +63,38 @@ export function createScenePlugin(): TScenePlugin {
 			disposeScene(this: TSceneApp): void {
 				disposeScene?.();
 				disposeScene = null;
+			},
+			createOrSelectNotePlatform(this: TSceneApp, noteId: number): number | null {
+				const existingEntityId = findNotePlatformEntityId(this, noteId);
+				if (existingEntityId != null) {
+					selectSceneEntity(this, existingEntityId);
+					return existingEntityId;
+				}
+
+				const anchor = this.r.trajectoryProjection.noteAnchorsById.get(noteId);
+				if (anchor == null) {
+					return null;
+				}
+
+				const entityId = this.spawnBundle(createNotePlatformBundle(this, noteId, anchor.position));
+				selectSceneEntity(this, entityId);
+				this.markSimulationDirty();
+				this.requestSimulationSync();
+				return entityId;
+			},
+			updateNotePlatform(
+				this: TSceneApp,
+				entityId: number,
+				patch: Partial<TSceneApp['c']['NotePlatformMixin'][number]>
+			) {
+				return updateNotePlatformAuthoring(this, entityId, patch);
+			},
+			updateMarblePhysics(
+				this: TSceneApp,
+				entityId: number,
+				patch: Partial<TSceneApp['c']['MarblePhysicsMixin'][number]>
+			) {
+				return updateMarblePhysicsAuthoring(this, entityId, patch);
 			}
 		},
 		setup(app: TSceneApp) {
@@ -74,10 +123,13 @@ export function createScenePlugin(): TScenePlugin {
 			app.spawnBundle(createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION }));
 
 			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'PreUpdate' });
+			app.addSystem(syncMarbleRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncExclusiveSelectionSystem, { set: 'Update' });
 			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
+			app.addSystem(syncNotePlatformRuntimeSystem, { set: 'PostUpdate' });
 			app.addSystem(syncSceneManipulationHandlesSystem, { set: 'PostUpdate' });
+			app.addSystem(syncNotePlatformMarkerStateSystem, { set: 'PostUpdate' });
 			disposeScene = setupSceneManipulation(app);
 		}
 	};

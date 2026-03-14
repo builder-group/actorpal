@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import type { TVec3 } from '../../../types';
 import { findTrackById, tickToStep, type TMidiNote, type TMidiSong } from '../../midi';
+import type { TTrajectoryNoteAnchor } from '../types';
 
-const MARKER_SCALE = 0.22;
-const SELECTED_MARKER_SCALE = 0.3;
+export const MARKER_SCALE = 0.22;
+export const SELECTED_MARKER_SCALE = 0.3;
 
 export interface TTrajectoryMarkerDescriptor {
 	noteId: number;
@@ -12,6 +13,21 @@ export interface TTrajectoryMarkerDescriptor {
 	position: TVec3;
 	phase: 'past' | 'future';
 	selected: boolean;
+}
+
+export function buildTrajectoryProjection(
+	descriptors: TTrajectoryMarkerDescriptor[]
+): Map<number, TTrajectoryNoteAnchor> {
+	const noteAnchorsById = new Map<number, TTrajectoryNoteAnchor>();
+	for (const descriptor of descriptors) {
+		noteAnchorsById.set(descriptor.noteId, {
+			tick: descriptor.tick,
+			step: descriptor.step,
+			position: descriptor.position,
+			phase: descriptor.phase
+		});
+	}
+	return noteAnchorsById;
 }
 
 export function buildTrajectoryMarkerDescriptors(
@@ -84,6 +100,40 @@ export function syncTrajectoryMarkers(
 		group.add(marker);
 		noteIdToMarker.set(descriptor.noteId, marker);
 		markerToNoteId.set(marker, descriptor.noteId);
+	}
+}
+
+export function syncPlacedNoteMarkers(
+	noteIdToMarker: Map<number, THREE.Object3D>,
+	noteAnchorsById: Map<number, TTrajectoryNoteAnchor>,
+	selectedNoteId: number | null,
+	placedNoteIds: Set<number>,
+	materials: {
+		past: THREE.Material;
+		pastPlaced: THREE.Material;
+		future: THREE.Material;
+		futurePlaced: THREE.Material;
+		selected: THREE.Material;
+	}
+): void {
+	for (const [noteId, marker] of noteIdToMarker) {
+		const anchor = noteAnchorsById.get(noteId);
+		if (!(marker instanceof THREE.Mesh) || anchor == null) {
+			continue;
+		}
+
+		const isSelected = noteId === selectedNoteId;
+		const isPlaced = placedNoteIds.has(noteId);
+		marker.material = isSelected
+			? materials.selected
+			: anchor.phase === 'past'
+				? isPlaced
+					? materials.pastPlaced
+					: materials.past
+				: isPlaced
+					? materials.futurePlaced
+					: materials.future;
+		marker.scale.setScalar(isSelected ? SELECTED_MARKER_SCALE : MARKER_SCALE);
 	}
 }
 

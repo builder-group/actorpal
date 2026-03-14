@@ -1,6 +1,6 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type * as THREE from 'three';
-import type { TEngineSystemSet } from '../../types';
+import type { TEngineSystemSet, TVec3 } from '../../types';
 import type { TAudioPlugin } from '../audio';
 import type { TCorePlugin } from '../core';
 import type { TMidiPlugin } from '../midi';
@@ -19,9 +19,11 @@ export type TTrajectoryPlugin = TPlugin<
 		resources: {
 			trajectoryConfig: TTrajectoryConfig;
 			trajectoryState: TTrajectoryState;
+			trajectoryProjection: TTrajectoryProjection;
 		};
 		appExtensions: {
 			disposeTrajectory(): void;
+			syncPlacedNoteMarkers(placedNoteIds: Set<number>): void;
 		};
 		systemSets: TEngineSystemSet;
 	},
@@ -67,8 +69,21 @@ export interface TTrajectoryState {
 	markerToNoteId: Map<THREE.Object3D, number>;
 	markerGeometry: THREE.SphereGeometry;
 	pastMarkerMaterial: THREE.MeshBasicMaterial;
+	pastPlacedMarkerMaterial: THREE.MeshBasicMaterial;
 	futureMarkerMaterial: THREE.MeshBasicMaterial;
+	futurePlacedMarkerMaterial: THREE.MeshBasicMaterial;
 	selectedMarkerMaterial: THREE.MeshBasicMaterial;
+}
+
+export interface TTrajectoryProjection {
+	noteAnchorsById: Map<number, TTrajectoryNoteAnchor>;
+}
+
+export interface TTrajectoryNoteAnchor {
+	tick: number;
+	step: number;
+	position: TVec3;
+	phase: 'past' | 'future';
 }
 
 // MARK: - Components

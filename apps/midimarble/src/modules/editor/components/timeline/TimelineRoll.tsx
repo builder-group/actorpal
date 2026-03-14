@@ -110,6 +110,7 @@ const PianoRollGrid: React.FC<{
 	beatTicks: { majorBeats: number[]; minorBeats: number[] };
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
 	selectedNoteId: number | null;
+	placedNoteIds: Set<number>;
 	onSelectNote: (noteId: number, tick: number) => void;
 }> = ({
 	noteRows,
@@ -119,6 +120,7 @@ const PianoRollGrid: React.FC<{
 	beatTicks,
 	notes,
 	selectedNoteId,
+	placedNoteIds,
 	onSelectNote
 }) => {
 	const noteIndexByNumber = React.useMemo(
@@ -176,7 +178,9 @@ const PianoRollGrid: React.FC<{
 							top: noteRow * NOTE_ROW_HEIGHT + 2,
 							width: Math.max(note.durationTicks * pixelsPerTick, 3),
 							height: NOTE_ROW_HEIGHT - 4,
-							background: `hsl(${210 + Math.round((note.velocity / 127) * 25)} 70% 56%)`,
+							background: placedNoteIds.has(note.id)
+								? `hsl(${145 + Math.round((note.velocity / 127) * 12)} 55% 48%)`
+								: `hsl(${210 + Math.round((note.velocity / 127) * 25)} 70% 56%)`,
 							borderColor:
 								note.id === selectedNoteId ? 'rgba(244, 63, 94, 0.92)' : 'rgba(15, 23, 42, 0.18)',
 							boxShadow:
@@ -212,6 +216,7 @@ export const TimelineRoll: React.FC<{
 	noteRows: number[];
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
 	selectedNoteId: number | null;
+	placedNoteIds: Set<number>;
 	canScrub: boolean;
 	isDragging: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
@@ -229,6 +234,7 @@ export const TimelineRoll: React.FC<{
 	noteRows,
 	notes,
 	selectedNoteId,
+	placedNoteIds,
 	canScrub,
 	isDragging,
 	onPointerDown,
@@ -281,6 +287,7 @@ export const TimelineRoll: React.FC<{
 							beatTicks={beatTicks}
 							notes={notes}
 							selectedNoteId={selectedNoteId}
+							placedNoteIds={placedNoteIds}
 							onSelectNote={onSelectNote}
 						/>
 					</div>

@@ -43,8 +43,8 @@ export function startSimulationSync(app: TPhysicsApp): void {
 		return;
 	}
 
-	const rebuiltWorld = createEditedWorldBase(app);
-	if (rebuiltWorld == null) {
+	const rebuiltWorldBase = createEditedWorldBase(app);
+	if (rebuiltWorldBase == null) {
 		return;
 	}
 
@@ -53,7 +53,8 @@ export function startSimulationSync(app: TPhysicsApp): void {
 		targetStep: getTransportTargetStep(app),
 		currentStep: 0,
 		resumeWhenReady: simulationSync.resumeWhenReady,
-		world: rebuiltWorld,
-		checkpointStore: new Map([[0, rebuiltWorld.takeSnapshot()]])
+		world: rebuiltWorldBase.world,
+		checkpointStore: new Map([[0, rebuiltWorldBase.world.takeSnapshot()]]),
+		fixedHandles: rebuiltWorldBase.fixedHandles
 	});
 }

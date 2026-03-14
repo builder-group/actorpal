@@ -1,4 +1,5 @@
 import React from 'react';
+import { FileUp, SlidersHorizontal, X } from 'lucide-react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
@@ -94,17 +95,140 @@ const AudioSection: React.FC = () => {
 
 const InnerEditor: React.FC = () => {
 	const cx = useEditorCx();
+	const app = cx.runtime.app;
+	const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+	const [isImporting, setIsImporting] = React.useState(false);
+	const midiSong = useResource(app, 'midiSong');
+	const selectedTrackId = useResource(app, 'selectedTrackId');
+	const midiImportError = useResource(app, 'midiImportError');
+	const fileInputRef = React.useRef<HTMLInputElement>(null);
+	const selectedTrack = React.useMemo(
+		() => midiSong?.tracks.find((track) => track.id === selectedTrackId) ?? null,
+		[midiSong, selectedTrackId]
+	);
+	const songLabel = midiSong?.name ?? 'No MIDI';
+	const needsMidiStart = midiSong == null || selectedTrack == null;
+
+	const openMidiPicker = React.useCallback(() => {
+		if (!isImporting) {
+			fileInputRef.current?.click();
+		}
+	}, [isImporting]);
+
+	const handleMidiFileChange = React.useCallback(
+		async (event: React.ChangeEvent<HTMLInputElement>) => {
+			const file = event.target.files?.[0];
+			event.target.value = '';
+			if (file == null) {
+				return;
+			}
+
+			setIsImporting(true);
+			try {
+				await cx.runtime.loadMidiFile(file);
+			} finally {
+				setIsImporting(false);
+			}
+		},
+		[cx.runtime]
+	);
 
 	return (
 		<main className="bg-base-100 h-screen overflow-hidden">
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept=".mid,.midi,audio/midi,audio/x-midi"
+				className="hidden"
+				onChange={handleMidiFileChange}
+			/>
+
+			{needsMidiStart ? (
+				<section className="from-base-100 via-base-50 to-base-100 flex h-full items-center justify-center bg-linear-to-br px-6">
+					<div className="border-base-200 bg-base-0 w-full max-w-xl rounded-2xl border px-8 py-10 shadow-lg">
+						<p className="text-base-500 text-xs font-semibold tracking-[0.18em] uppercase">
+							Midimarble
+						</p>
+						<h1 className="text-base-950 mt-3 text-3xl font-semibold tracking-tight">
+							Open a MIDI file to start shaping the marble path.
+						</h1>
+						<p className="text-base-600 mt-3 max-w-lg text-sm leading-6">
+							Import a single MIDI track first. Then the timeline, note markers, and note-bound
+							platform workflow become available in the scene.
+						</p>
+
+						<div className="mt-8 flex items-center gap-3">
+							<button
+								type="button"
+								className="bg-base-900 text-base-0 hover:bg-base-800 inline-flex h-11 items-center gap-2 rounded-md px-4 text-sm font-medium transition disabled:opacity-60"
+								disabled={isImporting}
+								onClick={openMidiPicker}
+							>
+								<FileUp className="h-4 w-4" />
+								<span>{isImporting ? 'Importing…' : 'Open MIDI'}</span>
+							</button>
+						</div>
+
+						{midiImportError != null ? (
+							<p className="mt-4 text-sm text-red-700">{midiImportError}</p>
+						) : selectedTrack == null && midiSong != null ? (
+							<p className="mt-4 text-sm text-red-700">
+								The imported MIDI file does not contain a playable note track yet.
+							</p>
+						) : null}
+					</div>
+				</section>
+			) : (
 			<Group orientation="vertical" className="h-full">
 				<Panel>
 					<Group className="h-full">
 						<Panel>
 							<section className="border-base-300 relative h-full min-w-0 overflow-hidden border-r">
 								<div ref={cx.setContainer} className="h-full w-full" />
-								<div className="bg-base-0/85 text-base-700 pointer-events-none absolute top-3 left-3 rounded-md px-3 py-1.5 text-xs">
-									ECSify + Three.js + Rapier scene
+								<div className="absolute top-3 left-3 z-10">
+									<div className="flex w-fit min-w-full items-center gap-2">
+										<div className="bg-base-0/90 text-base-700 inline-flex h-9 items-center rounded-md px-3 text-xs font-medium tracking-wide uppercase shadow-sm">
+											{songLabel}
+											{selectedTrack != null ? (
+												<span className="text-base-500 ml-2">{selectedTrack.name}</span>
+											) : null}
+										</div>
+										<button
+											type="button"
+											className={`pointer-events-auto border-base-200 hover:bg-base-100 bg-base-0/90 inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition ${
+												isSettingsOpen ? 'bg-base-900 text-base-0 border-base-900 hover:bg-base-900' : 'text-base-600'
+											}`}
+											aria-pressed={isSettingsOpen}
+											aria-label={isSettingsOpen ? 'Close settings' : 'Open settings'}
+											title={isSettingsOpen ? 'Close settings' : 'Open settings'}
+											onClick={() => setIsSettingsOpen((current) => !current)}
+										>
+											<SlidersHorizontal className="h-4 w-4" />
+										</button>
+									</div>
+
+									{isSettingsOpen ? (
+										<div className="pointer-events-auto bg-base-0 border-base-200 mt-2 w-max min-w-full max-w-[min(22rem,calc(100vw-2rem))] rounded-lg border p-4 shadow-xl">
+											<div className="mb-4 flex items-center justify-between gap-3">
+												<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">
+													Settings
+												</h3>
+												<button
+													type="button"
+													className="border-base-200 text-base-500 hover:bg-base-100 inline-flex h-8 w-8 items-center justify-center rounded-md border transition"
+													aria-label="Close settings"
+													onClick={() => setIsSettingsOpen(false)}
+												>
+													<X className="h-4 w-4" />
+												</button>
+											</div>
+
+											<div className="flex flex-col gap-5">
+												<TrajectorySection />
+												<AudioSection />
+											</div>
+										</div>
+									) : null}
 								</div>
 							</section>
 						</Panel>
@@ -112,12 +236,13 @@ const InnerEditor: React.FC = () => {
 						<Separator className="border-base-300 w-px shrink-0 cursor-col-resize border-r" />
 
 						<Panel defaultSize="320px" minSize="200px" maxSize="500px">
-							<aside className="bg-base-50 flex h-full flex-col gap-6 overflow-y-auto p-4">
-								<SelectionInspector />
-								<hr className="border-base-200" />
-								<TrajectorySection />
-								<hr className="border-base-200" />
-								<AudioSection />
+							<aside className="bg-base-50 flex h-full flex-col overflow-hidden p-4">
+								<h2 className="text-base-900 mb-4 text-xs font-semibold tracking-wide uppercase">
+									Inspector
+								</h2>
+								<div className="min-h-0 flex-1 overflow-y-auto">
+									<SelectionInspector showTitle={false} />
+								</div>
 							</aside>
 						</Panel>
 					</Group>
@@ -129,6 +254,7 @@ const InnerEditor: React.FC = () => {
 					<Timeline className="h-full" />
 				</Panel>
 			</Group>
+			)}
 		</main>
 	);
 };

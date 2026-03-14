@@ -44,6 +44,11 @@ export type TRRigidBodies = Map<number, RAPIER.RigidBody>;
 export type TRColliders = Map<number, RAPIER.Collider[]>;
 export type TCheckpointStore = Map<number, Uint8Array>;
 
+export interface TPhysicsWorldHandles {
+	rigidBodies: TRRigidBodies;
+	colliders: TRColliders;
+}
+
 export interface TSimulationConfig {
 	checkpointIntervalSteps: number;
 	preloadHorizonSteps: number;
@@ -74,6 +79,7 @@ export interface TRebuildingSimulationSync {
 	resumeWhenReady: boolean;
 	world: RAPIER.World;
 	checkpointStore: TCheckpointStore;
+	fixedHandles: TPhysicsWorldHandles;
 }
 
 export interface TCRigidBodyMixin {
@@ -95,6 +101,7 @@ interface TBaseColliderDescriptor {
 	rotation?: TVec3;
 	friction?: number;
 	restitution?: number;
+	restitutionCombineRule?: 'average' | 'min' | 'multiply' | 'max';
 	density?: number;
 	sensor?: boolean;
 }

@@ -47,9 +47,12 @@ The current editor now supports:
 - note markers rendered on the marble trajectory for the selected track
 - clicking a note marker to pause if needed, seek, and select that note
 - clicking a timeline note to select the same note and jump there
-- a read-only inspector for the current selected note, straight track, or marble
+- a simple read-only inspector for the current selected note, straight track, or marble
+- creating or reselecting one `NotePlatform` per note from the selected note inspector
+- inspector-first editing for the selected note platform's rotation and length
+- placed vs unplaced note state reflected in the timeline and trajectory
 
-This slice intentionally stops before note-bound platform creation.
+This is the first proof of note-bound geometry, not the finished platform toolset.
 
 ## Core UX Model
 
@@ -112,8 +115,9 @@ The intended workflow is:
    - or by pressing play
 5. The editor shows note markers on the marble trajectory for the selected track.
 6. The user clicks a note marker to select that musical moment and jump the playhead there.
-7. In the next slice, that selected note becomes the place where a note-bound platform is created.
-8. The user continues forward to the next note and repeats the process.
+7. The inspector lets the user create or reselect that note's `NotePlatform`.
+8. The user adjusts that platform's local authored settings.
+9. The user continues forward to the next note and repeats the process.
 
 This loop should feel incremental and musical, not batch-generated.
 
@@ -198,7 +202,8 @@ Their job is to support authoring, not only display.
 Marker interactions should evolve like this:
 
 - current slice: click selects the note and seeks there
-- next slice: click creates or selects the note-bound platform for that note
+- current platform flow: the inspector creates or selects the note-bound platform for that note
+- later slice: marker interaction may become a more direct creation shortcut
 - selected: show that the note is the current editing target
 
 The user should not need to mentally translate from a MIDI list into 3D space.

@@ -1,16 +1,22 @@
 import { Entity, With } from 'ecsify';
 import React from 'react';
 import { useQueryComponents, useResource } from '@/modules/engine';
-import { findTrackById } from '@/modules/engine/plugins/midi';
+import { findNoteById, findTrackById, tickToStep } from '@/modules/engine/plugins/midi';
+import { MARBLE_PHYSICS_LIMITS } from '@/modules/engine/plugins/scene/lib/marble';
+import { NOTE_PLATFORM_LIMITS } from '@/modules/engine/plugins/scene/lib/note-platform';
 import { useEditorCx } from '../EditorCx';
 import {
 	buildEmptyInspectorTarget,
 	buildNoteInspectorTarget,
+	buildNotePlatformInspectorTarget,
 	type TInspectorTarget
 } from '../lib/inspector-target';
 
-export const SelectionInspector: React.FC = () => {
-	const app = useEditorCx().runtime.app;
+export const SelectionInspector: React.FC<{
+	showTitle?: boolean;
+}> = ({ showTitle = true }) => {
+	const runtime = useEditorCx().runtime;
+	const app = runtime.app;
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
@@ -18,6 +24,7 @@ export const SelectionInspector: React.FC = () => {
 	const liveStep = useResource(app, 'liveStep');
 	const bufferedStep = useResource(app, 'bufferedStep');
 	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
+	const trajectoryProjection = useResource(app, 'trajectoryProjection');
 
 	const tracks = useQueryComponents(app, {
 		components: [
@@ -34,9 +41,23 @@ export const SelectionInspector: React.FC = () => {
 		]
 	});
 	const marbles = useQueryComponents(app, {
-		components: [Entity, app.c.PositionMixin] as const,
+		components: [Entity, app.c.PositionMixin, app.c.MarblePhysicsMixin] as const,
 		queryOrFilter: With(app.c.MarbleTag),
-		watchComponents: [app.c.MarbleTag, app.c.PositionMixin]
+		watchComponents: [app.c.MarbleTag, app.c.PositionMixin, app.c.MarblePhysicsMixin]
+	});
+	const notePlatforms = useQueryComponents(app, {
+		components: [
+			Entity,
+			app.c.NoteBindingMixin,
+			app.c.NotePlatformMixin,
+			app.c.PositionMixin
+		] as const,
+		queryOrFilter: With(app.c.NotePlatformMixin),
+		watchComponents: [
+			app.c.NoteBindingMixin,
+			app.c.NotePlatformMixin,
+			app.c.PositionMixin
+		]
 	});
 
 	const selectedTrack = React.useMemo(
@@ -47,10 +68,14 @@ export const SelectionInspector: React.FC = () => {
 		() => selectedTrack?.notes.find((note) => note.id === selectedNoteId) ?? null,
 		[selectedNoteId, selectedTrack]
 	);
+	const notePlatformByNoteId = React.useMemo(
+		() => new Map(notePlatforms.map(([eid, binding]) => [binding.noteId, eid])),
+		[notePlatforms]
+	);
 
 	const target = React.useMemo<TInspectorTarget>(() => {
 		if (midiSong != null && selectedTrack != null && selectedNote != null) {
-			const markerPosition = app.r.trajectoryState.noteIdToMarker.get(selectedNote.id)?.position;
+			const anchor = trajectoryProjection.noteAnchorsById.get(selectedNote.id) ?? null;
 			return buildNoteInspectorTarget(
 				midiSong,
 				selectedTrack.name,
@@ -58,17 +83,32 @@ export const SelectionInspector: React.FC = () => {
 				liveStep,
 				bufferedStep,
 				fixedTimeStepSeconds,
-				markerPosition == null
-					? null
-					: {
-							x: markerPosition.x,
-							y: markerPosition.y,
-							z: markerPosition.z
-						}
+				anchor?.position ?? null,
+				notePlatformByNoteId.get(selectedNote.id) ?? null
 			);
 		}
 
 		if (sceneSelection.entityId != null) {
+			const selectedNotePlatform = notePlatforms.find(([eid]) => eid === sceneSelection.entityId);
+			if (selectedNotePlatform != null) {
+				const [eid, binding, platform, position] = selectedNotePlatform;
+				const noteMatch = findNoteById(midiSong, binding.noteId);
+				if (noteMatch != null && midiSong != null) {
+					const anchor = trajectoryProjection.noteAnchorsById.get(binding.noteId);
+					const step =
+						anchor?.step ?? tickToStep(noteMatch.note.tick, midiSong, fixedTimeStepSeconds);
+					return buildNotePlatformInspectorTarget(
+						noteMatch.track.name,
+						noteMatch.note,
+						eid,
+						step,
+						anchor?.phase ?? 'unresolved',
+						anchor?.position ?? null,
+						platform
+					);
+				}
+			}
+
 			const selectedTrackEntity = tracks.find(([eid]) => eid === sceneSelection.entityId);
 			if (selectedTrackEntity != null) {
 				const [eid, transform, linear, track] = selectedTrackEntity;
@@ -88,13 +128,14 @@ export const SelectionInspector: React.FC = () => {
 
 			const selectedMarble = marbles.find(([eid]) => eid === sceneSelection.entityId);
 			if (selectedMarble != null) {
-				const [eid, position] = selectedMarble;
+				const [eid, position, marblePhysics] = selectedMarble;
 				const velocity = app.r.rigidBodies.get(eid)?.linvel();
 				return {
 					kind: 'marble',
 					title: 'Marble',
 					entityId: eid,
 					position,
+					bounce: marblePhysics.bounce,
 					velocity:
 						velocity == null
 							? null
@@ -115,21 +156,69 @@ export const SelectionInspector: React.FC = () => {
 		liveStep,
 		marbles,
 		midiSong,
+		notePlatformByNoteId,
+		notePlatforms,
 		sceneSelection.entityId,
 		selectedNote,
 		selectedTrack,
-		tracks
+		tracks,
+		trajectoryProjection.noteAnchorsById
 	]);
 
 	return (
 		<section>
-			<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Inspector</h3>
+			{showTitle ? (
+				<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Inspector</h3>
+			) : null}
 
-			<div className="mt-3">
+			<div className={showTitle ? 'mt-3' : ''}>
 				{target.kind === 'empty' ? <EmptyState message={target.message} /> : null}
-				{target.kind === 'note' ? <NoteInspector target={target} /> : null}
+				{target.kind === 'note' ? (
+					<NoteInspector
+						target={target}
+						onCreateOrSelectNotePlatform={(noteId) => void runtime.createOrSelectNotePlatform(noteId)}
+					/>
+				) : null}
+				{target.kind === 'note-platform' ? (
+					<NotePlatformInspector
+						target={target}
+						onRotationChange={(value) =>
+							runtime.updateNotePlatform(target.entityId, {
+								rotationX: clamp(
+									value,
+									NOTE_PLATFORM_LIMITS.rotationX.min,
+									NOTE_PLATFORM_LIMITS.rotationX.max
+								)
+							})
+						}
+						onBounceChange={(value) =>
+							runtime.updateNotePlatform(target.entityId, {
+								bounce: clamp(
+									value,
+									NOTE_PLATFORM_LIMITS.bounce.min,
+									NOTE_PLATFORM_LIMITS.bounce.max
+								)
+							})
+						}
+						onCommit={() => runtime.commitSceneEdit()}
+					/>
+				) : null}
 				{target.kind === 'straight-track' ? <StraightTrackInspector target={target} /> : null}
-				{target.kind === 'marble' ? <MarbleInspector target={target} /> : null}
+				{target.kind === 'marble' ? (
+					<MarbleInspector
+						target={target}
+						onBounceChange={(value) =>
+							runtime.updateMarblePhysics(target.entityId, {
+								bounce: clamp(
+									value,
+									MARBLE_PHYSICS_LIMITS.bounce.min,
+									MARBLE_PHYSICS_LIMITS.bounce.max
+								)
+							})
+						}
+						onCommit={() => runtime.commitSceneEdit()}
+					/>
+				) : null}
 			</div>
 		</section>
 	);
@@ -143,7 +232,8 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => (
 
 const NoteInspector: React.FC<{
 	target: Extract<TInspectorTarget, { kind: 'note' }>;
-}> = ({ target }) => (
+	onCreateOrSelectNotePlatform: (noteId: number) => void;
+}> = ({ target, onCreateOrSelectNotePlatform }) => (
 	<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
 		<InspectorTitle title={target.title} subtitle={`${target.noteName} · ${target.trackName}`} />
 		<InspectorField label="Tick" value={Math.round(target.tick)} mono />
@@ -153,6 +243,59 @@ const NoteInspector: React.FC<{
 		<InspectorField label="Channel" value={target.channel} mono />
 		<InspectorField label="Path" value={capitalize(target.pathState)} />
 		{target.position != null ? <Vec3Field label="Position" value={target.position} /> : null}
+		<div className="mt-4">
+			<button
+				type="button"
+				className="bg-base-900 text-base-0 disabled:bg-base-200 disabled:text-base-500 w-full rounded-md px-3 py-2 text-sm font-medium"
+				disabled={target.notePlatformEntityId == null && target.position == null}
+				onClick={() => onCreateOrSelectNotePlatform(target.noteId)}
+			>
+				{target.notePlatformEntityId == null ? 'Create Note Platform' : 'Select Note Platform'}
+			</button>
+			{target.notePlatformEntityId == null && target.position == null ? (
+				<p className="text-base-500 mt-2 text-xs">
+					This note must be within the solved trajectory horizon before a note platform can be created.
+				</p>
+			) : null}
+		</div>
+	</div>
+);
+
+const NotePlatformInspector: React.FC<{
+	target: Extract<TInspectorTarget, { kind: 'note-platform' }>;
+	onRotationChange: (value: number) => void;
+	onBounceChange: (value: number) => void;
+	onCommit: () => void;
+}> = ({ target, onRotationChange, onBounceChange, onCommit }) => (
+	<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
+		<InspectorTitle title={target.title} subtitle={`Entity ${target.entityId}`} />
+		<InspectorField label="Note" value={target.noteName} />
+		<InspectorField label="Tick" value={Math.round(target.tick)} mono />
+		<InspectorField label="Step" value={target.step} mono />
+		<InspectorField label="Path" value={capitalize(target.pathState)} />
+		{target.position != null ? <Vec3Field label="Position" value={target.position} /> : null}
+		<SliderField
+			label="Rotation"
+			value={target.rotationX}
+			min={NOTE_PLATFORM_LIMITS.rotationX.min}
+			max={NOTE_PLATFORM_LIMITS.rotationX.max}
+			step={0.01}
+			onChange={onRotationChange}
+			onCommit={onCommit}
+		/>
+		<SliderField
+			label="Bounce"
+			value={target.bounce}
+			min={NOTE_PLATFORM_LIMITS.bounce.min}
+			max={NOTE_PLATFORM_LIMITS.bounce.max}
+			step={0.01}
+			onChange={onBounceChange}
+			onCommit={onCommit}
+		/>
+		<InspectorField label="Width" value={target.width.toFixed(2)} mono />
+		<InspectorField label="Depth" value={target.length.toFixed(2)} mono />
+		<InspectorField label="Thickness" value={target.thickness.toFixed(2)} mono />
+		<InspectorColorField label="Color" value={target.color} />
 	</div>
 );
 
@@ -173,11 +316,22 @@ const StraightTrackInspector: React.FC<{
 
 const MarbleInspector: React.FC<{
 	target: Extract<TInspectorTarget, { kind: 'marble' }>;
-}> = ({ target }) => (
+	onBounceChange: (value: number) => void;
+	onCommit: () => void;
+}> = ({ target, onBounceChange, onCommit }) => (
 	<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
 		<InspectorTitle title={target.title} subtitle={`Entity ${target.entityId}`} />
 		<Vec3Field label="Position" value={target.position} />
 		{target.velocity != null ? <Vec3Field label="Velocity" value={target.velocity} /> : null}
+		<SliderField
+			label="Bounce"
+			value={target.bounce}
+			min={MARBLE_PHYSICS_LIMITS.bounce.min}
+			max={MARBLE_PHYSICS_LIMITS.bounce.max}
+			step={0.01}
+			onChange={onBounceChange}
+			onCommit={onCommit}
+		/>
 	</div>
 );
 
@@ -230,4 +384,38 @@ const Vec3Field: React.FC<{
 
 function capitalize(value: string): string {
 	return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+const SliderField: React.FC<{
+	label: string;
+	value: number;
+	min: number;
+	max: number;
+	step: number;
+	onChange: (value: number) => void;
+	onCommit?: () => void;
+}> = ({ label, value, min, max, step, onChange, onCommit }) => (
+	<label className="mt-3 block">
+		<div className="flex items-baseline justify-between gap-4">
+			<span className="text-base-500 text-xs tracking-wide uppercase">{label}</span>
+			<span className="text-base-800 font-mono text-sm">{value.toFixed(2)}</span>
+		</div>
+		<input
+			type="range"
+			min={min}
+			max={max}
+			step={step}
+			value={value}
+			className="mt-1 block w-full"
+			onChange={(event) => onChange(Number(event.target.value))}
+			onPointerUp={onCommit}
+			onPointerCancel={onCommit}
+			onBlur={onCommit}
+			onKeyUp={onCommit}
+		/>
+	</label>
+);
+
+function clamp(value: number, min: number, max: number): number {
+	return Math.max(min, Math.min(max, value));
 }

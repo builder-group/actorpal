@@ -190,7 +190,7 @@ export function advanceSimulationSyncSystem(app: TPhysicsApp) {
 		storeCheckpoint(app.r.checkpointStore, step, snapshot);
 	}
 
-	replaceLiveWorld(app, simulationSync.world);
+	replaceLiveWorld(app, simulationSync.world, simulationSync.fixedHandles);
 
 	app.r.preloadWorld?.free();
 	const rapier = app.r.rapier;

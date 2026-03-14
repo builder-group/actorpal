@@ -14,9 +14,12 @@ export type TScenePlugin = TPlugin<
 		name: 'Scene';
 		components: {
 			MarbleTag: TCMarbleTag[];
+			MarblePhysicsMixin: TCMarblePhysicsMixin[];
 			AuthoredTransformMixin: TCAuthoredTransformMixin[];
 			StraightTrackMixin: TCStraightTrackMixin[];
 			LinearElementMixin: TCLinearElementMixin[];
+			NoteBindingMixin: TCNoteBindingMixin[];
+			NotePlatformMixin: TCNotePlatformMixin[];
 		};
 		resources: {
 			sceneSelection: TSceneSelection;
@@ -26,6 +29,9 @@ export type TScenePlugin = TPlugin<
 		};
 		appExtensions: {
 			disposeScene(): void;
+			createOrSelectNotePlatform(noteId: number): number | null;
+			updateNotePlatform(entityId: number, patch: Partial<TCNotePlatformMixin>): boolean;
+			updateMarblePhysics(entityId: number, patch: Partial<TCMarblePhysicsMixin>): boolean;
 		};
 		systemSets: TEngineSystemSet;
 	},
@@ -54,6 +60,10 @@ export interface TCAuthoredTransformMixin {
 
 export interface TCMarbleTag {}
 
+export interface TCMarblePhysicsMixin {
+	bounce: number;
+}
+
 export interface TCStraightTrackMixin {
 	height: number;
 	width: number;
@@ -69,6 +79,19 @@ export interface TCLinearElementMixin {
 	handleOffset: number;
 }
 
+export interface TCNoteBindingMixin {
+	noteId: number;
+}
+
+export interface TCNotePlatformMixin {
+	rotationX: number;
+	length: number;
+	width: number;
+	thickness: number;
+	bounce: number;
+	color: string;
+}
+
 export interface TSceneSelection {
 	entityId: number | null;
 }
@@ -77,6 +100,7 @@ export interface TSceneManipulationState {
 	mode: 'idle' | 'move' | 'resizeStart' | 'resizeEnd';
 	entityId: number | null;
 	isDragging: boolean;
+	didEdit: boolean;
 	pointerDownClient: { x: number; y: number } | null;
 	dragPlaneX: number | null;
 	dragOffset: TVec3 | null;

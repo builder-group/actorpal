@@ -1,0 +1,102 @@
+import * as THREE from 'three';
+import { describe, expect, it, vi } from 'vitest';
+import { syncNotePlatformRuntimeSystem } from './systems';
+
+describe('syncNotePlatformRuntimeSystem', () => {
+	it('requests a follow-up simulation sync when note anchors move a bound platform', () => {
+		const updateComponent = vi.fn();
+		const markSimulationDirty = vi.fn();
+		const requestSimulationSync = vi.fn();
+		const notePlatformMesh = new THREE.Mesh(
+			new THREE.BoxGeometry(1, 1, 1),
+			new THREE.MeshBasicMaterial()
+		);
+		const app = {
+			c: {
+				NotePlatformMixin: Symbol('NotePlatformMixin'),
+				NoteBindingMixin: Symbol('NoteBindingMixin'),
+				PositionMixin: Symbol('PositionMixin'),
+				RotationMixin: Symbol('RotationMixin'),
+				MeshMixin: Symbol('MeshMixin'),
+				ColliderMixin: Symbol('ColliderMixin')
+			},
+			r: {
+				simulationSync: { mode: 'idle' },
+				trajectoryProjection: {
+					noteAnchorsById: new Map([
+						[
+							7,
+							{
+								tick: 120,
+								step: 30,
+								position: { x: 1, y: 2, z: 3 },
+								phase: 'future'
+							}
+						]
+					])
+				}
+			},
+			wasResourceChanged: vi.fn((resource: string) => resource === 'trajectoryProjection'),
+			queryEntities: vi.fn(() => []),
+			queryComponents: vi.fn(() => [
+				[
+					12,
+					{ noteId: 7 },
+					{
+						rotationX: 0,
+						length: 1.2,
+						width: 0.84,
+						thickness: 0.22,
+						bounce: 0.58,
+						color: '#2a5e92'
+					},
+					{ x: 0, y: 0, z: 0 },
+					{ x: 0, y: 0, z: 0 },
+					{ type: 'three', object: notePlatformMesh },
+					{
+						descriptors: [
+							{
+								shape: 'cuboid',
+								halfExtents: { x: 0.4, y: 0.11, z: 0.6 }
+							}
+						]
+					}
+				]
+			]),
+			updateComponent,
+			markSimulationDirty,
+			requestSimulationSync
+		};
+
+		syncNotePlatformRuntimeSystem(app as never);
+
+		expect(updateComponent).toHaveBeenCalledWith(
+			12,
+			app.c.PositionMixin,
+			expect.objectContaining({ x: 1, z: 3 })
+		);
+		expect(markSimulationDirty).toHaveBeenCalledOnce();
+		expect(requestSimulationSync).toHaveBeenCalledOnce();
+	});
+
+	it('does not touch note-platform runtime while simulation sync is rebuilding', () => {
+		const app = {
+			r: {
+				simulationSync: { mode: 'rebuilding' }
+			},
+			wasResourceChanged: vi.fn(),
+			queryEntities: vi.fn(),
+			queryComponents: vi.fn(),
+			updateComponent: vi.fn(),
+			markSimulationDirty: vi.fn(),
+			requestSimulationSync: vi.fn()
+		};
+
+		syncNotePlatformRuntimeSystem(app as never);
+
+		expect(app.wasResourceChanged).not.toHaveBeenCalled();
+		expect(app.updateComponent).not.toHaveBeenCalled();
+		expect(app.markSimulationDirty).not.toHaveBeenCalled();
+		expect(app.requestSimulationSync).not.toHaveBeenCalled();
+	});
+});

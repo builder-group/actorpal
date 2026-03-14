@@ -1,5 +1,10 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { buildTrajectoryMarkerDescriptors } from './note-markers';
+import {
+	buildTrajectoryMarkerDescriptors,
+	buildTrajectoryProjection,
+	syncPlacedNoteMarkers
+} from './note-markers';
 
 const SONG = {
 	bpm: 120,
@@ -46,5 +51,65 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 				selected: true
 			}
 		]);
+	});
+
+	it('builds note anchor projection from the same marker descriptors', () => {
+		const descriptors = buildTrajectoryMarkerDescriptors(
+			SONG,
+			{
+				notes: [{ id: 4, tick: 12, durationTicks: 120, noteNumber: 65, velocity: 88, channel: 0 }]
+			},
+			null,
+			1,
+			4,
+			1 / 240,
+			new Map([[3, { x: 3, y: 2, z: 1 }]])
+		);
+
+		expect(buildTrajectoryProjection(descriptors)).toEqual(
+			new Map([
+				[
+					4,
+					{
+						tick: 12,
+						step: 3,
+						position: { x: 3, y: 2, z: 1 },
+						phase: 'future'
+					}
+				]
+			])
+		);
+	});
+
+	it('styles placed markers without scene mutating trajectory internals directly', () => {
+		const past = new THREE.MeshBasicMaterial();
+		const pastPlaced = new THREE.MeshBasicMaterial();
+		const future = new THREE.MeshBasicMaterial();
+		const futurePlaced = new THREE.MeshBasicMaterial();
+		const selected = new THREE.MeshBasicMaterial();
+		const noteIdToMarker = new Map<number, THREE.Object3D>([
+			[1, new THREE.Mesh(new THREE.SphereGeometry(1), past)],
+			[2, new THREE.Mesh(new THREE.SphereGeometry(1), future)]
+		]);
+
+		syncPlacedNoteMarkers(
+			noteIdToMarker,
+			new Map([
+				[1, { tick: 0, step: 0, position: { x: 0, y: 0, z: 0 }, phase: 'past' as const }],
+				[2, { tick: 8, step: 2, position: { x: 2, y: 0, z: 0 }, phase: 'future' as const }]
+			]),
+			2,
+			new Set([1]),
+			{
+				past,
+				pastPlaced,
+				future,
+				futurePlaced,
+				selected
+			}
+		);
+
+		expect((noteIdToMarker.get(1) as THREE.Mesh).material).toBe(pastPlaced);
+		expect((noteIdToMarker.get(2) as THREE.Mesh).material).toBe(selected);
 	});
 });

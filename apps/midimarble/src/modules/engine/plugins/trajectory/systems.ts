@@ -5,7 +5,11 @@ import {
 	setTrajectoryLinePoints,
 	syncTrajectoryLineColors
 } from './lib/line-state';
-import { buildTrajectoryMarkerDescriptors, syncTrajectoryMarkers } from './lib/note-markers';
+import {
+	buildTrajectoryMarkerDescriptors,
+	buildTrajectoryProjection,
+	syncTrajectoryMarkers
+} from './lib/note-markers';
 import { shouldRefreshTrajectory } from './lib/refresh';
 import { rebuildTrajectorySamples } from './lib/trajectory-samples';
 import type { TTrajectoryApp } from './types';
@@ -69,6 +73,8 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 		app.r.fixedTimeStepSeconds,
 		samples.positionsByStep
 	);
+	const noteAnchorsById = buildTrajectoryProjection(markers);
+	app.updateResource('trajectoryProjection', { noteAnchorsById });
 
 	syncTrajectoryMarkers(
 		state.noteMarkerGroup,

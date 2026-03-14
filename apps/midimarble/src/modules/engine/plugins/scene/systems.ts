@@ -1,8 +1,18 @@
-import { Added, Changed, Entity, Or } from 'ecsify';
+import { Added, Changed, Entity, Or, Removed } from 'ecsify';
 import * as THREE from 'three';
 import { createStraightTrackColliders, createStraightTrackGeometry } from './bundles';
 import { getLinearElement, getLinearElementHandlePositions } from './lib/linear-element';
+import { createMarbleColliderDescriptors, getMarbleRadius } from './lib/marble';
 import { updateHandleAppearance } from './lib/manipulation-handles';
+import {
+	getNotePlatform,
+	getNotePlatformHandlePositions,
+	getPlacedNoteIds
+} from './lib/note-platform';
+import {
+	syncResolvedNotePlatform,
+	syncUnresolvedNotePlatform
+} from './lib/note-platform-runtime';
 import { clearSceneEntitySelection } from './lib/scene-selection';
 import { sameVec3 } from './lib/vec3';
 import type { TSceneApp } from './types';
@@ -62,6 +72,79 @@ export function syncStraightTrackRuntimeMixinsSystem(app: TSceneApp) {
 	}
 }
 
+export function syncMarbleRuntimeMixinsSystem(app: TSceneApp) {
+	for (const [eid, marblePhysics, collider] of app.queryComponents(
+		[Entity, app.c.MarblePhysicsMixin, app.c.ColliderMixin] as const,
+		Or(Added(app.c.MarblePhysicsMixin), Changed(app.c.MarblePhysicsMixin))
+	)) {
+		const radius = getMarbleRadius(collider.descriptors);
+		app.updateComponent(eid, app.c.ColliderMixin, {
+			descriptors: createMarbleColliderDescriptors(radius, marblePhysics.bounce)
+		});
+	}
+}
+
+export function syncNotePlatformRuntimeSystem(app: TSceneApp) {
+	if (app.r.simulationSync.mode !== 'idle') {
+		return;
+	}
+
+	const shouldSyncProjection = app.wasResourceChanged('trajectoryProjection');
+	const changedPlatformEntities = new Set(
+		app.queryEntities(Or(Added(app.c.NotePlatformMixin), Changed(app.c.NotePlatformMixin)))
+	);
+	if (!shouldSyncProjection && changedPlatformEntities.size === 0) {
+		return;
+	}
+	let didProjectionAffectSimulation = false;
+
+	for (const [eid, binding, platform, position, rotation, mesh, collider] of app.queryComponents(
+		[
+			Entity,
+			app.c.NoteBindingMixin,
+			app.c.NotePlatformMixin,
+			app.c.PositionMixin,
+			app.c.RotationMixin,
+			app.c.MeshMixin,
+			app.c.ColliderMixin
+		] as const
+	)) {
+		const anchor = app.r.trajectoryProjection.noteAnchorsById.get(binding.noteId);
+		if (anchor == null) {
+			const didRuntimeChange = syncUnresolvedNotePlatform(
+				app,
+				eid,
+				collider.descriptors,
+				mesh.type === 'three' ? mesh.object : null
+			);
+			if (shouldSyncProjection && didRuntimeChange) {
+				didProjectionAffectSimulation = true;
+			}
+			continue;
+		}
+
+		const didRuntimeChange = syncResolvedNotePlatform(
+			app,
+			eid,
+			platform,
+			position,
+			rotation,
+			collider.descriptors,
+			mesh.type === 'three' ? mesh.object : null,
+			anchor.position,
+			changedPlatformEntities.has(eid)
+		);
+		if (shouldSyncProjection && didRuntimeChange) {
+			didProjectionAffectSimulation = true;
+		}
+	}
+
+	if (shouldSyncProjection && didProjectionAffectSimulation) {
+		app.markSimulationDirty();
+		app.requestSimulationSync();
+	}
+}
+
 export function syncSceneManipulationHandlesSystem(app: TSceneApp) {
 	const selection = app.r.sceneSelection;
 	const handles = app.r.sceneManipulationHandles;
@@ -73,19 +156,34 @@ export function syncSceneManipulationHandlesSystem(app: TSceneApp) {
 	}
 
 	const linearElement = getLinearElement(app, selection.entityId);
-	if (linearElement == null) {
+	if (linearElement != null) {
+		const handlePositions = getLinearElementHandlePositions(
+			linearElement.transform.position,
+			linearElement.transform.rotation.x,
+			linearElement.linear.length,
+			linearElement.linear.handleOffset
+		);
+
+		handles.start.position.copy(handlePositions.start);
+		handles.end.position.copy(handlePositions.end);
+		handles.start.visible = true;
+		handles.end.visible = true;
+		return;
+	}
+
+	const notePlatform = getNotePlatform(app, selection.entityId);
+	const notePlatformObject = app.r.sceneObjects.get(selection.entityId);
+	if (notePlatform == null || notePlatformObject?.visible === false) {
 		handles.start.visible = false;
 		handles.end.visible = false;
 		return;
 	}
 
-	const handlePositions = getLinearElementHandlePositions(
-		linearElement.transform.position,
-		linearElement.transform.rotation.x,
-		linearElement.linear.length,
-		linearElement.linear.handleOffset
+	const handlePositions = getNotePlatformHandlePositions(
+		notePlatform.position,
+		notePlatform.platform.rotationX,
+		notePlatform.platform.length
 	);
-
 	handles.start.position.copy(handlePositions.start);
 	handles.end.position.copy(handlePositions.end);
 	handles.start.visible = true;
@@ -115,4 +213,26 @@ export function syncExclusiveSelectionSystem(app: TSceneApp) {
 	}
 
 	clearSceneEntitySelection(app);
+}
+
+export function syncNotePlatformMarkerStateSystem(app: TSceneApp) {
+	const didNotePlatformStateChange =
+		app.queryEntities(
+			Or(
+				Added(app.c.NotePlatformMixin),
+				Changed(app.c.NotePlatformMixin),
+				Removed(app.c.NotePlatformMixin),
+				Added(app.c.NoteBindingMixin),
+				Removed(app.c.NoteBindingMixin)
+			)
+		).length > 0;
+	if (
+		!didNotePlatformStateChange &&
+		!app.wasResourceChanged('trajectoryProjection') &&
+		!app.wasResourceChanged('selectedNoteId')
+	) {
+		return;
+	}
+
+	app.syncPlacedNoteMarkers(getPlacedNoteIds(app));
 }

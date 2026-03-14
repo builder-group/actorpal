@@ -1,4 +1,4 @@
-import type { TMidiSong, TMidiTrack } from '../types';
+import type { TMidiNote, TMidiSong, TMidiTrack } from '../types';
 
 export function getSongMaxTick(song: TMidiSong | null): number {
 	return song?.totalTicks ?? 0;
@@ -63,4 +63,19 @@ export function findTrackById(song: TMidiSong | null, trackId: number | null): T
 	}
 
 	return song.tracks.find((track) => track.id === trackId) ?? null;
+}
+
+export function findNoteById(song: TMidiSong | null, noteId: number | null): { note: TMidiNote; track: TMidiTrack } | null {
+	if (song == null || noteId == null) {
+		return null;
+	}
+
+	for (const track of song.tracks) {
+		const note = track.notes.find((entry) => entry.id === noteId);
+		if (note != null) {
+			return { note, track };
+		}
+	}
+
+	return null;
 }

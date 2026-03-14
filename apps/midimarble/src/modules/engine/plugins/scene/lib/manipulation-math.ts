@@ -60,3 +60,20 @@ export function computeLinearResizeResult(
 		length: (clampedHandleDistance - linearElement.handleOffset) * 2
 	};
 }
+
+export function computeRotationXFromDraggedPoint(
+	position: TVec3,
+	draggedPoint: THREE.Vector3,
+	fallbackRotationX: number
+): number {
+	const center = new THREE.Vector3(position.x, position.y, position.z);
+	const handleVector = draggedPoint.clone().sub(center);
+	handleVector.x = 0;
+
+	if (handleVector.length() < 1e-6) {
+		return fallbackRotationX;
+	}
+
+	const desiredDirection = handleVector.normalize();
+	return -Math.atan2(desiredDirection.y, desiredDirection.z);
+}

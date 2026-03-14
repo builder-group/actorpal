@@ -1,6 +1,11 @@
 import type * as RAPIER from '@dimforge/rapier3d-compat';
 import { Entity } from 'ecsify';
-import type { TCRigidBodyMixin, TPhysicsApp, TPhysicsColliderDescriptor } from '../types';
+import type {
+	TCRigidBodyMixin,
+	TPhysicsApp,
+	TPhysicsColliderDescriptor,
+	TPhysicsWorldHandles
+} from '../types';
 import { storeCheckpoint } from './simulation';
 
 export function createRigidBodyDesc(
@@ -70,6 +75,17 @@ export function createColliderDesc(
 	}
 	if (descriptor.restitution != null) {
 		collider.setRestitution(descriptor.restitution);
+	}
+	if (descriptor.restitutionCombineRule != null) {
+		collider.setRestitutionCombineRule(
+			descriptor.restitutionCombineRule === 'max'
+				? rapier.CoefficientCombineRule.Max
+				: descriptor.restitutionCombineRule === 'min'
+					? rapier.CoefficientCombineRule.Min
+					: descriptor.restitutionCombineRule === 'multiply'
+						? rapier.CoefficientCombineRule.Multiply
+						: rapier.CoefficientCombineRule.Average
+		);
 	}
 	if (descriptor.density != null) {
 		collider.setDensity(descriptor.density);
@@ -147,7 +163,9 @@ export function ensureSimulationBaseInitialized(app: TPhysicsApp): void {
 	app.updateResource('bufferedStep', 0);
 }
 
-export function createEditedWorldBase(app: TPhysicsApp): RAPIER.World | null {
+export function createEditedWorldBase(
+	app: TPhysicsApp
+): { world: RAPIER.World; fixedHandles: TPhysicsWorldHandles } | null {
 	ensureSimulationBaseInitialized(app);
 
 	const rapier = app.r.rapier;
@@ -162,15 +180,21 @@ export function createEditedWorldBase(app: TPhysicsApp): RAPIER.World | null {
 
 	const rebuiltWorld = rapier.World.restoreSnapshot(baseSnapshot);
 	rebuiltWorld.timestep = app.r.fixedTimeStepSeconds;
-	reapplyAuthoredStaticScene(app, rebuiltWorld, rapier);
-	return rebuiltWorld;
+	const fixedHandles = reapplyAuthoredStaticScene(app, rebuiltWorld, rapier);
+	return {
+		world: rebuiltWorld,
+		fixedHandles
+	};
 }
 
 function reapplyAuthoredStaticScene(
 	app: TPhysicsApp,
 	world: RAPIER.World,
 	rapier: typeof RAPIER
-): void {
+): TPhysicsWorldHandles {
+	const rigidBodies = new Map<number, RAPIER.RigidBody>();
+	const colliders = new Map<number, RAPIER.Collider[]>();
+
 	for (const [eid, position, rotation, rigidBody, collider] of app.queryComponents([
 		Entity,
 		app.c.PositionMixin,
@@ -178,33 +202,84 @@ function reapplyAuthoredStaticScene(
 		app.c.RigidBodyMixin,
 		app.c.ColliderMixin
 	] as const)) {
-		if (rigidBody.kind !== 'fixed') {
-			continue;
-		}
-
 		const currentBody = app.r.rigidBodies.get(eid);
-		if (currentBody == null) {
+		const rebuiltBody = currentBody == null ? null : world.getRigidBody(currentBody.handle);
+		if (rebuiltBody == null && rigidBody.kind !== 'fixed') {
 			continue;
 		}
 
-		const rebuiltBody = world.getRigidBody(currentBody.handle);
-		if (rebuiltBody == null) {
-			continue;
-		}
+		const nextBody =
+			rebuiltBody ??
+			createRebuiltStaticBody(world, rapier, position, rotation, rigidBody);
+		const rebuiltColliders = syncRebuiltBody(
+			world,
+			rapier,
+			nextBody,
+			position,
+			rotation,
+			rigidBody,
+			collider.descriptors
+		);
 
-		rebuiltBody.setTranslation(position, true);
-		rebuiltBody.setRotation(createQuaternionFromEuler(rotation.x, rotation.y, rotation.z), true);
+		rigidBodies.set(eid, nextBody);
+		colliders.set(eid, rebuiltColliders);
+	}
 
-		const existingColliderCount = rebuiltBody.numColliders();
-		for (let index = existingColliderCount - 1; index >= 0; index--) {
-			const existingCollider = rebuiltBody.collider(index);
-			if (existingCollider != null) {
-				world.removeCollider(existingCollider, true);
-			}
-		}
+	return { rigidBodies, colliders };
+}
 
-		for (const descriptor of collider.descriptors) {
-			world.createCollider(createColliderDesc(rapier, descriptor), rebuiltBody);
+function syncRebuiltBody(
+	world: RAPIER.World,
+	rapier: typeof RAPIER,
+	body: RAPIER.RigidBody,
+	position: { x: number; y: number; z: number },
+	rotation: { x: number; y: number; z: number },
+	rigidBody: TCRigidBodyMixin,
+	colliderDescriptors: TPhysicsColliderDescriptor[]
+): RAPIER.Collider[] {
+	if (rigidBody.kind !== 'dynamic') {
+		syncBodyTransform(body, rigidBody.kind, position, rotation);
+	}
+	if (rigidBody.gravityScale != null) {
+		body.setGravityScale(rigidBody.gravityScale, true);
+	}
+	if (rigidBody.linearDamping != null) {
+		body.setLinearDamping(rigidBody.linearDamping);
+	}
+	if (rigidBody.angularDamping != null) {
+		body.setAngularDamping(rigidBody.angularDamping);
+	}
+	if (rigidBody.linearVelocity != null) {
+		body.setLinvel(rigidBody.linearVelocity, true);
+	}
+	if (rigidBody.angularVelocity != null) {
+		body.setAngvel(rigidBody.angularVelocity, true);
+	}
+
+	const existingColliderCount = body.numColliders();
+	for (let index = existingColliderCount - 1; index >= 0; index--) {
+		const existingCollider = body.collider(index);
+		if (existingCollider != null) {
+			world.removeCollider(existingCollider, true);
 		}
 	}
+
+	const rebuiltColliders = [];
+	for (const descriptor of colliderDescriptors) {
+		rebuiltColliders.push(world.createCollider(createColliderDesc(rapier, descriptor), body));
+	}
+	return rebuiltColliders;
+}
+
+function createRebuiltStaticBody(
+	world: RAPIER.World,
+	rapier: typeof RAPIER,
+	position: { x: number; y: number; z: number },
+	rotation: { x: number; y: number; z: number },
+	rigidBody: TCRigidBodyMixin
+): RAPIER.RigidBody {
+	const bodyDesc = createRigidBodyDesc(rapier, rigidBody);
+	bodyDesc.setTranslation(position.x, position.y, position.z);
+	bodyDesc.setRotation(createQuaternionFromEuler(rotation.x, rotation.y, rotation.z));
+	return world.createRigidBody(bodyDesc);
 }

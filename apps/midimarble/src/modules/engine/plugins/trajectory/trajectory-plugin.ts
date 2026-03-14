@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildTrajectoryLine } from './lib/line-state';
 import { setupTrajectoryMarkerInteraction } from './lib/marker-interaction';
+import { syncPlacedNoteMarkers } from './lib/note-markers';
 import { updateTrajectorySystem } from './systems';
 import type { TTrajectoryApp, TTrajectoryPlugin } from './types';
 
@@ -10,7 +11,9 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 	const noteMarkerGroup = new THREE.Group();
 	const markerGeometry = new THREE.SphereGeometry(1, 14, 14);
 	const pastMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#ffb05b' });
+	const pastPlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#34d399' });
 	const futureMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#68aef2' });
+	const futurePlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#6ee7b7' });
 	const selectedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#f43f5e' });
 	let cleanupMarkerInteraction: (() => void) | null = null;
 
@@ -35,8 +38,13 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				markerToNoteId: new Map(),
 				markerGeometry,
 				pastMarkerMaterial,
+				pastPlacedMarkerMaterial,
 				futureMarkerMaterial,
+				futurePlacedMarkerMaterial,
 				selectedMarkerMaterial
+			},
+			trajectoryProjection: {
+				noteAnchorsById: new Map()
 			}
 		},
 		appExtensions: {
@@ -46,8 +54,26 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				const state = this.r.trajectoryState;
 				state.markerGeometry.dispose();
 				state.pastMarkerMaterial.dispose();
+				state.pastPlacedMarkerMaterial.dispose();
 				state.futureMarkerMaterial.dispose();
+				state.futurePlacedMarkerMaterial.dispose();
 				state.selectedMarkerMaterial.dispose();
+			},
+			syncPlacedNoteMarkers(this: TTrajectoryApp, placedNoteIds: Set<number>): void {
+				const state = this.r.trajectoryState;
+				syncPlacedNoteMarkers(
+					state.noteIdToMarker,
+					this.r.trajectoryProjection.noteAnchorsById,
+					this.r.selectedNoteId,
+					placedNoteIds,
+					{
+						past: state.pastMarkerMaterial,
+						pastPlaced: state.pastPlacedMarkerMaterial,
+						future: state.futureMarkerMaterial,
+						futurePlaced: state.futurePlacedMarkerMaterial,
+						selected: state.selectedMarkerMaterial
+					}
+				);
 			}
 		},
 		setup(app: TTrajectoryApp) {

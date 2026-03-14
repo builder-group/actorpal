@@ -30,6 +30,7 @@ export class Runtime {
 	private _frameId: number | null = null;
 	private _lastTime = 0;
 	private _isMounted = true;
+	private _hasPendingSceneEdit = false;
 
 	constructor() {
 		this._app = createApp({
@@ -98,6 +99,51 @@ export class Runtime {
 		this._app.selectNote(noteId);
 		this._applyTransportChange();
 		void this._app.previewNotesAtTick(tick);
+	}
+
+	public createOrSelectNotePlatform(noteId: number): number | null {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return null;
+		}
+
+		const entityId = this._app.createOrSelectNotePlatform(noteId);
+		this._applyTransportChange();
+		return entityId;
+	}
+
+	public updateNotePlatform(
+		entityId: number,
+		patch: Partial<TRuntimeApp['c']['NotePlatformMixin'][number]>
+	): void {
+		if (!this._app.updateNotePlatform(entityId, patch)) {
+			return;
+		}
+
+		this._hasPendingSceneEdit = true;
+		this._applyTransportChange();
+	}
+
+	public updateMarblePhysics(
+		entityId: number,
+		patch: Partial<TRuntimeApp['c']['MarblePhysicsMixin'][number]>
+	): void {
+		if (!this._app.updateMarblePhysics(entityId, patch)) {
+			return;
+		}
+
+		this._hasPendingSceneEdit = true;
+		this._applyTransportChange();
+	}
+
+	public commitSceneEdit(): void {
+		if (!this._hasPendingSceneEdit) {
+			return;
+		}
+
+		this._app.markSimulationDirty();
+		this._app.requestSimulationSync();
+		this._hasPendingSceneEdit = false;
+		this._applyTransportChange();
 	}
 
 	public seekToTick(tick: number): void {

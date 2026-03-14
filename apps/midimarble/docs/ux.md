@@ -43,8 +43,11 @@ The current editor now supports:
 - a shared tick-first transport playhead
 - a timeline whose length comes from the imported song
 - tick navigation with reset, back one tick, play/pause, and forward one tick
+- note markers rendered on the marble trajectory for the selected track
+- clicking a note marker to pause if needed, seek, and select that note
+- clicking a timeline note to select the same note and jump there
 
-This slice intentionally stops before note markers and note-bound platform creation.
+This slice intentionally stops before note-bound platform creation.
 
 ## Core UX Model
 
@@ -104,10 +107,9 @@ The intended workflow is:
    - one tick at a time
    - or by pressing play
 5. The editor shows note markers on the marble trajectory for the selected track.
-6. The user clicks a note marker to add a note-bound platform at that musical moment.
-7. The user adjusts that platform, mainly through rotation and later other platform properties.
-8. The trajectory and all later note-bound placements update immediately.
-9. The user continues forward to the next note and repeats the process.
+6. The user clicks a note marker to select that musical moment and jump the playhead there.
+7. In the next slice, that selected note becomes the place where a note-bound platform is created.
+8. The user continues forward to the next note and repeats the process.
 
 This loop should feel incremental and musical, not batch-generated.
 
@@ -155,6 +157,12 @@ The timeline should eventually make clear:
 
 The user should be able to trust that the timeline and the 3D note markers refer to the same moments.
 
+Selecting a note from either surface should select the same note everywhere:
+
+- click a timeline note: the 3D marker becomes selected
+- click a 3D marker: the matching timeline note becomes selected
+- the shared selection should still point at one note, not two parallel UI-local selections
+
 ## Trajectory And Marker UX
 
 ### Past and future
@@ -168,6 +176,7 @@ The past should be shown completely for the currently known run.
 It tells the user what has already been solved or traversed.
 
 The future should be shown only as far as the engine has currently simulated ahead.
+It should also never imply musical time beyond the imported song length.
 That future is the actionable space where upcoming note markers can be clicked.
 
 ### Note markers
@@ -178,8 +187,8 @@ Their job is to support authoring, not only display.
 
 Marker interactions should evolve like this:
 
-- hover: reveal note information and intent
-- click: create or select the note-bound platform for that note
+- current slice: click selects the note and seeks there
+- next slice: click creates or selects the note-bound platform for that note
 - selected: show that the note is the current editing target
 
 The user should not need to mentally translate from a MIDI list into 3D space.

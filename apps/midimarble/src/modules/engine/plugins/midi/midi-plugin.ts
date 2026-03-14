@@ -1,4 +1,8 @@
-import { clearMidiSongState, loadMidiFileIntoState } from './lib/midi-state';
+import {
+	clearMidiSongState,
+	loadMidiFileIntoState,
+	selectMidiNote
+} from './lib/midi-state';
 import type { TMidiApp, TMidiPlugin } from './types';
 
 export function createMidiPlugin(): TMidiPlugin {
@@ -9,6 +13,7 @@ export function createMidiPlugin(): TMidiPlugin {
 		resources: {
 			midiSong: null,
 			selectedTrackId: null,
+			selectedNoteId: null,
 			midiImportError: null
 		},
 		appExtensions: {
@@ -17,6 +22,9 @@ export function createMidiPlugin(): TMidiPlugin {
 			},
 			clearMidiSong(this: TMidiApp): void {
 				clearMidiSongState(this);
+			},
+			selectNote(this: TMidiApp, noteId: number | null): void {
+				selectMidiNote(this, noteId);
 			}
 		}
 	};

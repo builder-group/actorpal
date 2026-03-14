@@ -176,6 +176,7 @@ Responsibilities:
 
 - `midiSong`
 - `selectedTrackId`
+- `selectedNoteId`
 - MIDI import and parse errors
 - first-track-only selection for the current slice
 
@@ -221,8 +222,11 @@ Owns only trajectory visualization.
 Responsibilities:
 
 - `TrajectorySourceTag`
-- trajectory buffers and line objects
+- past and future line objects
+- note marker objects and picking
 - simulation-derived path rendering
+- note selection and seek interactions routed through shared engine state
+- clipping the visible future to the imported song horizon
 
 `Trajectory` defines what a trajectory source is and queries only `TrajectorySourceTag`.
 
@@ -230,8 +234,13 @@ It does not need to know what a marble is.
 
 Trajectory refresh should be keyed off ECSify resource/component change tracking, not a duplicated shadow sync resource.
 
-For the current slice, trajectory still visualizes the current live simulation path only.
-Note markers are the next slice, not part of the current engine state yet.
+For the current slice, trajectory is now the first real authoring surface:
+
+- it shows the full solved past
+- it shows the currently buffered future
+- it renders selected-track MIDI note markers on that path
+- clicking a marker pauses if needed, seeks the shared playhead, and selects the note
+- timeline note selection and trajectory marker selection meet at shared `selectedNoteId`
 
 ### `Scene`
 

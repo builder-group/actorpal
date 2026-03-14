@@ -14,6 +14,7 @@ describe('midi plugin', () => {
 
 		expect(app.r.midiSong?.name).toBe('Demo');
 		expect(app.r.selectedTrackId).toBe(0);
+		expect(app.r.selectedNoteId).toBeNull();
 		expect(app.r.midiImportError).toBeNull();
 	});
 
@@ -27,7 +28,23 @@ describe('midi plugin', () => {
 
 		expect(app.r.midiSong).toBeNull();
 		expect(app.r.selectedTrackId).toBeNull();
+		expect(app.r.selectedNoteId).toBeNull();
 		expect(app.r.midiImportError).toBe('Not a valid MIDI file. Missing MThd header.');
+	});
+
+	it('selects and clears the current note id', async () => {
+		const app = createApp({
+			plugins: [createDefaultPlugin(), createMidiPlugin()] as const,
+			systemSets: [...ENGINE_SYSTEM_SETS]
+		});
+
+		await app.loadMidiFile(new File([createTestMidiBuffer()], 'demo.mid', { type: 'audio/midi' }));
+
+		app.selectNote(0);
+		expect(app.r.selectedNoteId).toBe(0);
+
+		app.selectNote(null);
+		expect(app.r.selectedNoteId).toBeNull();
 	});
 });
 

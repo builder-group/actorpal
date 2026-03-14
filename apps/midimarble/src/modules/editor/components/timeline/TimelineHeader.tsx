@@ -115,6 +115,7 @@ export const TimelineHeader: React.FC<{
 	playheadTick: number;
 	liveStep: number;
 	preloadedSteps: number;
+	selectedNoteLabel: string | null;
 	zoomLabel: string;
 	statusLabel: string | null;
 	onOpenMidi: () => void;
@@ -138,6 +139,7 @@ export const TimelineHeader: React.FC<{
 	playheadTick,
 	liveStep,
 	preloadedSteps,
+	selectedNoteLabel,
 	zoomLabel,
 	statusLabel,
 	onOpenMidi,
@@ -198,6 +200,12 @@ export const TimelineHeader: React.FC<{
 			<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase">
 				Preloaded {preloadedSteps}
 			</span>
+
+			{selectedNoteLabel != null ? (
+				<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase">
+					Note {selectedNoteLabel}
+				</span>
+			) : null}
 
 			<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium uppercase">
 				Zoom {zoomLabel}

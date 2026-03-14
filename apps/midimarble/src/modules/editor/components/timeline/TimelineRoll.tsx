@@ -109,7 +109,18 @@ const PianoRollGrid: React.FC<{
 	noteRows: number[];
 	beatTicks: { majorBeats: number[]; minorBeats: number[] };
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
-}> = ({ noteRows, ticksPerBeat, pixelsPerTick, contentHeight, beatTicks, notes }) => {
+	selectedNoteId: number | null;
+	onSelectNote: (noteId: number, tick: number) => void;
+}> = ({
+	noteRows,
+	ticksPerBeat,
+	pixelsPerTick,
+	contentHeight,
+	beatTicks,
+	notes,
+	selectedNoteId,
+	onSelectNote
+}) => {
 	const noteIndexByNumber = React.useMemo(
 		() => new Map(noteRows.map((noteNumber, index) => [noteNumber, index])),
 		[noteRows]
@@ -156,19 +167,33 @@ const PianoRollGrid: React.FC<{
 				}
 
 				return (
-					<div
+					<button
 						key={note.id}
-						className="absolute overflow-hidden rounded-sm border"
+						type="button"
+						className="absolute overflow-hidden rounded-sm border text-left transition-transform hover:brightness-105 focus:outline-none"
 						style={{
 							left: note.tick * pixelsPerTick,
 							top: noteRow * NOTE_ROW_HEIGHT + 2,
 							width: Math.max(note.durationTicks * pixelsPerTick, 3),
 							height: NOTE_ROW_HEIGHT - 4,
 							background: `hsl(${210 + Math.round((note.velocity / 127) * 25)} 70% 56%)`,
-							borderColor: 'rgba(15, 23, 42, 0.18)',
-							boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28)'
+							borderColor:
+								note.id === selectedNoteId ? 'rgba(244, 63, 94, 0.92)' : 'rgba(15, 23, 42, 0.18)',
+							boxShadow:
+								note.id === selectedNoteId
+									? '0 0 0 2px rgba(244,63,94,0.26), inset 0 1px 0 rgba(255,255,255,0.35)'
+									: 'inset 0 1px 0 rgba(255,255,255,0.28)',
+							transform: note.id === selectedNoteId ? 'scaleY(1.05)' : undefined
 						}}
 						title={`${getNoteName(note.noteNumber)} · Tick ${note.tick}`}
+						aria-pressed={note.id === selectedNoteId}
+						onPointerDown={(event) => {
+							event.stopPropagation();
+						}}
+						onClick={(event) => {
+							event.stopPropagation();
+							onSelectNote(note.id, note.tick);
+						}}
 					/>
 				);
 			})}
@@ -186,11 +211,13 @@ export const TimelineRoll: React.FC<{
 	contentHeight: number;
 	noteRows: number[];
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
+	selectedNoteId: number | null;
 	canScrub: boolean;
 	isDragging: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
 	onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
 	onPointerUp: () => void;
+	onSelectNote: (noteId: number, tick: number) => void;
 }> = ({
 	timelineWidth,
 	totalTicks,
@@ -201,11 +228,13 @@ export const TimelineRoll: React.FC<{
 	contentHeight,
 	noteRows,
 	notes,
+	selectedNoteId,
 	canScrub,
 	isDragging,
 	onPointerDown,
 	onPointerMove,
-	onPointerUp
+	onPointerUp,
+	onSelectNote
 }) => {
 	const playheadLineRef = React.useRef<HTMLDivElement>(null);
 	const beatTicks = React.useMemo(
@@ -251,6 +280,8 @@ export const TimelineRoll: React.FC<{
 							contentHeight={contentHeight}
 							beatTicks={beatTicks}
 							notes={notes}
+							selectedNoteId={selectedNoteId}
+							onSelectNote={onSelectNote}
 						/>
 					</div>
 

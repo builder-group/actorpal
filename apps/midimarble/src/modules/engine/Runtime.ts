@@ -77,6 +77,17 @@ export class Runtime {
 		this._applyTransportChange();
 	}
 
+	public selectNote(noteId: number, tick: number): void {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return;
+		}
+
+		this._app.pause();
+		this._app.seekToTick(tick);
+		this._app.selectNote(noteId);
+		this._applyTransportChange();
+	}
+
 	public seekToTick(tick: number): void {
 		if (updateSimulationResumeWhenReady(this._app, false)) {
 			return;
@@ -140,6 +151,7 @@ export class Runtime {
 			this._app.r.simulationSync.world.free();
 		}
 		this._app.disposeScene();
+		this._app.disposeTrajectory();
 		this._app.setRenderContainer(null);
 		this._app.disposeRender();
 		this._app.flush();

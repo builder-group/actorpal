@@ -5,7 +5,11 @@ export function shouldRefreshTrajectory(app: TTrajectoryApp): boolean {
 	return (
 		app.wasResourceAdded('trajectoryConfig') ||
 		app.wasResourceChanged('trajectoryConfig') ||
+		app.wasResourceChanged('midiSong') ||
+		app.wasResourceChanged('selectedTrackId') ||
+		app.wasResourceChanged('selectedNoteId') ||
 		app.wasResourceChanged('liveStep') ||
+		app.wasResourceChanged('bufferedStep') ||
 		app.wasResourceChanged('world') ||
 		app.wasResourceChanged('simulationSync') ||
 		app.queryEntities(Or(Added(app.c.TrajectorySourceTag), Removed(app.c.TrajectorySourceTag)))

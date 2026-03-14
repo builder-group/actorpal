@@ -7,7 +7,8 @@ import {
 	MIN_ROLL_HEIGHT,
 	NOTE_ROW_HEIGHT,
 	ZOOM_STEP_FACTOR,
-	buildNoteRows
+	buildNoteRows,
+	getNoteName
 } from '../lib/timeline-layout';
 import { TimelineCx, useTimelineState } from './timeline/TimelineCx';
 import { TimelineHeader } from './timeline/TimelineHeader';
@@ -31,6 +32,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const midiImportError = useResource(app, 'midiImportError');
+	const selectedNoteId = useResource(app, 'selectedNoteId');
 	const transport = useResource(app, 'transport');
 	const liveStep = useResource(app, 'liveStep');
 	const bufferedStep = useResource(app, 'bufferedStep');
@@ -64,6 +66,14 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const playheadPx = playheadTick * pixelsPerTick;
 	const bufferedPx = bufferedTick * pixelsPerTick;
 	const noteRows = React.useMemo(() => buildNoteRows(selectedTrack?.notes ?? []), [selectedTrack]);
+	const selectedNote = React.useMemo(
+		() => selectedTrack?.notes.find((note) => note.id === selectedNoteId) ?? null,
+		[selectedNoteId, selectedTrack]
+	);
+	const selectedNoteLabel =
+		selectedNote == null
+			? null
+			: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
 	const contentHeight = Math.max(noteRows.length * NOTE_ROW_HEIGHT, MIN_ROLL_HEIGHT);
 	const timelineWidth = midiSong == null ? Math.max(containerWidth, 1) : timelineCx.getTimelineWidth(midiSong);
 	const zoomLabel = `${timelineCx.getZoomRatio().toFixed(2)}x`;
@@ -222,6 +232,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				playheadTick={playheadTick}
 				liveStep={liveStep}
 				preloadedSteps={preloadedSteps}
+				selectedNoteLabel={selectedNoteLabel}
 				zoomLabel={zoomLabel}
 				statusLabel={statusLabel}
 				onOpenMidi={openMidiPicker}
@@ -252,11 +263,13 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 						contentHeight={contentHeight}
 						noteRows={noteRows}
 						notes={selectedTrack?.notes ?? []}
+						selectedNoteId={selectedNoteId}
 						canScrub={canControlPlayback}
 						isDragging={isDragging}
 						onPointerDown={handlePointerDown}
 						onPointerMove={handlePointerMove}
 						onPointerUp={handlePointerUp}
+						onSelectNote={(noteId, tick) => cx.runtime.selectNote(noteId, tick)}
 					/>
 				</div>
 			)}

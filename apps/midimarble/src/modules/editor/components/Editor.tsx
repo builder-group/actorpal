@@ -44,28 +44,6 @@ const TrajectorySection: React.FC = () => {
 				/>
 				Enabled
 			</label>
-			<label className="text-base-700 mt-3 block text-sm">
-				Future steps: {config.futureSteps}
-				<input
-					type="range"
-					min={10}
-					max={500}
-					value={config.futureSteps}
-					className="mt-1 block w-full"
-					onChange={(e) => update({ futureSteps: Number(e.target.value) })}
-				/>
-			</label>
-			<label className="text-base-700 mt-3 block text-sm">
-				Past steps: {config.pastSteps}
-				<input
-					type="range"
-					min={10}
-					max={500}
-					value={config.pastSteps}
-					className="mt-1 block w-full"
-					onChange={(e) => update({ pastSteps: Number(e.target.value) })}
-				/>
-			</label>
 			<div className="text-base-700 mt-3 flex gap-4 text-sm">
 				<label className="flex items-center gap-2">
 					Future

@@ -213,9 +213,6 @@ const InnerEditor: React.FC = () => {
 										<div className="flex w-fit min-w-full items-center gap-2">
 											<div className="bg-base-0/90 text-base-700 inline-flex h-9 items-center rounded-md px-3 text-xs font-medium tracking-wide uppercase shadow-sm">
 												{songLabel}
-												{selectedTrack != null ? (
-													<span className="text-base-500 ml-2">{selectedTrack.name}</span>
-												) : null}
 											</div>
 											<div className="relative">
 												<button

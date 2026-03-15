@@ -125,6 +125,13 @@ export class Runtime {
 		});
 	}
 
+	public setSelectedTrack(trackId: number): void {
+		this._runImmediateCommand(() => {
+			this._app.updateResource('selectedTrackId', trackId);
+			this._app.clearNoteSelection();
+		});
+	}
+
 	public setTrackInstrument(trackId: number, instrumentId: TAudioInstrumentId): void {
 		this._runImmediateCommand(() => {
 			this._app.setTrackInstrument(trackId, instrumentId);

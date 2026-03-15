@@ -132,9 +132,12 @@ export const TimelineHeader: React.FC<{
 	preloadedLabel: string;
 	selectedNoteLabel: string | null;
 	keyboardMode: 'adaptive' | 'full88';
+	trackId: number | null;
+	trackOptions: readonly { id: number; name: string }[];
 	instrumentId: TAudioInstrumentId | null;
 	instrumentOptions: readonly TAudioInstrumentOption[];
 	onOpenMidi: () => void;
+	onSetTrack: (trackId: number) => void;
 	onSetInstrument: (instrumentId: TAudioInstrumentId) => void;
 	onSetKeyboardMode: (mode: 'adaptive' | 'full88') => void;
 	onStepBackwardTick: () => void;
@@ -161,9 +164,12 @@ export const TimelineHeader: React.FC<{
 	preloadedLabel,
 	selectedNoteLabel,
 	keyboardMode,
+	trackId,
+	trackOptions,
 	instrumentId,
 	instrumentOptions,
 	onOpenMidi,
+	onSetTrack,
 	onSetInstrument,
 	onSetKeyboardMode,
 	onStepBackwardTick,
@@ -182,12 +188,6 @@ export const TimelineHeader: React.FC<{
 			{importError != null ? (
 				<span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700 uppercase">
 					{importError}
-				</span>
-			) : null}
-
-			{trackName != null ? (
-				<span className="text-base-500 bg-base-100 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase">
-					{trackName}
 				</span>
 			) : null}
 
@@ -218,9 +218,25 @@ export const TimelineHeader: React.FC<{
 			<div className="ml-auto flex items-center gap-2">
 				<TimelineOpenMidiButton disabled={isImporting} label={importLabel} onClick={onOpenMidi} />
 
+				{trackId != null ? (
+					<label className="border-base-200 bg-base-0 text-base-700 inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] font-medium">
+						<select
+							aria-label="MIDI track"
+							value={trackId}
+							className="bg-base-0 text-base-700 min-w-20 border-0 p-0 text-[11px] font-medium focus:outline-none"
+							onChange={(event) => onSetTrack(Number(event.target.value))}
+						>
+							{trackOptions.map((track) => (
+								<option key={track.id} value={track.id}>
+									{track.name}
+								</option>
+							))}
+						</select>
+					</label>
+				) : null}
+
 				{instrumentId != null ? (
-					<label className="border-base-200 bg-base-0 text-base-700 inline-flex h-7 items-center gap-2 rounded-md border px-2.5 text-[11px] font-medium">
-						<span className="text-base-500 uppercase">Inst</span>
+					<label className="border-base-200 bg-base-0 text-base-700 inline-flex h-7 items-center rounded-md border px-2.5 text-[11px] font-medium">
 						<select
 							aria-label="Track instrument"
 							value={instrumentId}

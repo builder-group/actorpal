@@ -144,6 +144,10 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 		audioSettings.trackInstrumentIds,
 		selectedTrack?.id ?? null
 	);
+	const trackOptions = React.useMemo(
+		() => midiSong?.tracks.map((t) => ({ id: t.id, name: t.name })) ?? [],
+		[midiSong]
+	);
 	const placedNoteIds = React.useMemo(
 		() => new Set(notePlatforms.map(([, binding]) => binding.noteId)),
 		[notePlatforms]
@@ -615,9 +619,12 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				preloadedLabel={preloadedLabel}
 				selectedNoteLabel={selectedNoteLabel}
 				keyboardMode={keyboardMode}
+				trackId={selectedTrackId}
+				trackOptions={trackOptions}
 				instrumentId={selectedTrackInstrumentId}
 				instrumentOptions={audioConfig.instrumentOptions}
 				onOpenMidi={openMidiPicker}
+				onSetTrack={(trackId) => cx.runtime.setSelectedTrack(trackId)}
 				onSetInstrument={(instrumentId) => {
 					if (selectedTrack == null) {
 						return;

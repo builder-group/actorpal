@@ -4,7 +4,8 @@ import { useProjects } from '../hooks/use-projects';
 import { ProjectCard } from './ProjectCard';
 
 export const ProjectPicker: React.FC = () => {
-	const { projects, isLoading, createProject, createBlankProject, deleteProject, openProject } = useProjects();
+	const { projects, isLoading, createProject, createBlankProject, deleteProject, openProject } =
+		useProjects();
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 	const [isCreating, setIsCreating] = React.useState(false);
 

@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { createNotePlatformColliders } from '../bundles/note-platform';
+import { sceneConfig } from '../config';
 import {
 	getNotePlatformNoteState,
 	isNotePlatformAdjusted,
 	resolveNotePlatformTransform
 } from './note-platform';
-import { sceneConfig } from '../config';
 
 describe('note platform helpers', () => {
 	it('derives the platform center from the note anchor and platform normal', () => {
 		expect(resolveNotePlatformTransform({ x: 1, y: 2, z: 3 }, 0.4, -1.2, 0, 0.24, 0.84)).toEqual({
-			position: { x: 1 - (sceneConfig.track.defaultWidth - 0.84) / 2, y: 2 - (0.36 + 0.12) + 0.4, z: 3 - 1.2 },
+			position: {
+				x: 1 - (sceneConfig.track.defaultWidth - 0.84) / 2,
+				y: 2 - (0.36 + 0.12) + 0.4,
+				z: 3 - 1.2
+			},
 			rotation: { x: 0, y: 0, z: 0 }
 		});
 	});

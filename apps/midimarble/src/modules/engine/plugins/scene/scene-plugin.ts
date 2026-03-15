@@ -213,9 +213,7 @@ export function createScenePlugin(options?: TScenePluginOptions): TScenePlugin {
 							const snapshot = pendingNotePlatforms[i];
 							if (snapshot == null) continue;
 							// Anchors from the previous PostUpdate trajectory computation persist here
-							const anchor = app.r.trajectoryProjection.noteAnchorsById.get(
-								snapshot.noteId
-							);
+							const anchor = app.r.trajectoryProjection.noteAnchorsById.get(snapshot.noteId);
 							if (anchor == null) continue;
 							if (findNotePlatformEntityId(app, snapshot.noteId) != null) {
 								pendingNotePlatforms.splice(i, 1);

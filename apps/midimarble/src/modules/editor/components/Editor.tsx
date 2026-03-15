@@ -148,12 +148,15 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 		void cx.runtime.createStraightTrack();
 	}, [canAddStraightTrack, cx.runtime]);
 
-	const handleNameSave = React.useCallback(async (name: string) => {
-		if (projectId == null) return;
-		const existing = await projectRepository.getProject(projectId);
-		if (existing == null) return;
-		await projectRepository.saveProject({ ...existing, name, updatedAt: Date.now() });
-	}, [projectId]);
+	const handleNameSave = React.useCallback(
+		async (name: string) => {
+			if (projectId == null) return;
+			const existing = await projectRepository.getProject(projectId);
+			if (existing == null) return;
+			await projectRepository.saveProject({ ...existing, name, updatedAt: Date.now() });
+		},
+		[projectId]
+	);
 
 	const handleSave = React.useCallback(async () => {
 		if (projectId == null || isSaving) return;
@@ -271,7 +274,9 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 														<div className="border-base-100 border-t" />
 														<div className="flex flex-col gap-5 p-4">
 															<section>
-																<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Project</h3>
+																<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">
+																	Project
+																</h3>
 																<input
 																	type="text"
 																	value={projectName}

@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowLeft, ChevronDown, FileUp, Plus, Save } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, FileUp, Plus, Save } from 'lucide-react';
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
@@ -96,6 +96,7 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 	const [isProjectMenuOpen, setIsProjectMenuOpen] = React.useState(false);
 	const [isImporting, setIsImporting] = React.useState(false);
 	const [isSaving, setIsSaving] = React.useState(false);
+	const [isSaved, setIsSaved] = React.useState(false);
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const midiImportError = useResource(app, 'midiImportError');
@@ -172,6 +173,8 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 				createdAt: existing.createdAt,
 				updatedAt: Date.now()
 			});
+			setIsSaved(true);
+			setTimeout(() => setIsSaved(false), 1500);
 		} finally {
 			setIsSaving(false);
 		}
@@ -300,12 +303,18 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 												<button
 													type="button"
 													className="focus-visible:ring-base-300 border-base-200 bg-base-0/90 text-base-600 hover:bg-base-100 pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
-													disabled={isSaving}
-													aria-label={isSaving ? 'Saving…' : 'Save project'}
-													title={isSaving ? 'Saving…' : 'Save'}
+													disabled={isSaving || isSaved}
+													aria-label={
+														isSaving ? 'Saving\u2026' : isSaved ? 'Saved' : 'Save project'
+													}
+													title={isSaving ? 'Saving\u2026' : isSaved ? 'Saved' : 'Save'}
 													onClick={() => void handleSave()}
 												>
-													<Save className="h-4 w-4" />
+													{isSaved ? (
+														<Check className="h-4 w-4 text-green-500" />
+													) : (
+														<Save className="h-4 w-4" />
+													)}
 												</button>
 											) : null}
 

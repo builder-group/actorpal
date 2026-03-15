@@ -241,6 +241,10 @@ export class Runtime {
 		void this._runSimulationCommand(false, () => this._app.deleteStraightTrack(entityId));
 	}
 
+	public deleteNotePlatform(entityId: number): void {
+		void this._runSimulationCommand(false, () => this._app.deleteNotePlatform(entityId));
+	}
+
 	public updateNotePlatform(
 		entityId: number,
 		patch: Partial<TRuntimeApp['c']['NotePlatformMixin'][number]>

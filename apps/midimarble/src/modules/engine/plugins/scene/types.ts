@@ -32,6 +32,7 @@ export type TScenePlugin = TPlugin<
 			disposeScene(): void;
 			createStraightTrack(): number | null;
 			deleteStraightTrack(entityId: number): boolean;
+			deleteNotePlatform(entityId: number): boolean;
 			createOrSelectNotePlatform(noteId: number): number | null;
 			updateNotePlatform(entityId: number, patch: Partial<TCNotePlatformMixin>): boolean;
 			updateMarblePhysics(entityId: number, patch: Partial<TCMarblePhysicsMixin>): boolean;

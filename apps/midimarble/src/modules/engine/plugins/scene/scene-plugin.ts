@@ -132,6 +132,23 @@ export function createScenePlugin(options?: TScenePluginOptions): TScenePlugin {
 				this.requestSimulationSync();
 				return true;
 			},
+			deleteNotePlatform(this: TSceneApp, entityId: number): boolean {
+				if (!this.hasComponent(entityId, this.c.NotePlatformMixin)) {
+					return false;
+				}
+
+				if (
+					this.r.sceneSelection.entityId === entityId ||
+					this.r.sceneManipulationState.entityId === entityId
+				) {
+					clearSceneEntitySelection(this);
+				}
+
+				this.destroyEntity(entityId);
+				this.markSimulationDirty();
+				this.requestSimulationSync();
+				return true;
+			},
 			createOrSelectNotePlatform(this: TSceneApp, noteId: number): number | null {
 				const existingEntityId = findNotePlatformEntityId(this, noteId);
 				if (existingEntityId != null) {
@@ -263,27 +280,10 @@ export function createScenePlugin(options?: TScenePluginOptions): TScenePlugin {
 function resolveStraightTrackSpawnPosition(
 	app: TSceneApp
 ): { x: number; y: number; z: number } | null {
-	for (const [eid, position] of app.queryComponents(
-		[Entity, app.c.PositionMixin] as const,
-		With(app.c.MarbleTag)
-	)) {
-		const liveBody = app.r.rigidBodies.get(eid);
-		const translation = liveBody?.translation();
-		const basePosition =
-			translation == null
-				? position
-				: {
-						x: translation.x,
-						y: translation.y,
-						z: translation.z
-					};
-
-		return {
-			x: sceneConfig.track.wallLaneX,
-			y: basePosition.y + sceneConfig.track.newTrackYOffset,
-			z: basePosition.z + sceneConfig.track.newTrackZOffset
-		};
-	}
-
-	return null;
+	const { target } = app.r.viewport.getCameraSnapshot();
+	return {
+		x: sceneConfig.track.wallLaneX,
+		y: target.y,
+		z: target.z
+	};
 }

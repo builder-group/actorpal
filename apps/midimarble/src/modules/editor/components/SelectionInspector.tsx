@@ -24,7 +24,8 @@ export const SelectionInspector: React.FC = () => {
 	const simulationSync = useResource(app, 'simulationSync');
 	const deleteEntityId =
 		sceneSelection.entityId != null &&
-		app.hasComponent(sceneSelection.entityId, app.c.StraightTrackMixin)
+		(app.hasComponent(sceneSelection.entityId, app.c.StraightTrackMixin) ||
+			app.hasComponent(sceneSelection.entityId, app.c.NotePlatformMixin))
 			? sceneSelection.entityId
 			: null;
 	const canDelete = React.useMemo(
@@ -32,10 +33,13 @@ export const SelectionInspector: React.FC = () => {
 		[deleteEntityId, simulationSync.mode]
 	);
 	const handleDelete = React.useCallback(() => {
-		if (canDelete && deleteEntityId != null) {
+		if (!canDelete || deleteEntityId == null) return;
+		if (app.hasComponent(deleteEntityId, app.c.StraightTrackMixin)) {
 			runtime.deleteStraightTrack(deleteEntityId);
+		} else if (app.hasComponent(deleteEntityId, app.c.NotePlatformMixin)) {
+			runtime.deleteNotePlatform(deleteEntityId);
 		}
-	}, [canDelete, deleteEntityId, runtime]);
+	}, [canDelete, deleteEntityId, app, runtime]);
 
 	return (
 		<section>
@@ -44,10 +48,10 @@ export const SelectionInspector: React.FC = () => {
 				{deleteEntityId != null ? (
 					<button
 						type="button"
-						className="border-base-200 text-base-500 hover:bg-base-100 focus-visible:ring-base-300 disabled:border-base-200 disabled:text-base-400 inline-flex h-8 w-8 items-center justify-center rounded-md border transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+						className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-red-500/20 text-red-400 transition hover:bg-red-500/35 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none disabled:opacity-40"
 						disabled={!canDelete}
-						aria-label="Delete straight track"
-						title="Delete straight track"
+						aria-label="Delete"
+						title="Delete"
 						onClick={handleDelete}
 					>
 						<Trash2 className="h-4 w-4" />

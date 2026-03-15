@@ -2,6 +2,7 @@ import { Entity, With } from 'ecsify';
 import React from 'react';
 import { useMemoCleanup } from '@/hooks';
 import { useQueryComponents, useResource } from '@/modules/engine';
+import { AUDIO_INSTRUMENT_OPTIONS, getTrackInstrumentId } from '@/modules/engine/plugins/audio';
 import {
 	clampMidiTick,
 	findTrackById,
@@ -61,6 +62,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const midiImportError = useResource(app, 'midiImportError');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
 	const selectedNoteIds = useResource(app, 'selectedNoteIds');
+	const audioConfig = useResource(app, 'audioConfig');
 	const audioPlaybackFeedback = useResource(app, 'audioPlaybackFeedback');
 	const transport = useResource(app, 'transport');
 	const previewConfig = useResource(app, 'previewConfig');
@@ -133,6 +135,10 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 			: selectedNote == null
 				? null
 				: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
+	const selectedTrackInstrumentId = getTrackInstrumentId(
+		audioConfig.trackInstrumentIds,
+		selectedTrack?.id ?? null
+	);
 	const placedNoteIds = React.useMemo(
 		() => new Set(notePlatforms.map(([, binding]) => binding.noteId)),
 		[notePlatforms]
@@ -580,7 +586,16 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				preloadedLabel={preloadedLabel}
 				selectedNoteLabel={selectedNoteLabel}
 				keyboardMode={keyboardMode}
+				instrumentId={selectedTrackInstrumentId}
+				instrumentOptions={AUDIO_INSTRUMENT_OPTIONS}
 				onOpenMidi={openMidiPicker}
+				onSetInstrument={(instrumentId) => {
+					if (selectedTrack == null) {
+						return;
+					}
+
+					cx.runtime.setTrackInstrument(selectedTrack.id, instrumentId);
+				}}
 				onSetKeyboardMode={(mode) => timelineCx.setKeyboardMode(mode)}
 				onStepBackwardTick={() => cx.runtime.stepBackwardTick()}
 				onStepForwardTick={() => cx.runtime.stepForwardTick()}

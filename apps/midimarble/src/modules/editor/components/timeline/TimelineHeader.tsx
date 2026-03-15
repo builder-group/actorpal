@@ -10,6 +10,7 @@ import {
 	ZoomOut
 } from 'lucide-react';
 import React from 'react';
+import type { TAudioInstrumentId, TAudioInstrumentOption } from '@/modules/engine/plugins/audio';
 
 const TICK_REPEAT_INITIAL_DELAY_MS = 260;
 const TICK_REPEAT_INTERVAL_MS = 70;
@@ -131,7 +132,10 @@ export const TimelineHeader: React.FC<{
 	preloadedLabel: string;
 	selectedNoteLabel: string | null;
 	keyboardMode: 'adaptive' | 'full88';
+	instrumentId: TAudioInstrumentId | null;
+	instrumentOptions: readonly TAudioInstrumentOption[];
 	onOpenMidi: () => void;
+	onSetInstrument: (instrumentId: TAudioInstrumentId) => void;
 	onSetKeyboardMode: (mode: 'adaptive' | 'full88') => void;
 	onStepBackwardTick: () => void;
 	onStepForwardTick: () => void;
@@ -157,7 +161,10 @@ export const TimelineHeader: React.FC<{
 	preloadedLabel,
 	selectedNoteLabel,
 	keyboardMode,
+	instrumentId,
+	instrumentOptions,
 	onOpenMidi,
+	onSetInstrument,
 	onSetKeyboardMode,
 	onStepBackwardTick,
 	onStepForwardTick,
@@ -210,6 +217,24 @@ export const TimelineHeader: React.FC<{
 
 			<div className="ml-auto flex items-center gap-2">
 				<TimelineOpenMidiButton disabled={isImporting} label={importLabel} onClick={onOpenMidi} />
+
+				{instrumentId != null ? (
+					<label className="border-base-200 bg-base-0 text-base-700 inline-flex h-7 items-center gap-2 rounded-md border px-2.5 text-[11px] font-medium">
+						<span className="text-base-500 uppercase">Inst</span>
+						<select
+							aria-label="Track instrument"
+							value={instrumentId}
+							className="bg-base-0 text-base-700 min-w-20 border-0 p-0 text-[11px] font-medium focus:outline-none"
+							onChange={(event) => onSetInstrument(event.target.value as TAudioInstrumentId)}
+						>
+							{instrumentOptions.map((option) => (
+								<option key={option.id} value={option.id}>
+									{option.label}
+								</option>
+							))}
+						</select>
+					</label>
+				) : null}
 
 				<div className="border-base-200 bg-base-0 flex items-center overflow-hidden rounded-md border">
 					<button

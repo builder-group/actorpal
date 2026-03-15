@@ -14,6 +14,7 @@ import {
 	createScenePlugin,
 	createTrajectoryPlugin,
 	createTransportPlugin,
+	type TAudioInstrumentId,
 	type TAudioPlugin,
 	type TCorePlugin,
 	type TMidiCreateNoteInput,
@@ -79,6 +80,7 @@ export class Runtime {
 	public async loadMidiFile(file: File): Promise<void> {
 		await this._app.loadMidiFile(file);
 		this._runImmediateCommand(() => {
+			this._app.clearTrackInstruments();
 			this._app.resetTransport();
 			this._app.setSceneEditPending(false);
 		});
@@ -87,6 +89,7 @@ export class Runtime {
 	public clearMidiSong(): void {
 		this._runImmediateCommand(() => {
 			this._app.clearMidiSong();
+			this._app.clearTrackInstruments();
 			this._app.resetTransport();
 			this._app.setSceneEditPending(false);
 		});
@@ -120,6 +123,15 @@ export class Runtime {
 		this._runImmediateCommand(() => {
 			this._app.updateAudioConfig(patch);
 		});
+	}
+
+	public setTrackInstrument(trackId: number, instrumentId: TAudioInstrumentId): void {
+		this._runImmediateCommand(() => {
+			this._app.setTrackInstrument(trackId, instrumentId);
+		});
+		if (this._app.r.selectedTrackId === trackId) {
+			void this._app.previewTrackInstrument(trackId);
+		}
 	}
 
 	public selectNote(noteId: number, tick: number): void {

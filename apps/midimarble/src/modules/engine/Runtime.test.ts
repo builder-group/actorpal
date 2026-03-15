@@ -11,6 +11,7 @@ describe('Runtime scene edit lifecycle', () => {
 		);
 
 		expect(runtime._app.loadMidiFile).toHaveBeenCalledOnce();
+		expect(runtime._app.clearTrackInstruments).toHaveBeenCalledOnce();
 		expect(runtime._app.resetTransport).toHaveBeenCalledOnce();
 		expect(runtime._app.setSceneEditPending).toHaveBeenCalledWith(false);
 		expect(runtime._flushImmediateUpdate).toHaveBeenCalledOnce();
@@ -22,8 +23,28 @@ describe('Runtime scene edit lifecycle', () => {
 		Runtime.prototype.clearMidiSong.call(runtime);
 
 		expect(runtime._app.clearMidiSong).toHaveBeenCalledOnce();
+		expect(runtime._app.clearTrackInstruments).toHaveBeenCalledOnce();
 		expect(runtime._app.resetTransport).toHaveBeenCalledOnce();
 		expect(runtime._app.setSceneEditPending).toHaveBeenCalledWith(false);
+		expect(runtime._flushImmediateUpdate).toHaveBeenCalledOnce();
+	});
+
+	it('updates the selected track instrument and previews it immediately', () => {
+		const runtime = createRuntimeHarness({
+			_app: {
+				r: {
+					selectedTrackId: 7,
+					simulationSync: {
+						mode: 'idle'
+					}
+				}
+			}
+		});
+
+		Runtime.prototype.setTrackInstrument.call(runtime, 7, 'lead');
+
+		expect(runtime._app.setTrackInstrument).toHaveBeenCalledWith(7, 'lead');
+		expect(runtime._app.previewTrackInstrument).toHaveBeenCalledWith(7);
 		expect(runtime._flushImmediateUpdate).toHaveBeenCalledOnce();
 	});
 
@@ -81,12 +102,16 @@ function createRuntimeHarness(
 		_app: {
 			loadMidiFile: vi.fn().mockResolvedValue(undefined),
 			clearMidiSong: vi.fn(),
+			clearTrackInstruments: vi.fn(),
 			resetTransport: vi.fn(),
 			createStraightTrack: vi.fn(() => 41),
 			deleteStraightTrack: vi.fn(() => true),
+			setTrackInstrument: vi.fn(),
+			previewTrackInstrument: vi.fn(),
 			setSceneEditPending: vi.fn(),
 			setSimulationResumeWhenReady: vi.fn(() => false),
 			r: {
+				selectedTrackId: null,
 				simulationSync: {
 					mode: 'idle'
 				}

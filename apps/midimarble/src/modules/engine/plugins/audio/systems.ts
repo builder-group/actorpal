@@ -1,3 +1,4 @@
+import { getTrackInstrumentId } from './lib/instruments';
 import { getSelectedTrackNotesInRange } from './lib/playback';
 import { playTrackNotes, stopAllVoices, syncMasterVolume } from './lib/synth';
 import type { TAudioApp } from './types';
@@ -69,8 +70,15 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 			transport.playheadTick - 0.0001,
 			transport.playheadTick
 		);
+		const instrumentId = getTrackInstrumentId(audioConfig.trackInstrumentIds, selectedTrackId);
 		syncPlaybackFeedback(app, notesAtCurrentTick);
-		playTrackNotes(audioState, midiSong, notesAtCurrentTick, transport.playheadTick - 0.0001);
+		playTrackNotes(
+			audioState,
+			midiSong,
+			notesAtCurrentTick,
+			transport.playheadTick - 0.0001,
+			instrumentId
+		);
 		syncAudioCursor(app, transport.playheadTick, 'running');
 		return;
 	}
@@ -87,8 +95,9 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 		audioState.lastProcessedTick,
 		transport.playheadTick
 	);
+	const instrumentId = getTrackInstrumentId(audioConfig.trackInstrumentIds, selectedTrackId);
 	syncPlaybackFeedback(app, notes);
-	playTrackNotes(audioState, midiSong, notes, audioState.lastProcessedTick);
+	playTrackNotes(audioState, midiSong, notes, audioState.lastProcessedTick, instrumentId);
 	syncAudioCursor(app, transport.playheadTick, 'running');
 }
 

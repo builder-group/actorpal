@@ -16,7 +16,10 @@ export type TAudioPlugin = TPlugin<
 			previewNotesAtTick(tick: number): Promise<void>;
 			previewNote(noteId: number): Promise<void>;
 			previewMidiNote(noteNumber: number): Promise<void>;
+			previewTrackInstrument(trackId: number): Promise<void>;
 			updateAudioConfig(patch: Partial<TAudioConfig>): void;
+			setTrackInstrument(trackId: number, instrumentId: TAudioInstrumentId): void;
+			clearTrackInstruments(): void;
 			disposeAudio(): void;
 		};
 		systemSets: TEngineSystemSet;
@@ -35,11 +38,15 @@ export interface TAudioState {
 	lastProcessedTick: number;
 	lastMode: 'paused' | 'running';
 	activeVoices: Map<number, TActiveVoice[]>;
+	instrumentPlayers: Partial<Record<TAudioInstrumentId, TAudioInstrumentPlayer>>;
 }
+
+export type TAudioInstrumentId = 'classic' | 'bell' | 'xylophone' | 'warm' | 'pluck' | 'lead';
 
 export interface TAudioConfig {
 	enabled: boolean;
 	masterVolume: number;
+	trackInstrumentIds: Record<number, TAudioInstrumentId>;
 }
 
 export interface TAudioPlaybackFeedback {
@@ -48,8 +55,20 @@ export interface TAudioPlaybackFeedback {
 	expiresAtMs: number;
 }
 
+export interface TAudioInstrumentOption {
+	id: TAudioInstrumentId;
+	label: string;
+}
+
+export interface TAudioInstrumentPlayer {
+	connect(destination: AudioNode): unknown;
+	dispose(): unknown;
+	releaseAll(time?: number): unknown;
+	triggerAttackRelease(note: number, duration: number, time?: number, velocity?: number): unknown;
+}
+
 export interface TActiveVoice {
-	oscillator: OscillatorNode;
-	gain: GainNode;
+	instrumentId: TAudioInstrumentId;
+	noteNumber: number;
 	cleanupId: ReturnType<typeof setTimeout> | null;
 }

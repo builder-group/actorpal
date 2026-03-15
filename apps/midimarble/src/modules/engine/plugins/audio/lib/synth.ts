@@ -1,5 +1,6 @@
 import { getTicksPerSecond, type TMidiNote, type TMidiSong } from '../../midi';
-import type { TActiveVoice, TAudioState } from '../types';
+import type { TActiveVoice, TAudioInstrumentId, TAudioState } from '../types';
+import { createInstrumentPlayer } from './instruments';
 import {
 	getNoteDurationSeconds,
 	getPlaybackDelaySeconds,
@@ -7,10 +8,9 @@ import {
 	PLAYBACK_MAX_NOTE_SECONDS,
 	PREVIEW_MAX_NOTE_SECONDS
 } from './playback';
+import { getContext, setContext } from './tone-runtime';
 
-const ATTACK_SECONDS = 0.01;
-const RELEASE_SECONDS = 0.08;
-const MIN_AUDIBLE_GAIN = 0.0001;
+const VOICE_CLEANUP_PADDING_SECONDS = 1.6;
 
 export async function ensureAudioGraph(
 	state: TAudioState,
@@ -22,6 +22,7 @@ export async function ensureAudioGraph(
 		state.masterGain != null &&
 		state.context.state !== 'closed'
 	) {
+		syncToneContext(state.context);
 		syncMasterVolume(state, masterVolume);
 		return state;
 	}
@@ -36,6 +37,7 @@ export async function ensureAudioGraph(
 	const context = reusableContext ?? new AudioCtor();
 	const masterGain =
 		reusableContext != null && state.masterGain != null ? state.masterGain : context.createGain();
+	syncToneContext(context);
 	masterGain.gain.value = clampVolume(masterVolume);
 	if (reusableContext == null || state.masterGain == null) {
 		masterGain.connect(context.destination);
@@ -47,7 +49,8 @@ export async function ensureAudioGraph(
 		...state,
 		context,
 		masterGain,
-		isEnabled: true
+		isEnabled: true,
+		instrumentPlayers: reusableContext != null ? state.instrumentPlayers : {}
 	};
 }
 
@@ -58,17 +61,19 @@ export function syncMasterVolume(state: TAudioState, masterVolume: number): void
 export function previewTrackNotesAtTick(
 	state: TAudioState,
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
-	notes: TMidiNote[]
+	notes: TMidiNote[],
+	instrumentId: TAudioInstrumentId | null
 ): void {
-	previewTrackNotes(state, song, notes, PREVIEW_MAX_NOTE_SECONDS);
+	previewTrackNotes(state, song, notes, PREVIEW_MAX_NOTE_SECONDS, instrumentId);
 }
 
 export function previewSelectedTrackNote(
 	state: TAudioState,
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
-	note: TMidiNote
+	note: TMidiNote,
+	instrumentId: TAudioInstrumentId | null
 ): void {
-	previewTrackNotes(state, song, [note], Number.POSITIVE_INFINITY);
+	previewTrackNotes(state, song, [note], Number.POSITIVE_INFINITY, instrumentId);
 }
 
 export function previewMidiKeyNote(
@@ -76,9 +81,9 @@ export function previewMidiKeyNote(
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
 	noteNumber: number,
 	options: {
-		channel: number;
 		velocity: number;
-	}
+	},
+	instrumentId: TAudioInstrumentId | null
 ): void {
 	const previewDurationTicks = Math.max(
 		1,
@@ -94,10 +99,11 @@ export function previewMidiKeyNote(
 				durationTicks: previewDurationTicks,
 				noteNumber,
 				velocity: options.velocity,
-				channel: options.channel
+				channel: 0
 			}
 		],
-		PREVIEW_MAX_NOTE_SECONDS
+		PREVIEW_MAX_NOTE_SECONDS,
+		instrumentId
 	);
 }
 
@@ -105,12 +111,14 @@ function previewTrackNotes(
 	state: TAudioState,
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
 	notes: TMidiNote[],
-	maxDurationSeconds: number
+	maxDurationSeconds: number,
+	instrumentId: TAudioInstrumentId | null
 ): void {
 	for (const note of notes) {
 		playTrackNote(state, song, note, {
 			delaySeconds: 0,
-			maxDurationSeconds
+			maxDurationSeconds,
+			instrumentId
 		});
 	}
 }
@@ -119,12 +127,14 @@ export function playTrackNotes(
 	state: TAudioState,
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
 	notes: TMidiNote[],
-	startTick: number
+	startTick: number,
+	instrumentId: TAudioInstrumentId | null
 ): void {
 	for (const note of notes) {
 		playTrackNote(state, song, note, {
 			delaySeconds: getPlaybackDelaySeconds(song, note.tick, startTick),
-			maxDurationSeconds: PLAYBACK_MAX_NOTE_SECONDS
+			maxDurationSeconds: PLAYBACK_MAX_NOTE_SECONDS,
+			instrumentId
 		});
 	}
 }
@@ -135,11 +145,16 @@ export function stopAllVoices(state: TAudioState): void {
 			if (voice.cleanupId != null) {
 				globalThis.clearTimeout(voice.cleanupId);
 			}
-			stopVoice(voice, state.context?.currentTime ?? 0);
 		}
 	}
 
 	state.activeVoices.clear();
+	const now = state.context?.currentTime ?? 0;
+	for (const instrument of Object.values(state.instrumentPlayers)) {
+		instrument?.releaseAll(now);
+		instrument?.dispose();
+	}
+	state.instrumentPlayers = {};
 }
 
 export function disposeAudioGraph(state: TAudioState): void {
@@ -157,40 +172,31 @@ function playTrackNote(
 	options: {
 		delaySeconds: number;
 		maxDurationSeconds: number;
+		instrumentId: TAudioInstrumentId | null;
 	}
 ): void {
 	const context = state.context;
-	const masterGain = state.masterGain;
-	if (context == null || masterGain == null) {
+	if (context == null || state.masterGain == null || options.instrumentId == null) {
 		return;
 	}
 
-	const oscillator = context.createOscillator();
-	oscillator.type = note.channel === 9 ? 'square' : 'triangle';
-	oscillator.frequency.value = midiNoteToFrequency(note.noteNumber);
-
-	const gain = context.createGain();
-	oscillator.connect(gain);
-	gain.connect(masterGain);
+	const instrument = ensureInstrumentPlayer(state, options.instrumentId);
+	if (instrument == null) {
+		return;
+	}
 
 	const startAt = context.currentTime + Math.max(0, options.delaySeconds);
 	const sustainSeconds = getNoteDurationSeconds(song, note, options.maxDurationSeconds);
-	const peakGain = Math.max(0.04, (note.velocity / 127) * 0.24);
-	const sustainEnd = startAt + Math.max(ATTACK_SECONDS, sustainSeconds);
-	const stopAt = sustainEnd + RELEASE_SECONDS;
-
-	gain.gain.cancelScheduledValues(startAt);
-	gain.gain.setValueAtTime(0, startAt);
-	gain.gain.linearRampToValueAtTime(peakGain, startAt + ATTACK_SECONDS);
-	gain.gain.setValueAtTime(peakGain, sustainEnd);
-	gain.gain.linearRampToValueAtTime(MIN_AUDIBLE_GAIN, stopAt);
-
-	oscillator.start(startAt);
-	oscillator.stop(stopAt);
+	instrument.triggerAttackRelease(
+		midiNoteToFrequency(note.noteNumber),
+		sustainSeconds,
+		startAt,
+		clampVelocity(note.velocity)
+	);
 
 	const voice: TActiveVoice = {
-		oscillator,
-		gain,
+		instrumentId: options.instrumentId,
+		noteNumber: note.noteNumber,
 		cleanupId: null
 	};
 
@@ -200,7 +206,6 @@ function playTrackNote(
 
 	voice.cleanupId = globalThis.setTimeout(
 		() => {
-			stopVoice(voice, state.context?.currentTime ?? 0);
 			const active = state.activeVoices.get(note.id);
 			if (active == null) {
 				return;
@@ -214,25 +219,16 @@ function playTrackNote(
 
 			state.activeVoices.set(note.id, next);
 		},
-		Math.ceil((stopAt - context.currentTime) * 1000) + 40
+		Math.ceil((options.delaySeconds + sustainSeconds + VOICE_CLEANUP_PADDING_SECONDS) * 1000)
 	);
-}
-
-function stopVoice(voice: TActiveVoice, now: number): void {
-	try {
-		voice.gain.gain.cancelScheduledValues(now);
-		voice.gain.gain.setValueAtTime(0, now);
-		voice.oscillator.stop(now);
-	} catch {
-		// Ignore duplicate-stop races from scheduled cleanup.
-	}
-
-	voice.oscillator.disconnect();
-	voice.gain.disconnect();
 }
 
 function clampVolume(value: number): number {
 	return Math.max(0, Math.min(1, value));
+}
+
+function clampVelocity(value: number): number {
+	return Math.max(0.05, Math.min(1, value / 127));
 }
 
 function getAudioContextCtor(): (new () => AudioContext) | null {
@@ -242,4 +238,26 @@ function getAudioContextCtor(): (new () => AudioContext) | null {
 	};
 
 	return scope.AudioContext ?? scope.webkitAudioContext ?? null;
+}
+
+function syncToneContext(context: AudioContext): void {
+	if (getContext().rawContext !== context) {
+		setContext(context);
+	}
+}
+
+function ensureInstrumentPlayer(state: TAudioState, instrumentId: TAudioInstrumentId) {
+	const existing = state.instrumentPlayers[instrumentId];
+	if (existing != null) {
+		return existing;
+	}
+
+	if (state.masterGain == null) {
+		return null;
+	}
+
+	const created = createInstrumentPlayer(instrumentId);
+	created.connect(state.masterGain);
+	state.instrumentPlayers[instrumentId] = created;
+	return created;
 }

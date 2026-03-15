@@ -18,6 +18,8 @@ export function syncTrajectoryLineColors(app: TTrajectoryApp): void {
 	const state = app.r.trajectoryState;
 	(state.futureLine.material as THREE.LineBasicMaterial).color.set(config.futureColor);
 	(state.pastLine.material as THREE.LineBasicMaterial).color.set(config.pastColor);
+	state.futureMarkerMaterial.color.set(config.futureColor);
+	state.pastMarkerMaterial.color.set(config.pastColor);
 }
 
 export function setTrajectoryLinePoints(

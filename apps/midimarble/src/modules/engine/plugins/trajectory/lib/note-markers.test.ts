@@ -22,7 +22,7 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 					{ id: 3, tick: 20, durationTicks: 120, noteNumber: 64, velocity: 100, channel: 0 }
 				]
 			},
-			2,
+			new Set([2]),
 			1,
 			4,
 			1 / 240,
@@ -59,7 +59,7 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 			{
 				notes: [{ id: 4, tick: 12, durationTicks: 120, noteNumber: 65, velocity: 88, channel: 0 }]
 			},
-			null,
+			new Set<number>(),
 			1,
 			4,
 			1 / 240,
@@ -100,7 +100,7 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 				[1, { tick: 0, step: 0, position: { x: 0, y: 0, z: 0 }, phase: 'past' as const }],
 				[2, { tick: 8, step: 2, position: { x: 2, y: 0, z: 0 }, phase: 'future' as const }]
 			]),
-			2,
+			new Set([2]),
 			{
 				placedNoteIds: new Set([1]),
 				adjustedNoteIds: new Set()
@@ -139,7 +139,7 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 				[1, { tick: 0, step: 0, position: { x: 0, y: 0, z: 0 }, phase: 'past' as const }],
 				[2, { tick: 8, step: 2, position: { x: 2, y: 0, z: 0 }, phase: 'future' as const }]
 			]),
-			null,
+			new Set<number>(),
 			{
 				placedNoteIds: new Set([1, 2]),
 				adjustedNoteIds: new Set([2])
@@ -157,5 +157,44 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 
 		expect((noteIdToMarker.get(1) as THREE.Mesh).material).toBe(pastPlaced);
 		expect((noteIdToMarker.get(2) as THREE.Mesh).material).toBe(futureAdjusted);
+	});
+
+	it('styles every selected marker, not only the primary note', () => {
+		const past = new THREE.MeshBasicMaterial();
+		const pastPlaced = new THREE.MeshBasicMaterial();
+		const pastAdjusted = new THREE.MeshBasicMaterial();
+		const future = new THREE.MeshBasicMaterial();
+		const futurePlaced = new THREE.MeshBasicMaterial();
+		const futureAdjusted = new THREE.MeshBasicMaterial();
+		const selected = new THREE.MeshBasicMaterial();
+		const noteIdToMarker = new Map<number, THREE.Object3D>([
+			[1, new THREE.Mesh(new THREE.SphereGeometry(1), past)],
+			[2, new THREE.Mesh(new THREE.SphereGeometry(1), future)]
+		]);
+
+		syncPlacedNoteMarkers(
+			noteIdToMarker,
+			new Map([
+				[1, { tick: 0, step: 0, position: { x: 0, y: 0, z: 0 }, phase: 'past' as const }],
+				[2, { tick: 8, step: 2, position: { x: 2, y: 0, z: 0 }, phase: 'future' as const }]
+			]),
+			new Set([1, 2]),
+			{
+				placedNoteIds: new Set(),
+				adjustedNoteIds: new Set()
+			},
+			{
+				past,
+				pastPlaced,
+				pastAdjusted,
+				future,
+				futurePlaced,
+				futureAdjusted,
+				selected
+			}
+		);
+
+		expect((noteIdToMarker.get(1) as THREE.Mesh).material).toBe(selected);
+		expect((noteIdToMarker.get(2) as THREE.Mesh).material).toBe(selected);
 	});
 });

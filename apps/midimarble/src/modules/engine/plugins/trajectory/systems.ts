@@ -68,7 +68,7 @@ export function updateTrajectorySystem(app: TTrajectoryApp) {
 	const markers = buildTrajectoryMarkerDescriptors(
 		app.r.midiSong,
 		selectedTrack,
-		app.r.selectedNoteId,
+		app.r.selectedNoteIds,
 		app.r.liveStep,
 		app.r.bufferedStep,
 		app.r.fixedTimeStepSeconds,

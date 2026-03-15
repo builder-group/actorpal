@@ -33,7 +33,7 @@ export function buildTrajectoryProjection(
 export function buildTrajectoryMarkerDescriptors(
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'> | null,
 	track: { notes: TMidiNote[] } | null,
-	selectedNoteId: number | null,
+	selectedNoteIds: ReadonlySet<number>,
 	liveStep: number,
 	bufferedStep: number,
 	fixedTimeStepSeconds: number,
@@ -61,7 +61,7 @@ export function buildTrajectoryMarkerDescriptors(
 			step,
 			position,
 			phase: step <= liveStep ? 'past' : 'future',
-			selected: note.id === selectedNoteId
+			selected: selectedNoteIds.has(note.id)
 		});
 	}
 
@@ -106,7 +106,7 @@ export function syncTrajectoryMarkers(
 export function syncPlacedNoteMarkers(
 	noteIdToMarker: Map<number, THREE.Object3D>,
 	noteAnchorsById: Map<number, TTrajectoryNoteAnchor>,
-	selectedNoteId: number | null,
+	selectedNoteIds: ReadonlySet<number>,
 	noteState: {
 		placedNoteIds: Set<number>;
 		adjustedNoteIds: Set<number>;
@@ -127,7 +127,7 @@ export function syncPlacedNoteMarkers(
 			continue;
 		}
 
-		const isSelected = noteId === selectedNoteId;
+		const isSelected = selectedNoteIds.has(noteId);
 		const isAdjusted = noteState.adjustedNoteIds.has(noteId);
 		const isPlaced = noteState.placedNoteIds.has(noteId);
 		if (isSelected) {

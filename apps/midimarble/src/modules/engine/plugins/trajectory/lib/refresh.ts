@@ -8,6 +8,7 @@ export function shouldRefreshTrajectory(app: TTrajectoryApp): boolean {
 		app.wasResourceChanged('midiSong') ||
 		app.wasResourceChanged('selectedTrackId') ||
 		app.wasResourceChanged('selectedNoteId') ||
+		app.wasResourceChanged('selectedNoteIds') ||
 		app.wasResourceChanged('liveStep') ||
 		app.wasResourceChanged('bufferedStep') ||
 		app.wasResourceChanged('world') ||

@@ -278,7 +278,8 @@ export function syncNotePlatformMarkerStateSystem(app: TSceneApp) {
 	if (
 		!didNotePlatformStateChange &&
 		!app.wasResourceChanged('trajectoryProjection') &&
-		!app.wasResourceChanged('selectedNoteId')
+		!app.wasResourceChanged('selectedNoteId') &&
+		!app.wasResourceChanged('selectedNoteIds')
 	) {
 		return;
 	}

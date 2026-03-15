@@ -70,7 +70,7 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				syncPlacedNoteMarkers(
 					state.noteIdToMarker,
 					this.r.trajectoryProjection.noteAnchorsById,
-					this.r.selectedNoteId,
+					this.r.selectedNoteIds,
 					noteState,
 					{
 						past: state.pastMarkerMaterial,

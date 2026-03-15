@@ -418,13 +418,21 @@ export const TimelineRoll: React.FC<{
 }) => {
 	const playheadLineRef = React.useRef<HTMLDivElement>(null);
 	const gridSurfaceRef = React.useRef<HTMLDivElement>(null);
-	const beatTicks = React.useMemo(
-		() => buildBeatTicks(totalTicks, ticksPerBeat),
-		[totalTicks, ticksPerBeat]
-	);
 	const hiddenNoteIds = React.useMemo(
 		() => new Set(draftNotes.flatMap((note) => (note.sourceId == null ? [] : [note.sourceId]))),
 		[draftNotes]
+	);
+	const renderedTimelineWidth = Math.max(
+		timelineWidth,
+		Math.max(totalTicks * pixelsPerTick, 1)
+	);
+	const renderedTotalTicks = Math.max(
+		totalTicks,
+		Math.ceil(renderedTimelineWidth / Math.max(pixelsPerTick, 0.0001))
+	);
+	const beatTicks = React.useMemo(
+		() => buildBeatTicks(renderedTotalTicks, ticksPerBeat),
+		[renderedTotalTicks, ticksPerBeat]
 	);
 
 	React.useEffect(() => {
@@ -529,7 +537,7 @@ export const TimelineRoll: React.FC<{
 
 	return (
 		<div className="min-h-full">
-			<div className="flex min-h-full" style={{ width: PIANO_WIDTH + timelineWidth }}>
+			<div className="flex min-h-full" style={{ width: PIANO_WIDTH + renderedTimelineWidth }}>
 				<PianoColumn
 					noteRows={noteRows}
 					contentHeight={contentHeight}
@@ -538,7 +546,7 @@ export const TimelineRoll: React.FC<{
 
 				<div
 					className="relative flex min-h-full shrink-0 flex-col"
-					style={{ width: timelineWidth }}
+					style={{ width: renderedTimelineWidth }}
 				>
 					<TimelineRuler
 						ticksPerBeat={ticksPerBeat}

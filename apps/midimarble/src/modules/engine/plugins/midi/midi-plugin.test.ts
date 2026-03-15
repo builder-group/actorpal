@@ -15,6 +15,8 @@ describe('midi plugin', () => {
 		expect(app.r.midiSong?.name).toBe('Demo');
 		expect(app.r.selectedTrackId).toBe(0);
 		expect(app.r.selectedNoteId).toBeNull();
+		expect(app.r.selectedNoteIds).toEqual(new Set());
+		expect(app.r.nextMidiNoteId).toBe(2);
 		expect(app.r.midiImportError).toBeNull();
 	});
 
@@ -29,6 +31,8 @@ describe('midi plugin', () => {
 		expect(app.r.midiSong).toBeNull();
 		expect(app.r.selectedTrackId).toBeNull();
 		expect(app.r.selectedNoteId).toBeNull();
+		expect(app.r.selectedNoteIds).toEqual(new Set());
+		expect(app.r.nextMidiNoteId).toBe(0);
 		expect(app.r.midiImportError).toBe('Not a valid MIDI file. Missing MThd header.');
 	});
 
@@ -42,9 +46,95 @@ describe('midi plugin', () => {
 
 		app.selectNote(0);
 		expect(app.r.selectedNoteId).toBe(0);
+		expect(app.r.selectedNoteIds).toEqual(new Set([0]));
 
 		app.selectNote(null);
 		expect(app.r.selectedNoteId).toBeNull();
+		expect(app.r.selectedNoteIds).toEqual(new Set());
+	});
+
+	it('creates, moves, resizes, selects, and deletes notes in the selected track', async () => {
+		const app = createApp({
+			plugins: [createDefaultPlugin(), createMidiPlugin()] as const,
+			systemSets: [...ENGINE_SYSTEM_SETS]
+		});
+
+		await app.loadMidiFile(new File([createTestMidiBuffer()], 'demo.mid', { type: 'audio/midi' }));
+
+		const createdNoteId = app.createNote({
+			tick: 720,
+			durationTicks: 240,
+			noteNumber: 67
+		});
+		const getSelectedTrack = () =>
+			app.r.midiSong?.tracks.find((track) => track.id === app.r.selectedTrackId);
+
+		expect(createdNoteId).toBe(2);
+		expect(app.r.nextMidiNoteId).toBe(3);
+		expect(app.r.selectedNoteId).toBe(2);
+		expect(app.r.selectedNoteIds).toEqual(new Set([2]));
+		expect(app.r.midiSong?.totalTicks).toBe(960);
+
+		app.selectAllTrackNotes();
+		expect(app.r.selectedNoteIds).toEqual(new Set([0, 1, 2]));
+		expect(app.r.selectedNoteId).toBe(2);
+
+		expect(app.moveSelectedNotes(120, 1)).toBe(true);
+		expect(getSelectedTrack()?.notes.map((note) => [note.id, note.tick, note.noteNumber])).toEqual([
+			[0, 120, 61],
+			[1, 600, 65],
+			[2, 840, 68]
+		]);
+
+		app.selectNotes([2], 2);
+		expect(app.resizePrimarySelectedNote('end', -239)).toBe(true);
+		expect(getSelectedTrack()?.notes.find((note) => note.id === 2)?.durationTicks).toBe(1);
+
+		expect(app.deleteSelectedNotes()).toBe(1);
+		expect(app.r.selectedNoteId).toBeNull();
+		expect(app.r.selectedNoteIds).toEqual(new Set());
+		expect(getSelectedTrack()?.notes.map((note) => note.id)).toEqual([0, 1]);
+	});
+
+	it('keeps selection and deletion scoped to the selected track', () => {
+		const app = createApp({
+			plugins: [createDefaultPlugin(), createMidiPlugin()] as const,
+			systemSets: [...ENGINE_SYSTEM_SETS]
+		});
+
+		app.updateResource('midiSong', {
+			name: 'Demo',
+			bpm: 120,
+			ticksPerBeat: 480,
+			totalTicks: 360,
+			tracks: [
+				{
+					id: 7,
+					name: 'Lead',
+					notes: [{ id: 1, tick: 0, durationTicks: 120, noteNumber: 60, velocity: 100, channel: 0 }]
+				},
+				{
+					id: 9,
+					name: 'Bass',
+					notes: [
+						{ id: 2, tick: 120, durationTicks: 120, noteNumber: 48, velocity: 100, channel: 0 }
+					]
+				}
+			]
+		} as never);
+		app.updateResource('selectedTrackId', 7);
+
+		app.selectNotes([1, 2], 2);
+		expect(app.r.selectedNoteIds).toEqual(new Set([1]));
+		expect(app.r.selectedNoteId).toBe(1);
+
+		app.updateResource('selectedNoteIds', new Set([2]));
+		app.updateResource('selectedNoteId', 2);
+
+		expect(app.deleteSelectedNotes()).toBe(0);
+		expect(app.r.selectedNoteIds).toEqual(new Set());
+		expect(app.r.selectedNoteId).toBeNull();
+		expect(app.r.midiSong?.tracks[1]?.notes.map((note) => note.id)).toEqual([2]);
 	});
 });
 

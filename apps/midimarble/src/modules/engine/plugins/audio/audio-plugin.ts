@@ -22,6 +22,11 @@ export function createAudioPlugin(): TAudioPlugin {
 			audioConfig: {
 				enabled: true,
 				masterVolume: 0.32
+			},
+			audioPlaybackFeedback: {
+				activeNoteIds: new Set<number>(),
+				activeNoteNumbers: new Set<number>(),
+				expiresAtMs: 0
 			}
 		},
 		appExtensions: {
@@ -74,6 +79,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				const notes = getSelectedTrackNotesAtTick(midiSong, selectedTrackId, tick);
 				stopAllVoices(audioState);
 				previewTrackNotesAtTick(audioState, midiSong, notes);
+				this.updateResource('audioPlaybackFeedback', createPlaybackFeedback(notes));
 				this.updateResource('audioState', {
 					...audioState,
 					lastProcessedTick: tick,
@@ -86,6 +92,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				resumePromise = null;
 				previewRequestId += 1;
 				this.updateResource('audioState', createInitialAudioState());
+				this.updateResource('audioPlaybackFeedback', createEmptyPlaybackFeedback());
 			}
 		},
 		setup(app: TAudioApp) {
@@ -102,5 +109,23 @@ function createInitialAudioState(): TAudioState {
 		lastProcessedTick: 0,
 		lastMode: 'paused' as const,
 		activeVoices: new Map()
+	};
+}
+
+function createPlaybackFeedback(
+	notes: Array<{ id: number; noteNumber: number }>
+): TAudioApp['r']['audioPlaybackFeedback'] {
+	return {
+		activeNoteIds: new Set(notes.map((note) => note.id)),
+		activeNoteNumbers: new Set(notes.map((note) => note.noteNumber)),
+		expiresAtMs: Date.now() + 120
+	};
+}
+
+function createEmptyPlaybackFeedback(): TAudioApp['r']['audioPlaybackFeedback'] {
+	return {
+		activeNoteIds: new Set<number>(),
+		activeNoteNumbers: new Set<number>(),
+		expiresAtMs: 0
 	};
 }

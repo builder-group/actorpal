@@ -21,6 +21,7 @@ export const SelectionInspector: React.FC = () => {
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
+	const selectedNoteIds = useResource(app, 'selectedNoteIds');
 	const sceneSelection = useResource(app, 'sceneSelection');
 	const simulationSync = useResource(app, 'simulationSync');
 	const liveStep = useResource(app, 'liveStep');
@@ -193,6 +194,7 @@ export const SelectionInspector: React.FC = () => {
 				{target.kind === 'note' ? (
 					<NoteInspector
 						target={target}
+						selectedNoteCount={selectedNoteIds.size}
 						onCreateOrSelectNotePlatform={(noteId) =>
 							void runtime.createOrSelectNotePlatform(noteId)
 						}
@@ -203,12 +205,20 @@ export const SelectionInspector: React.FC = () => {
 						target={target}
 						onLiftChange={(value) =>
 							runtime.updateNotePlatform(target.entityId, {
-								offsetY: clamp(value, NOTE_PLATFORM_LIMITS.offsetY.min, NOTE_PLATFORM_LIMITS.offsetY.max)
+								offsetY: clamp(
+									value,
+									NOTE_PLATFORM_LIMITS.offsetY.min,
+									NOTE_PLATFORM_LIMITS.offsetY.max
+								)
 							})
 						}
 						onPushChange={(value) =>
 							runtime.updateNotePlatform(target.entityId, {
-								offsetZ: clamp(value, NOTE_PLATFORM_LIMITS.offsetZ.min, NOTE_PLATFORM_LIMITS.offsetZ.max)
+								offsetZ: clamp(
+									value,
+									NOTE_PLATFORM_LIMITS.offsetZ.min,
+									NOTE_PLATFORM_LIMITS.offsetZ.max
+								)
 							})
 						}
 						onRotationChange={(value) =>
@@ -261,10 +271,14 @@ const EmptyState: React.FC<{ message: string }> = ({ message }) => (
 
 const NoteInspector: React.FC<{
 	target: Extract<TInspectorTarget, { kind: 'note' }>;
+	selectedNoteCount: number;
 	onCreateOrSelectNotePlatform: (noteId: number) => void;
-}> = ({ target, onCreateOrSelectNotePlatform }) => (
+}> = ({ target, selectedNoteCount, onCreateOrSelectNotePlatform }) => (
 	<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
 		<InspectorTitle title={target.title} subtitle={`${target.noteName} · ${target.trackName}`} />
+		{selectedNoteCount > 1 ? (
+			<InspectorField label="Selection" value={`${selectedNoteCount} selected`} />
+		) : null}
 		<InspectorField label="Tick" value={Math.round(target.tick)} mono />
 		<InspectorField label="Step" value={target.step} mono />
 		<InspectorField label="Duration" value={`${target.durationTicks} ticks`} mono />
@@ -272,22 +286,24 @@ const NoteInspector: React.FC<{
 		<InspectorField label="Channel" value={target.channel} mono />
 		<InspectorField label="Path" value={capitalize(target.pathState)} />
 		{target.position != null ? <Vec3Field label="Position" value={target.position} /> : null}
-		<div className="mt-4">
-			<button
-				type="button"
-				className="bg-base-900 text-base-0 disabled:bg-base-200 disabled:text-base-500 w-full rounded-md px-3 py-2 text-sm font-medium"
-				disabled={target.notePlatformEntityId == null && target.position == null}
-				onClick={() => onCreateOrSelectNotePlatform(target.noteId)}
-			>
-				{target.notePlatformEntityId == null ? 'Create Note Platform' : 'Select Note Platform'}
-			</button>
-			{target.notePlatformEntityId == null && target.position == null ? (
-				<p className="text-base-500 mt-2 text-xs">
-					This note must be within the solved trajectory horizon before a note platform can be
-					created.
-				</p>
-			) : null}
-		</div>
+		{selectedNoteCount === 1 ? (
+			<div className="mt-4">
+				<button
+					type="button"
+					className="bg-base-900 text-base-0 disabled:bg-base-200 disabled:text-base-500 w-full rounded-md px-3 py-2 text-sm font-medium"
+					disabled={target.notePlatformEntityId == null && target.position == null}
+					onClick={() => onCreateOrSelectNotePlatform(target.noteId)}
+				>
+					{target.notePlatformEntityId == null ? 'Create Note Platform' : 'Select Note Platform'}
+				</button>
+				{target.notePlatformEntityId == null && target.position == null ? (
+					<p className="text-base-500 mt-2 text-xs">
+						This note must be within the solved trajectory horizon before a note platform can be
+						created.
+					</p>
+				) : null}
+			</div>
+		) : null}
 	</div>
 );
 

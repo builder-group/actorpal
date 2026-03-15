@@ -3,7 +3,21 @@ import { playTrackNotes, stopAllVoices, syncMasterVolume } from './lib/synth';
 import type { TAudioApp } from './types';
 
 export function syncAudioPlaybackSystem(app: TAudioApp) {
-	const { audioConfig, audioState, midiSong, selectedTrackId, transport } = app.r;
+	const { audioConfig, audioState, audioPlaybackFeedback, midiSong, selectedTrackId, transport } =
+		app.r;
+
+	if (
+		audioPlaybackFeedback.expiresAtMs > 0 &&
+		audioPlaybackFeedback.expiresAtMs <= Date.now() &&
+		(audioPlaybackFeedback.activeNoteIds.size > 0 ||
+			audioPlaybackFeedback.activeNoteNumbers.size > 0)
+	) {
+		app.updateResource('audioPlaybackFeedback', {
+			activeNoteIds: new Set<number>(),
+			activeNoteNumbers: new Set<number>(),
+			expiresAtMs: 0
+		});
+	}
 
 	syncMasterVolume(audioState, audioConfig.masterVolume);
 
@@ -55,6 +69,7 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 			transport.playheadTick - 0.0001,
 			transport.playheadTick
 		);
+		syncPlaybackFeedback(app, notesAtCurrentTick);
 		playTrackNotes(audioState, midiSong, notesAtCurrentTick, transport.playheadTick - 0.0001);
 		syncAudioCursor(app, transport.playheadTick, 'running');
 		return;
@@ -72,6 +87,7 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 		audioState.lastProcessedTick,
 		transport.playheadTick
 	);
+	syncPlaybackFeedback(app, notes);
 	playTrackNotes(audioState, midiSong, notes, audioState.lastProcessedTick);
 	syncAudioCursor(app, transport.playheadTick, 'running');
 }
@@ -90,5 +106,20 @@ function syncAudioCursor(
 		...audioState,
 		lastProcessedTick,
 		lastMode
+	});
+}
+
+function syncPlaybackFeedback(
+	app: Pick<TAudioApp, 'updateResource'>,
+	notes: Array<{ id: number; noteNumber: number }>
+): void {
+	if (notes.length === 0) {
+		return;
+	}
+
+	app.updateResource('audioPlaybackFeedback', {
+		activeNoteIds: new Set(notes.map((note) => note.id)),
+		activeNoteNumbers: new Set(notes.map((note) => note.noteNumber)),
+		expiresAtMs: Date.now() + 120
 	});
 }

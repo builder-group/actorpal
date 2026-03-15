@@ -9,6 +9,7 @@ export type TAudioPlugin = TPlugin<
 		resources: {
 			audioState: TAudioState;
 			audioConfig: TAudioConfig;
+			audioPlaybackFeedback: TAudioPlaybackFeedback;
 		};
 		appExtensions: {
 			resumeAudio(): Promise<void>;
@@ -36,6 +37,12 @@ export interface TAudioState {
 export interface TAudioConfig {
 	enabled: boolean;
 	masterVolume: number;
+}
+
+export interface TAudioPlaybackFeedback {
+	activeNoteIds: Set<number>;
+	activeNoteNumbers: Set<number>;
+	expiresAtMs: number;
 }
 
 export interface TActiveVoice {

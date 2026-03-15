@@ -1,12 +1,10 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import {
-	createNotePlatformColliders,
-	createNotePlatformObject
-} from './bundles/note-platform';
+import { createNotePlatformColliders, createNotePlatformObject } from './bundles/note-platform';
 import { DEFAULT_TRACK_WIDTH } from './lib/track-shape';
 import {
 	syncNotePlatformRuntimeSystem,
+	syncOrphanedNotePlatformsSystem,
 	syncPreviewInteractionSystem,
 	syncSceneManipulationHandlesSystem
 } from './systems';
@@ -84,7 +82,11 @@ describe('syncNotePlatformRuntimeSystem', () => {
 		expect(updateComponent).toHaveBeenCalledWith(
 			12,
 			app.c.PositionMixin,
-			expect.objectContaining({ x: 1 - (DEFAULT_TRACK_WIDTH - 0.84) / 2, y: 2 - (0.36 + 0.11) + 0.25, z: 2.5 })
+			expect.objectContaining({
+				x: 1 - (DEFAULT_TRACK_WIDTH - 0.84) / 2,
+				y: 2 - (0.36 + 0.11) + 0.25,
+				z: 2.5
+			})
 		);
 		expect(markSimulationDirty).toHaveBeenCalledOnce();
 		expect(requestSimulationSync).toHaveBeenCalledOnce();
@@ -173,11 +175,62 @@ describe('syncNotePlatformRuntimeSystem', () => {
 		syncNotePlatformRuntimeSystem(app as never);
 
 		expect(notePlatformMesh.geometry).toBe(originalGeometry);
-		expect(updateComponent).not.toHaveBeenCalledWith(
-			12,
-			app.c.ColliderMixin,
-			expect.anything()
-		);
+		expect(updateComponent).not.toHaveBeenCalledWith(12, app.c.ColliderMixin, expect.anything());
+	});
+
+	it('removes orphaned note platforms when the bound note disappears from midi state', () => {
+		const destroyEntity = vi.fn();
+		const markSimulationDirty = vi.fn();
+		const requestSimulationSync = vi.fn();
+		const updateResource = vi.fn();
+
+		syncOrphanedNotePlatformsSystem({
+			c: {
+				NoteBindingMixin: Symbol('NoteBindingMixin'),
+				NotePlatformMixin: Symbol('NotePlatformMixin')
+			},
+			r: {
+				midiSong: {
+					name: 'Demo',
+					bpm: 120,
+					ticksPerBeat: 480,
+					totalTicks: 960,
+					tracks: [
+						{
+							id: 0,
+							name: 'Lead',
+							notes: [
+								{ id: 3, tick: 0, durationTicks: 120, noteNumber: 60, velocity: 100, channel: 0 }
+							]
+						}
+					]
+				},
+				sceneSelection: { entityId: 12 },
+				sceneManipulationState: {
+					mode: 'move',
+					entityId: 12,
+					isDragging: false,
+					didEdit: false,
+					pointerDownClient: null,
+					dragPlaneX: null,
+					dragOffset: null
+				},
+				viewport: {
+					setControlsEnabled: vi.fn()
+				}
+			},
+			wasResourceChanged: vi.fn((resource: string) => resource === 'midiSong'),
+			queryComponents: vi.fn(() => [[12, { noteId: 7 }]]),
+			updateResource,
+			destroyEntity,
+			markSimulationDirty,
+			requestSimulationSync
+		} as never);
+
+		expect(destroyEntity).toHaveBeenCalledWith(12);
+		expect(markSimulationDirty).toHaveBeenCalledOnce();
+		expect(requestSimulationSync).toHaveBeenCalledOnce();
+		expect(updateResource).toHaveBeenCalledWith('sceneSelection', { entityId: null });
 	});
 
 	it('hides manipulation handles while preview mode is active', () => {

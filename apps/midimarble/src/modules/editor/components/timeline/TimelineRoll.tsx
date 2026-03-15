@@ -10,43 +10,80 @@ import {
 	RULER_HEIGHT
 } from '../../lib/timeline-layout';
 
+export interface TTimelineDraftNote extends Pick<
+	TMidiNote,
+	'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'
+> {
+	sourceId: number | null;
+}
+
+export interface TTimelineGridPointerInput {
+	pointerId: number;
+	tick: number;
+	noteNumber: number;
+	clientX: number;
+	clientY: number;
+}
+
+export interface TTimelineNotePointerInput extends TTimelineGridPointerInput {
+	note: Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>;
+	edge: 'body' | 'start' | 'end';
+	additive: boolean;
+}
+
 const PianoColumn: React.FC<{
 	noteRows: number[];
 	contentHeight: number;
-}> = ({ noteRows, contentHeight }) => (
+	activeNoteNumbers: Set<number>;
+}> = ({ noteRows, contentHeight, activeNoteNumbers }) => (
 	<div
 		className="border-base-200 bg-base-50 sticky left-0 z-10 flex shrink-0 flex-col border-r"
 		style={{ width: PIANO_WIDTH }}
 	>
-		<div className="border-base-200 bg-base-50 border-b" style={{ height: RULER_HEIGHT }} />
+		<div
+			className="border-base-200 bg-base-50 sticky top-0 z-20 border-b"
+			style={{ height: RULER_HEIGHT }}
+		/>
 
 		<div className="relative flex-1" style={{ minHeight: MIN_ROLL_HEIGHT }}>
 			<div className="relative min-h-full" style={{ height: contentHeight }}>
 				{noteRows.map((noteNumber, index) => (
-					<PianoKeyRow key={noteNumber} noteNumber={noteNumber} top={index * NOTE_ROW_HEIGHT} />
+					<PianoKeyRow
+						key={noteNumber}
+						noteNumber={noteNumber}
+						top={index * NOTE_ROW_HEIGHT}
+						isActive={activeNoteNumbers.has(noteNumber)}
+					/>
 				))}
 			</div>
 		</div>
 	</div>
 );
 
-const PianoKeyRow: React.FC<{ noteNumber: number; top: number }> = ({ noteNumber, top }) => {
+const PianoKeyRow: React.FC<{
+	noteNumber: number;
+	top: number;
+	isActive: boolean;
+}> = ({ noteNumber, top, isActive }) => {
 	const blackKey = isBlackKey(noteNumber);
 	const cNote = noteNumber % 12 === 0;
 
 	return (
 		<div
-			className="border-base-200 absolute inset-x-0 border-b"
+			className="border-base-200 absolute inset-x-0 border-b transition-colors"
 			style={{
 				top,
 				height: NOTE_ROW_HEIGHT,
-				background: blackKey ? '#f0f0f0' : cNote ? '#f8f8f8' : '#ffffff'
+				background: blackKey ? '#f0f0f0' : cNote ? '#f8f8f8' : '#ffffff',
+				boxShadow: isActive ? 'inset 0 0 0 999px rgba(250, 204, 21, 0.18)' : undefined
 			}}
 		>
 			<div
-				className="absolute inset-y-0 left-0 w-10"
+				className="absolute inset-y-0 left-0 w-10 transition-transform"
 				style={{
-					background: blackKey ? '#111111' : 'transparent'
+					background: blackKey ? '#111111' : 'transparent',
+					transform: isActive ? 'translateX(1px) scaleX(0.98)' : undefined,
+					boxShadow: isActive ? 'inset 0 0 0 1px rgba(250,204,21,0.28)' : undefined
 				}}
 			/>
 
@@ -62,13 +99,31 @@ const PianoKeyRow: React.FC<{ noteNumber: number; top: number }> = ({ noteNumber
 const TimelineRuler: React.FC<{
 	ticksPerBeat: number;
 	bufferedPx: number;
+	playheadPx: number;
 	pixelsPerTick: number;
 	beatTicks: { majorBeats: number[]; minorBeats: number[] };
-}> = ({ ticksPerBeat, bufferedPx, pixelsPerTick, beatTicks }) => {
+	onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+	onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
+	onPointerUp: () => void;
+}> = ({
+	ticksPerBeat,
+	bufferedPx,
+	playheadPx,
+	pixelsPerTick,
+	beatTicks,
+	onPointerDown,
+	onPointerMove,
+	onPointerUp
+}) => {
 	return (
 		<div
-			className="border-base-200 bg-base-50 relative shrink-0 border-b select-none"
+			className="border-base-200 bg-base-50 sticky top-0 z-20 shrink-0 border-b select-none"
 			style={{ height: RULER_HEIGHT }}
+			onPointerDown={onPointerDown}
+			onPointerMove={onPointerMove}
+			onPointerUp={onPointerUp}
+			onPointerCancel={onPointerUp}
+			onLostPointerCapture={onPointerUp}
 		>
 			<div
 				className="pointer-events-none absolute inset-y-0 left-0"
@@ -100,21 +155,46 @@ const TimelineRuler: React.FC<{
 					<div className="bg-base-200 absolute bottom-0 w-px" style={{ height: 5 }} />
 				</div>
 			))}
+
+			<div className="pointer-events-none absolute inset-y-0 z-10" style={{ left: playheadPx }}>
+				<div
+					style={{
+						position: 'absolute',
+						top: 0,
+						left: -4,
+						width: 8,
+						height: 14,
+						background: '#ef4444',
+						clipPath: 'polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%)'
+					}}
+				/>
+				<div
+					className="absolute inset-y-0 w-px"
+					style={{ background: '#ef4444', left: '-0.5px' }}
+				/>
+			</div>
 		</div>
 	);
 };
 
 const PianoRollGrid: React.FC<{
+	noteRows: number[];
 	ticksPerBeat: number;
 	pixelsPerTick: number;
 	contentHeight: number;
-	noteRows: number[];
 	beatTicks: { majorBeats: number[]; minorBeats: number[] };
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
+	draftNotes: TTimelineDraftNote[];
 	selectedNoteId: number | null;
+	selectedNoteIds: Set<number>;
+	hiddenNoteIds: Set<number>;
+	activeNoteIds: Set<number>;
 	placedNoteIds: Set<number>;
 	adjustedNoteIds: Set<number>;
-	onSelectNote: (noteId: number, tick: number) => void;
+	onNotePointerDown: (
+		event: React.PointerEvent<HTMLButtonElement>,
+		note: Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>
+	) => void;
 }> = ({
 	noteRows,
 	ticksPerBeat,
@@ -122,10 +202,14 @@ const PianoRollGrid: React.FC<{
 	contentHeight,
 	beatTicks,
 	notes,
+	draftNotes,
 	selectedNoteId,
+	selectedNoteIds,
+	hiddenNoteIds,
+	activeNoteIds,
 	placedNoteIds,
 	adjustedNoteIds,
-	onSelectNote
+	onNotePointerDown
 }) => {
 	const noteIndexByNumber = React.useMemo(
 		() => new Map(noteRows.map((noteNumber, index) => [noteNumber, index])),
@@ -167,12 +251,20 @@ const PianoRollGrid: React.FC<{
 			))}
 
 			{notes.map((note) => {
+				if (hiddenNoteIds.has(note.id)) {
+					return null;
+				}
+
 				const noteRow = noteIndexByNumber.get(note.noteNumber);
 				if (noteRow == null) {
 					return null;
 				}
+
 				const isAdjusted = adjustedNoteIds.has(note.id);
 				const isPlaced = placedNoteIds.has(note.id);
+				const isPrimarySelected = note.id === selectedNoteId;
+				const isSelected = selectedNoteIds.has(note.id);
+				const isActive = activeNoteIds.has(note.id);
 
 				return (
 					<button
@@ -188,23 +280,77 @@ const PianoRollGrid: React.FC<{
 								? `hsl(${36 + Math.round((note.velocity / 127) * 8)} 88% 56%)`
 								: isPlaced
 									? `hsl(${145 + Math.round((note.velocity / 127) * 12)} 55% 48%)`
-								: `hsl(${210 + Math.round((note.velocity / 127) * 25)} 70% 56%)`,
-							borderColor:
-								note.id === selectedNoteId ? 'rgba(244, 63, 94, 0.92)' : 'rgba(15, 23, 42, 0.18)',
-							boxShadow:
-								note.id === selectedNoteId
+									: `hsl(${210 + Math.round((note.velocity / 127) * 25)} 70% 56%)`,
+							borderColor: isPrimarySelected
+								? 'rgba(244, 63, 94, 0.92)'
+								: isSelected
+									? 'rgba(244, 63, 94, 0.72)'
+									: 'rgba(15, 23, 42, 0.18)',
+							boxShadow: isActive
+								? '0 0 0 2px rgba(250,204,21,0.28), inset 0 1px 0 rgba(255,255,255,0.35)'
+								: isPrimarySelected
 									? '0 0 0 2px rgba(244,63,94,0.26), inset 0 1px 0 rgba(255,255,255,0.35)'
-									: 'inset 0 1px 0 rgba(255,255,255,0.28)',
-							transform: note.id === selectedNoteId ? 'scaleY(1.05)' : undefined
+									: isSelected
+										? '0 0 0 1px rgba(244,63,94,0.28), inset 0 1px 0 rgba(255,255,255,0.35)'
+										: 'inset 0 1px 0 rgba(255,255,255,0.28)',
+							transform:
+								isActive || isPrimarySelected
+									? 'scaleY(1.05)'
+									: isSelected
+										? 'scaleY(1.02)'
+										: undefined
 						}}
 						title={`${getNoteName(note.noteNumber)} · Tick ${note.tick}`}
-						aria-pressed={note.id === selectedNoteId}
-						onPointerDown={(event) => {
-							event.stopPropagation();
-						}}
-						onClick={(event) => {
-							event.stopPropagation();
-							onSelectNote(note.id, note.tick);
+						aria-pressed={isSelected}
+						tabIndex={-1}
+						onPointerDown={(event) => onNotePointerDown(event, note)}
+					>
+						<div
+							className="pointer-events-none absolute inset-y-0 left-0"
+							style={{
+								width: 6,
+								background: isPrimarySelected
+									? 'rgba(255,255,255,0.52)'
+									: isSelected
+										? 'rgba(255,255,255,0.34)'
+										: 'rgba(255,255,255,0.22)',
+								boxShadow: '1px 0 0 rgba(15,23,42,0.18)'
+							}}
+						/>
+						<div
+							className="pointer-events-none absolute inset-y-0 right-0"
+							style={{
+								width: 6,
+								background: isPrimarySelected
+									? 'rgba(255,255,255,0.52)'
+									: isSelected
+										? 'rgba(255,255,255,0.34)'
+										: 'rgba(255,255,255,0.22)',
+								boxShadow: '-1px 0 0 rgba(15,23,42,0.18)'
+							}}
+						/>
+					</button>
+				);
+			})}
+
+			{draftNotes.map((note) => {
+				const noteRow = noteIndexByNumber.get(note.noteNumber);
+				if (noteRow == null) {
+					return null;
+				}
+
+				return (
+					<div
+						key={`draft-${note.sourceId ?? note.id}`}
+						className="pointer-events-none absolute overflow-hidden rounded-sm border border-dashed"
+						style={{
+							left: note.tick * pixelsPerTick,
+							top: noteRow * NOTE_ROW_HEIGHT + 2,
+							width: Math.max(note.durationTicks * pixelsPerTick, 3),
+							height: NOTE_ROW_HEIGHT - 4,
+							background: 'rgba(244, 63, 94, 0.18)',
+							borderColor: 'rgba(244, 63, 94, 0.92)',
+							boxShadow: '0 0 0 1px rgba(244,63,94,0.18)'
 						}}
 					/>
 				);
@@ -223,15 +369,24 @@ export const TimelineRoll: React.FC<{
 	contentHeight: number;
 	noteRows: number[];
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
+	draftNotes: TTimelineDraftNote[];
 	selectedNoteId: number | null;
+	selectedNoteIds: Set<number>;
+	activeNoteIds: Set<number>;
+	activeNoteNumbers: Set<number>;
 	placedNoteIds: Set<number>;
 	adjustedNoteIds: Set<number>;
 	canScrub: boolean;
-	isDragging: boolean;
-	onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
-	onPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
-	onPointerUp: () => void;
-	onSelectNote: (noteId: number, tick: number) => void;
+	canEditNotes: boolean;
+	isRulerDragging: boolean;
+	onRulerPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
+	onRulerPointerMove: (event: React.PointerEvent<HTMLDivElement>) => void;
+	onRulerPointerUp: () => void;
+	onGridPointerDown: (input: TTimelineGridPointerInput) => void;
+	onGridPointerMove: (input: TTimelineGridPointerInput) => void;
+	onGridPointerUp: () => void;
+	onNotePointerDown: (input: TTimelineNotePointerInput) => void;
+	onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
 }> = ({
 	timelineWidth,
 	totalTicks,
@@ -242,20 +397,34 @@ export const TimelineRoll: React.FC<{
 	contentHeight,
 	noteRows,
 	notes,
+	draftNotes,
 	selectedNoteId,
+	selectedNoteIds,
+	activeNoteIds,
+	activeNoteNumbers,
 	placedNoteIds,
 	adjustedNoteIds,
 	canScrub,
-	isDragging,
-	onPointerDown,
-	onPointerMove,
-	onPointerUp,
-	onSelectNote
+	canEditNotes,
+	isRulerDragging,
+	onRulerPointerDown,
+	onRulerPointerMove,
+	onRulerPointerUp,
+	onGridPointerDown,
+	onGridPointerMove,
+	onGridPointerUp,
+	onNotePointerDown,
+	onKeyDown
 }) => {
 	const playheadLineRef = React.useRef<HTMLDivElement>(null);
+	const gridSurfaceRef = React.useRef<HTMLDivElement>(null);
 	const beatTicks = React.useMemo(
 		() => buildBeatTicks(totalTicks, ticksPerBeat),
 		[totalTicks, ticksPerBeat]
+	);
+	const hiddenNoteIds = React.useMemo(
+		() => new Set(draftNotes.flatMap((note) => (note.sourceId == null ? [] : [note.sourceId]))),
+		[draftNotes]
 	);
 
 	React.useEffect(() => {
@@ -264,31 +433,145 @@ export const TimelineRoll: React.FC<{
 		}
 	}, [playheadPx]);
 
+	const getGridPointerInput = React.useCallback(
+		(pointerId: number, clientX: number, clientY: number): TTimelineGridPointerInput | null => {
+			const surface = gridSurfaceRef.current;
+			if (surface == null) {
+				return null;
+			}
+
+			const rect = surface.getBoundingClientRect();
+			const noteViewportX = Math.max(0, clientX - rect.left);
+			const tick = noteViewportX / Math.max(pixelsPerTick, 0.0001);
+			const noteRowIndex = Math.max(
+				0,
+				Math.min(noteRows.length - 1, Math.floor((clientY - rect.top) / NOTE_ROW_HEIGHT))
+			);
+			const noteNumber = noteRows[noteRowIndex] ?? noteRows[noteRows.length - 1] ?? 60;
+
+			return {
+				pointerId,
+				tick,
+				noteNumber,
+				clientX,
+				clientY
+			};
+		},
+		[noteRows, pixelsPerTick]
+	);
+
+	const handleGridPointerDown = React.useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			if (!canEditNotes) {
+				return;
+			}
+
+			gridSurfaceRef.current?.focus();
+			gridSurfaceRef.current?.setPointerCapture(event.pointerId);
+			const input = getGridPointerInput(event.pointerId, event.clientX, event.clientY);
+			if (input != null) {
+				onGridPointerDown(input);
+			}
+		},
+		[canEditNotes, getGridPointerInput, onGridPointerDown]
+	);
+
+	const handleGridPointerMove = React.useCallback(
+		(event: React.PointerEvent<HTMLDivElement>) => {
+			const input = getGridPointerInput(event.pointerId, event.clientX, event.clientY);
+			if (input != null) {
+				onGridPointerMove(input);
+			}
+		},
+		[getGridPointerInput, onGridPointerMove]
+	);
+
+	const handleNoteButtonPointerDown = React.useCallback(
+		(
+			event: React.PointerEvent<HTMLButtonElement>,
+			note: Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>
+		) => {
+			event.preventDefault();
+			event.stopPropagation();
+			gridSurfaceRef.current?.focus();
+
+			const input = getGridPointerInput(event.pointerId, event.clientX, event.clientY);
+			if (input == null) {
+				return;
+			}
+
+			const additive = event.metaKey || event.ctrlKey;
+			const rect = event.currentTarget.getBoundingClientRect();
+			const edgeSize = Math.min(12, Math.max(6, rect.width * 0.35));
+			const canResize = canEditNotes && !additive;
+			const edge =
+				!canEditNotes || !canResize
+					? 'body'
+					: event.clientX - rect.left <= edgeSize
+						? 'start'
+						: rect.right - event.clientX <= edgeSize
+							? 'end'
+							: 'body';
+
+			if (canEditNotes && !additive) {
+				gridSurfaceRef.current?.setPointerCapture(event.pointerId);
+			}
+
+			onNotePointerDown({
+				...input,
+				note,
+				edge,
+				additive
+			});
+		},
+		[canEditNotes, getGridPointerInput, onNotePointerDown]
+	);
+
 	return (
 		<div className="min-h-full">
 			<div className="flex min-h-full" style={{ width: PIANO_WIDTH + timelineWidth }}>
-				<PianoColumn noteRows={noteRows} contentHeight={contentHeight} />
+				<PianoColumn
+					noteRows={noteRows}
+					contentHeight={contentHeight}
+					activeNoteNumbers={activeNoteNumbers}
+				/>
 
 				<div
 					className="relative flex min-h-full shrink-0 flex-col"
-					style={{
-						width: timelineWidth,
-						cursor: canScrub ? (isDragging ? 'grabbing' : 'crosshair') : 'default'
-					}}
-					onPointerDown={onPointerDown}
-					onPointerMove={onPointerMove}
-					onPointerUp={onPointerUp}
-					onPointerCancel={onPointerUp}
-					onLostPointerCapture={onPointerUp}
+					style={{ width: timelineWidth }}
 				>
 					<TimelineRuler
 						ticksPerBeat={ticksPerBeat}
 						bufferedPx={bufferedPx}
+						playheadPx={playheadPx}
 						pixelsPerTick={pixelsPerTick}
 						beatTicks={beatTicks}
+						onPointerDown={onRulerPointerDown}
+						onPointerMove={onRulerPointerMove}
+						onPointerUp={onRulerPointerUp}
 					/>
 
-					<div className="relative flex-1" style={{ minHeight: MIN_ROLL_HEIGHT }}>
+					<div
+						ref={gridSurfaceRef}
+						className="relative flex-1 outline-none"
+						style={{
+							minHeight: MIN_ROLL_HEIGHT,
+							cursor: canEditNotes
+								? isRulerDragging
+									? 'grabbing'
+									: 'crosshair'
+								: canScrub
+									? 'default'
+									: 'default'
+						}}
+						tabIndex={0}
+						onKeyDown={onKeyDown}
+						onPointerDown={handleGridPointerDown}
+						onPointerMove={handleGridPointerMove}
+						onPointerUp={onGridPointerUp}
+						onPointerCancel={onGridPointerUp}
+						onLostPointerCapture={onGridPointerUp}
+					>
 						<PianoRollGrid
 							noteRows={noteRows}
 							ticksPerBeat={ticksPerBeat}
@@ -296,29 +579,22 @@ export const TimelineRoll: React.FC<{
 							contentHeight={contentHeight}
 							beatTicks={beatTicks}
 							notes={notes}
+							draftNotes={draftNotes}
 							selectedNoteId={selectedNoteId}
+							selectedNoteIds={selectedNoteIds}
+							hiddenNoteIds={hiddenNoteIds}
+							activeNoteIds={activeNoteIds}
 							placedNoteIds={placedNoteIds}
 							adjustedNoteIds={adjustedNoteIds}
-							onSelectNote={onSelectNote}
+							onNotePointerDown={handleNoteButtonPointerDown}
 						/>
 					</div>
 
 					<div
 						ref={playheadLineRef}
-						className="pointer-events-none absolute inset-y-0 z-20"
-						style={{ left: playheadPx }}
+						className="pointer-events-none absolute z-20"
+						style={{ left: playheadPx, top: RULER_HEIGHT, bottom: 0 }}
 					>
-						<div
-							style={{
-								position: 'absolute',
-								top: 0,
-								left: -4,
-								width: 8,
-								height: 14,
-								background: '#ef4444',
-								clipPath: 'polygon(0 0, 100% 0, 100% 55%, 50% 100%, 0 55%)'
-							}}
-						/>
 						<div
 							className="absolute inset-y-0 w-px"
 							style={{ background: '#ef4444', left: '-0.5px' }}

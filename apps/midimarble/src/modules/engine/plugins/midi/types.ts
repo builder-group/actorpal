@@ -8,12 +8,21 @@ export type TMidiPlugin = TPlugin<
 			midiSong: TMidiSong | null;
 			selectedTrackId: number | null;
 			selectedNoteId: number | null;
+			selectedNoteIds: Set<number>;
+			nextMidiNoteId: number;
 			midiImportError: string | null;
 		};
 		appExtensions: {
 			loadMidiFile(file: File): Promise<void>;
 			clearMidiSong(): void;
 			selectNote(noteId: number | null): void;
+			selectNotes(noteIds: number[], primaryNoteId: number | null): void;
+			selectAllTrackNotes(trackId?: number): void;
+			clearNoteSelection(): void;
+			createNote(input: TMidiCreateNoteInput): number | null;
+			moveSelectedNotes(deltaTick: number, deltaNoteNumber: number): boolean;
+			resizePrimarySelectedNote(edge: 'start' | 'end', deltaTick: number): boolean;
+			deleteSelectedNotes(): number;
 		};
 		systemSets: TEngineSystemSet;
 	},
@@ -43,4 +52,11 @@ export interface TMidiSong {
 	ticksPerBeat: number;
 	totalTicks: number;
 	tracks: TMidiTrack[];
+}
+
+export interface TMidiCreateNoteInput {
+	trackId?: number;
+	tick: number;
+	durationTicks: number;
+	noteNumber: number;
 }

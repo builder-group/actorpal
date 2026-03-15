@@ -1,6 +1,7 @@
 import { createState } from 'feature-state';
 import React from 'react';
 import { clampMidiTick, type TMidiSong } from '@/modules/engine/plugins/midi';
+import type { TTimelineEditableNote } from '../../lib/timeline-editing';
 import {
 	DEFAULT_PIXELS_PER_BEAT,
 	getPixelsPerTick,
@@ -10,10 +11,45 @@ import {
 	ZOOM_STEP_FACTOR
 } from '../../lib/timeline-layout';
 
+export type TTimelineKeyboardMode = 'adaptive' | 'full88';
+
+export type TTimelineInteractionState =
+	| { mode: 'idle' }
+	| {
+			mode: 'drawing';
+			pointerId: number;
+			anchorTick: number;
+			currentTick: number;
+			noteNumber: number;
+			didDrag: boolean;
+			pointerDownClient: { x: number; y: number };
+	  }
+	| {
+			mode: 'moving';
+			pointerId: number;
+			anchorTick: number;
+			currentTick: number;
+			anchorNoteNumber: number;
+			currentNoteNumber: number;
+			didDrag: boolean;
+			pointerDownClient: { x: number; y: number };
+			clickedNote: TTimelineEditableNote;
+			notes: TTimelineEditableNote[];
+	  }
+	| {
+			mode: 'resizing-start' | 'resizing-end';
+			pointerId: number;
+			anchorTick: number;
+			currentTick: number;
+			note: TTimelineEditableNote;
+	  };
+
 export class TimelineCx {
 	public readonly scrollContainerRef = React.createRef<HTMLDivElement>();
 	public readonly $containerWidth = createState(0);
 	public readonly $pixelsPerBeat = createState(DEFAULT_PIXELS_PER_BEAT);
+	public readonly $keyboardMode = createState<TTimelineKeyboardMode>('adaptive');
+	public readonly $interactionState = createState<TTimelineInteractionState>({ mode: 'idle' });
 
 	public unmount(): void {
 		// No-op for now. Keep symmetry with other local Cx helpers.
@@ -44,6 +80,22 @@ export class TimelineCx {
 
 	public getZoomRatio(): number {
 		return this.$pixelsPerBeat.get() / DEFAULT_PIXELS_PER_BEAT;
+	}
+
+	public setKeyboardMode(mode: TTimelineKeyboardMode): void {
+		if (this.$keyboardMode.get() !== mode) {
+			this.$keyboardMode.set(mode);
+		}
+	}
+
+	public setInteractionState(state: TTimelineInteractionState): void {
+		this.$interactionState.set(state);
+	}
+
+	public clearInteractionState(): void {
+		if (this.$interactionState.get().mode !== 'idle') {
+			this.$interactionState.set({ mode: 'idle' });
+		}
 	}
 
 	public getTickAtClientX(

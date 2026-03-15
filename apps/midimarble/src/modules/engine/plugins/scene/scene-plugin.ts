@@ -17,6 +17,7 @@ import {
 	syncMarbleRuntimeMixinsSystem,
 	syncNotePlatformMarkerStateSystem,
 	syncNotePlatformRuntimeSystem,
+	syncOrphanedNotePlatformsSystem,
 	syncPreviewInteractionSystem,
 	syncSceneManipulationHandleAppearanceSystem,
 	syncSceneManipulationHandlesSystem,
@@ -171,9 +172,13 @@ export function createScenePlugin(): TScenePlugin {
 			app.addSystem(syncMarbleRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncStraightTrackRuntimeMixinsSystem, { set: 'PreUpdate' });
 			app.addSystem(syncExclusiveSelectionSystem, { set: 'Update' });
-			app.addSystem(syncPreviewInteractionSystem, {
+			app.addSystem(syncOrphanedNotePlatformsSystem, {
 				set: 'Update',
 				after: syncExclusiveSelectionSystem
+			});
+			app.addSystem(syncPreviewInteractionSystem, {
+				set: 'Update',
+				after: syncOrphanedNotePlatformsSystem
 			});
 			app.addSystem(syncSceneManipulationHandleAppearanceSystem, { set: 'Update' });
 			app.addSystem(syncNotePlatformRuntimeSystem, { set: 'PostUpdate' });

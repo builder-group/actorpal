@@ -1,5 +1,6 @@
-import { Added, Changed, Entity, Or, Removed } from 'ecsify';
+import { Added, Changed, Entity, Or, Removed, With } from 'ecsify';
 import * as THREE from 'three';
+import { findNoteById } from '../midi';
 import { createStraightTrackColliders, createStraightTrackGeometry } from './bundles';
 import { getLinearElement, getLinearElementHandlePositions } from './lib/linear-element';
 import { updateHandleAppearance } from './lib/manipulation-handles';
@@ -214,6 +215,34 @@ export function syncExclusiveSelectionSystem(app: TSceneApp) {
 	}
 
 	clearSceneEntitySelection(app);
+}
+
+export function syncOrphanedNotePlatformsSystem(app: TSceneApp) {
+	if (!app.wasResourceChanged('midiSong')) {
+		return;
+	}
+
+	let didRemovePlatform = false;
+	for (const [eid, binding] of app.queryComponents(
+		[Entity, app.c.NoteBindingMixin] as const,
+		With(app.c.NotePlatformMixin)
+	)) {
+		if (findNoteById(app.r.midiSong, binding.noteId) != null) {
+			continue;
+		}
+
+		if (app.r.sceneSelection.entityId === eid || app.r.sceneManipulationState.entityId === eid) {
+			clearSceneEntitySelection(app);
+		}
+
+		app.destroyEntity(eid);
+		didRemovePlatform = true;
+	}
+
+	if (didRemovePlatform) {
+		app.markSimulationDirty();
+		app.requestSimulationSync();
+	}
 }
 
 export function syncPreviewInteractionSystem(app: TSceneApp) {

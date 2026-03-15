@@ -117,6 +117,7 @@ const TimelineOpenMidiButton: React.FC<{
 
 export const TimelineHeader: React.FC<{
 	canControlPlayback: boolean;
+	canEditNotes: boolean;
 	canZoom: boolean;
 	isImporting: boolean;
 	importLabel: string;
@@ -129,7 +130,9 @@ export const TimelineHeader: React.FC<{
 	liveStep: number;
 	preloadedLabel: string;
 	selectedNoteLabel: string | null;
+	keyboardMode: 'adaptive' | 'full88';
 	onOpenMidi: () => void;
+	onSetKeyboardMode: (mode: 'adaptive' | 'full88') => void;
 	onStepBackwardTick: () => void;
 	onStepForwardTick: () => void;
 	onPlay: () => void;
@@ -140,6 +143,7 @@ export const TimelineHeader: React.FC<{
 	onZoomIn: () => void;
 }> = ({
 	canControlPlayback,
+	canEditNotes,
 	canZoom,
 	isImporting,
 	importLabel,
@@ -152,7 +156,9 @@ export const TimelineHeader: React.FC<{
 	liveStep,
 	preloadedLabel,
 	selectedNoteLabel,
+	keyboardMode,
 	onOpenMidi,
+	onSetKeyboardMode,
 	onStepBackwardTick,
 	onStepForwardTick,
 	onPlay,
@@ -204,6 +210,33 @@ export const TimelineHeader: React.FC<{
 
 			<div className="ml-auto flex items-center gap-2">
 				<TimelineOpenMidiButton disabled={isImporting} label={importLabel} onClick={onOpenMidi} />
+
+				<div className="border-base-200 bg-base-0 flex items-center overflow-hidden rounded-md border">
+					<button
+						type="button"
+						className={`px-2 py-1 text-[11px] font-medium transition-colors ${
+							keyboardMode === 'adaptive'
+								? 'bg-base-900 text-base-0'
+								: 'text-base-500 hover:bg-base-100'
+						}`}
+						disabled={!canEditNotes}
+						onClick={() => onSetKeyboardMode('adaptive')}
+					>
+						Auto
+					</button>
+					<button
+						type="button"
+						className={`px-2 py-1 text-[11px] font-medium transition-colors ${
+							keyboardMode === 'full88'
+								? 'bg-base-900 text-base-0'
+								: 'text-base-500 hover:bg-base-100'
+						}`}
+						disabled={!canEditNotes}
+						onClick={() => onSetKeyboardMode('full88')}
+					>
+						88
+					</button>
+				</div>
 
 				<div className="flex items-center gap-1">
 					<TimelineIconButton

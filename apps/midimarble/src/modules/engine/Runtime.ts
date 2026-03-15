@@ -16,6 +16,7 @@ import {
 	createTransportPlugin,
 	type TAudioPlugin,
 	type TCorePlugin,
+	type TMidiCreateNoteInput,
 	type TMidiPlugin,
 	type TPhysicsPlugin,
 	type TRenderPlugin,
@@ -115,6 +116,69 @@ export class Runtime {
 		this._app.selectNote(noteId);
 		this._flushImmediateUpdate();
 		void this._app.previewNotesAtTick(tick);
+	}
+
+	public selectNotes(noteIds: number[], primaryNoteId: number | null): void {
+		this._app.selectNotes(noteIds, primaryNoteId);
+		this._flushImmediateUpdate();
+	}
+
+	public selectAllTrackNotes(trackId?: number): void {
+		this._app.selectAllTrackNotes(trackId);
+		this._flushImmediateUpdate();
+	}
+
+	public clearNoteSelection(): void {
+		this._app.clearNoteSelection();
+		this._flushImmediateUpdate();
+	}
+
+	public previewNotesAtTick(tick: number): void {
+		void this._app.previewNotesAtTick(tick);
+	}
+
+	public createNote(input: TMidiCreateNoteInput): number | null {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return null;
+		}
+
+		this._app.pause();
+		const noteId = this._app.createNote(input);
+		this._flushImmediateUpdate();
+		return noteId;
+	}
+
+	public moveSelectedNotes(deltaTick: number, deltaNoteNumber: number): boolean {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return false;
+		}
+
+		this._app.pause();
+		const didMove = this._app.moveSelectedNotes(deltaTick, deltaNoteNumber);
+		this._flushImmediateUpdate();
+		return didMove;
+	}
+
+	public resizePrimarySelectedNote(edge: 'start' | 'end', deltaTick: number): boolean {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return false;
+		}
+
+		this._app.pause();
+		const didResize = this._app.resizePrimarySelectedNote(edge, deltaTick);
+		this._flushImmediateUpdate();
+		return didResize;
+	}
+
+	public deleteSelectedNotes(): number {
+		if (updateSimulationResumeWhenReady(this._app, false)) {
+			return 0;
+		}
+
+		this._app.pause();
+		const deletedCount = this._app.deleteSelectedNotes();
+		this._flushImmediateUpdate();
+		return deletedCount;
 	}
 
 	public createOrSelectNotePlatform(noteId: number): number | null {

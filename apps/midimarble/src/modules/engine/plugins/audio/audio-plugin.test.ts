@@ -25,6 +25,7 @@ const SONG = {
 describe('audio plugin', () => {
 	afterEach(() => {
 		Reflect.deleteProperty(globalThis, 'AudioContext');
+		vi.useRealTimers();
 	});
 
 	it('creates and resumes the audio context once across concurrent calls', async () => {
@@ -152,7 +153,71 @@ describe('audio plugin', () => {
 
 		expect(app.r.audioState.lastProcessedTick).toBe(8);
 		expect([...app.r.audioState.activeVoices.keys()]).toEqual([2]);
+		expect(app.r.audioPlaybackFeedback.activeNoteIds).toEqual(new Set([2]));
+		expect(app.r.audioPlaybackFeedback.activeNoteNumbers).toEqual(new Set([62]));
 		app.disposeAudio();
+	});
+
+	it('expires playback feedback after the tap window', async () => {
+		vi.useFakeTimers();
+
+		class FakeGainNode {
+			public readonly gain = {
+				value: 0,
+				setValueAtTime: vi.fn(),
+				cancelScheduledValues: vi.fn(),
+				linearRampToValueAtTime: vi.fn()
+			};
+			public connect = vi.fn();
+			public disconnect = vi.fn();
+		}
+
+		class FakeOscillatorNode {
+			public type = 'triangle';
+			public readonly frequency = { value: 0 };
+			public connect = vi.fn();
+			public disconnect = vi.fn();
+			public start = vi.fn();
+			public stop = vi.fn();
+		}
+
+		class FakeAudioContext {
+			public readonly destination = {};
+			public readonly currentTime = 0;
+			public readonly state = 'running';
+			public createGain = vi.fn(() => new FakeGainNode());
+			public createOscillator = vi.fn(() => new FakeOscillatorNode());
+			public resume = vi.fn(async () => undefined);
+			public close = vi.fn(async () => undefined);
+		}
+
+		Object.defineProperty(globalThis, 'AudioContext', {
+			value: FakeAudioContext,
+			configurable: true,
+			writable: true
+		});
+
+		const app = createApp({
+			plugins: [
+				createDefaultPlugin(),
+				createMidiPlugin(),
+				createTransportPlugin(),
+				createAudioPlugin()
+			] as const,
+			systemSets: [...ENGINE_SYSTEM_SETS]
+		});
+
+		app.updateResource('midiSong', SONG as never);
+		app.updateResource('selectedTrackId', 0);
+
+		await app.previewNotesAtTick(0);
+		expect(app.r.audioPlaybackFeedback.activeNoteIds).toEqual(new Set([1]));
+
+		vi.setSystemTime(Date.now() + 121);
+		app.update(0);
+
+		expect(app.r.audioPlaybackFeedback.activeNoteIds).toEqual(new Set());
+		expect(app.r.audioPlaybackFeedback.activeNoteNumbers).toEqual(new Set());
 	});
 
 	it('resets audio state on dispose so the graph can be rebuilt later', async () => {

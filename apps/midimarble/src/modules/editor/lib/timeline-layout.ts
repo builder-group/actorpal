@@ -9,6 +9,8 @@ export const DEFAULT_PIXELS_PER_BEAT = 48;
 export const MIN_PIXELS_PER_BEAT = 20;
 export const MAX_PIXELS_PER_BEAT = 320;
 export const ZOOM_STEP_FACTOR = 1.25;
+export const FULL_PIANO_LOW_NOTE = 21;
+export const FULL_PIANO_HIGH_NOTE = 108;
 
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
@@ -58,14 +60,29 @@ export function buildBeatTicks(
 	};
 }
 
-export function buildNoteRows(notes: Pick<TMidiNote, 'noteNumber'>[]): number[] {
-	if (notes.length === 0) {
+export function buildNoteRows(
+	notes: Pick<TMidiNote, 'noteNumber'>[],
+	extraNoteNumbers: number[] = [],
+	keyboardMode: 'adaptive' | 'full88' = 'adaptive'
+): number[] {
+	if (keyboardMode === 'full88') {
+		return Array.from(
+			{ length: FULL_PIANO_HIGH_NOTE - FULL_PIANO_LOW_NOTE + 1 },
+			(_, index) => FULL_PIANO_HIGH_NOTE - index
+		);
+	}
+
+	const allNoteNumbers = [
+		...notes.map((note) => note.noteNumber),
+		...extraNoteNumbers.filter((noteNumber) => Number.isFinite(noteNumber))
+	];
+
+	if (allNoteNumbers.length === 0) {
 		return Array.from({ length: MIN_NOTE_RANGE }, (_, index) => 71 - index);
 	}
 
-	const noteNumbers = notes.map((note) => note.noteNumber);
-	const minNote = Math.min(...noteNumbers);
-	const maxNote = Math.max(...noteNumbers);
+	const minNote = Math.min(...allNoteNumbers);
+	const maxNote = Math.max(...allNoteNumbers);
 	const range = maxNote - minNote + 1;
 	const padding = Math.max(0, MIN_NOTE_RANGE - range);
 	const low = Math.max(0, minNote - Math.floor(padding / 2) - 1);

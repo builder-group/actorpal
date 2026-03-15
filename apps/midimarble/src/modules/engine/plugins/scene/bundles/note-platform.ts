@@ -1,6 +1,7 @@
 import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import type { TPhysicsColliderDescriptor } from '../../physics';
+import { sceneConfig } from '../config';
 import {
 	getDefaultNotePlatformColor,
 	getNotePlatformGeometryKey,
@@ -15,17 +16,6 @@ import {
 import type { TCNoteBindingMixin, TCNotePlatformMixin, TSceneApp } from '../types';
 import type { TSceneBundle } from './types';
 
-const NOTE_PLATFORM_DEFAULTS = {
-	offsetY: 0,
-	offsetZ: 0,
-	rotationX: 0,
-	length: 1.2,
-	width: 1.5,
-	thickness: 0.22,
-	bounce: 0.58,
-	color: '#2a5e92'
-} satisfies TCNotePlatformMixin;
-
 export function createNotePlatformBundle(
 	app: TSceneApp,
 	noteId: number,
@@ -33,7 +23,7 @@ export function createNotePlatformBundle(
 	options: Partial<TCNotePlatformMixin> = {}
 ): TSceneBundle {
 	const platform = {
-		...NOTE_PLATFORM_DEFAULTS,
+		...sceneConfig.notePlatform.defaults,
 		color: getDefaultNotePlatformColor(noteId),
 		...options
 	} satisfies TCNotePlatformMixin;

@@ -1,17 +1,19 @@
-import { FileUp, Plus, SlidersHorizontal, X } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { ArrowLeft, ChevronDown, FileUp, Plus, Save } from 'lucide-react';
 import React from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import { useResource } from '@/modules/engine';
+import { projectRepository } from '@/modules/persistence';
 import { EditorCxProvider, useEditorCx } from '../EditorCx';
 import { canCreateStraightTrack } from '../lib/scene-ui';
 import { PreviewCameraInspector } from './PreviewCameraInspector';
 import { SelectionInspector } from './SelectionInspector';
 import { Timeline } from './Timeline';
 
-export const Editor: React.FC = () => {
+export const Editor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 	return (
-		<EditorCxProvider>
-			<InnerEditor />
+		<EditorCxProvider projectId={projectId}>
+			<InnerEditor projectId={projectId} />
 		</EditorCxProvider>
 	);
 };
@@ -95,12 +97,13 @@ const AudioSection: React.FC = () => {
 	);
 };
 
-const InnerEditor: React.FC = () => {
+const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 	const cx = useEditorCx();
 	const app = cx.runtime.app;
 	const [isAddMenuOpen, setIsAddMenuOpen] = React.useState(false);
-	const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+	const [isProjectMenuOpen, setIsProjectMenuOpen] = React.useState(false);
 	const [isImporting, setIsImporting] = React.useState(false);
+	const [isSaving, setIsSaving] = React.useState(false);
 	const midiSong = useResource(app, 'midiSong');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const midiImportError = useResource(app, 'midiImportError');
@@ -111,8 +114,9 @@ const InnerEditor: React.FC = () => {
 		() => midiSong?.tracks.find((track) => track.id === selectedTrackId) ?? null,
 		[midiSong, selectedTrackId]
 	);
-	const songLabel = midiSong?.name ?? 'No MIDI';
-	const needsMidiStart = midiSong == null || selectedTrack == null;
+	const projectLabel = midiSong?.name ?? 'Untitled';
+	// Only show the "no MIDI" splash when there's no project context
+	const needsMidiStart = projectId == null && (midiSong == null || selectedTrack == null);
 	const canAddStraightTrack = React.useMemo(
 		() => canCreateStraightTrack(previewConfig.enabled, simulationSync.mode),
 		[previewConfig.enabled, simulationSync.mode]
@@ -150,6 +154,25 @@ const InnerEditor: React.FC = () => {
 		setIsAddMenuOpen(false);
 		void cx.runtime.createStraightTrack();
 	}, [canAddStraightTrack, cx.runtime]);
+
+	const handleSave = React.useCallback(async () => {
+		if (projectId == null || isSaving) return;
+		setIsSaving(true);
+		try {
+			const existing = await projectRepository.getProject(projectId);
+			if (existing == null) return;
+			const snapshot = cx.runtime.extractSnapshot();
+			await projectRepository.saveProject({
+				...snapshot,
+				id: existing.id,
+				name: existing.name,
+				createdAt: existing.createdAt,
+				updatedAt: Date.now()
+			});
+		} finally {
+			setIsSaving(false);
+		}
+	}, [projectId, isSaving, cx.runtime]);
 
 	React.useEffect(() => {
 		if (!canAddStraightTrack) {
@@ -211,9 +234,64 @@ const InnerEditor: React.FC = () => {
 									<div ref={cx.setContainer} className="h-full w-full" />
 									<div className="absolute top-3 left-3 z-10">
 										<div className="flex w-fit min-w-full items-center gap-2">
-											<div className="bg-base-0/90 text-base-700 inline-flex h-9 items-center rounded-md px-3 text-xs font-medium tracking-wide uppercase shadow-sm">
-												{songLabel}
+											{/* Project name button — opens settings dropdown */}
+											<div className="relative">
+												<button
+													type="button"
+													className={`focus-visible:ring-base-300 pointer-events-auto inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium shadow-sm transition focus-visible:ring-2 focus-visible:outline-none ${
+														isProjectMenuOpen
+															? 'bg-base-100 text-base-900 border-base-300 border'
+															: 'bg-base-0/90 text-base-700 border-base-200 hover:bg-base-100 border'
+													}`}
+													aria-pressed={isProjectMenuOpen}
+													aria-label="Project menu"
+													onClick={() => {
+														setIsAddMenuOpen(false);
+														setIsProjectMenuOpen((c) => !c);
+													}}
+												>
+													<span className="max-w-48 truncate tracking-wide uppercase">
+														{projectLabel}
+													</span>
+													<ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+												</button>
+
+												{isProjectMenuOpen ? (
+													<div className="bg-base-0 border-base-200 pointer-events-auto absolute top-full left-0 mt-2 w-64 rounded-lg border shadow-xl">
+														<div className="p-1.5">
+															<Link
+																to="/"
+																className="text-base-700 hover:bg-base-100 focus-visible:ring-base-300 flex items-center gap-2 rounded-md px-2.5 py-2 text-sm transition focus-visible:ring-2 focus-visible:outline-none"
+																onClick={() => setIsProjectMenuOpen(false)}
+															>
+																<ArrowLeft className="h-4 w-4 shrink-0" />
+																<span>Back to Projects</span>
+															</Link>
+														</div>
+														<div className="border-base-100 border-t" />
+														<div className="flex flex-col gap-5 p-4">
+															<TrajectorySection />
+															<AudioSection />
+														</div>
+													</div>
+												) : null}
 											</div>
+
+											{/* Save */}
+											{projectId != null ? (
+												<button
+													type="button"
+													className="focus-visible:ring-base-300 border-base-200 bg-base-0/90 text-base-600 hover:bg-base-100 pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
+													disabled={isSaving}
+													aria-label={isSaving ? 'Saving…' : 'Save project'}
+													title={isSaving ? 'Saving…' : 'Save'}
+													onClick={() => void handleSave()}
+												>
+													<Save className="h-4 w-4" />
+												</button>
+											) : null}
+
+											{/* Add scene element */}
 											<div className="relative">
 												<button
 													type="button"
@@ -224,12 +302,9 @@ const InnerEditor: React.FC = () => {
 													aria-label="Add scene element"
 													title="Add Scene Element"
 													onClick={() => {
-														if (!canAddStraightTrack) {
-															return;
-														}
-
-														setIsSettingsOpen(false);
-														setIsAddMenuOpen((current) => !current);
+														if (!canAddStraightTrack) return;
+														setIsProjectMenuOpen(false);
+														setIsAddMenuOpen((c) => !c);
 													}}
 												>
 													<Plus className="h-4 w-4" />
@@ -249,47 +324,7 @@ const InnerEditor: React.FC = () => {
 													</div>
 												) : null}
 											</div>
-											<button
-												type="button"
-												className={`focus-visible:ring-base-300 pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-md border shadow-sm transition focus-visible:ring-2 focus-visible:outline-none ${
-													isSettingsOpen
-														? 'bg-base-100 text-base-900 border-base-300 hover:bg-base-200'
-														: 'border-base-200 bg-base-0/90 text-base-600 hover:bg-base-100'
-												}`}
-												aria-pressed={isSettingsOpen}
-												aria-label={isSettingsOpen ? 'Close settings' : 'Open settings'}
-												title={isSettingsOpen ? 'Close settings' : 'Open settings'}
-												onClick={() => {
-													setIsAddMenuOpen(false);
-													setIsSettingsOpen((current) => !current);
-												}}
-											>
-												<SlidersHorizontal className="h-4 w-4" />
-											</button>
 										</div>
-
-										{isSettingsOpen ? (
-											<div className="bg-base-0 border-base-200 pointer-events-auto mt-2 w-max max-w-[min(22rem,calc(100vw-2rem))] min-w-full rounded-lg border p-4 shadow-xl">
-												<div className="mb-4 flex items-center justify-between gap-3">
-													<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">
-														Settings
-													</h3>
-													<button
-														type="button"
-														className="border-base-200 text-base-500 hover:bg-base-100 focus-visible:ring-base-300 inline-flex h-8 w-8 items-center justify-center rounded-md border transition focus-visible:ring-2 focus-visible:outline-none"
-														aria-label="Close settings"
-														onClick={() => setIsSettingsOpen(false)}
-													>
-														<X className="h-4 w-4" />
-													</button>
-												</div>
-
-												<div className="flex flex-col gap-5">
-													<TrajectorySection />
-													<AudioSection />
-												</div>
-											</div>
-										) : null}
 									</div>
 								</section>
 							</Panel>

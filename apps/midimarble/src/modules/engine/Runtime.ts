@@ -1,10 +1,18 @@
 import {
 	createApp,
 	createDefaultPlugin,
+	Entity,
+	With,
 	type TApp,
 	type TAppContext,
 	type TDefaultPlugin
 } from 'ecsify';
+import type {
+	TMarbleSnapshot,
+	TNotePlatformSnapshot,
+	TProjectRecord,
+	TStraightTrackSnapshot
+} from '@/modules/persistence/types';
 import {
 	createAudioPlugin,
 	createCorePlugin,
@@ -25,6 +33,7 @@ import {
 	type TTrajectoryPlugin,
 	type TTransportPlugin
 } from './plugins';
+import { sceneConfig } from './plugins/scene/config';
 import { ENGINE_SYSTEM_SETS } from './types';
 
 export class Runtime {
@@ -33,21 +42,39 @@ export class Runtime {
 	private _lastTime = 0;
 	private _isMounted = true;
 
-	constructor() {
+	constructor(record?: TProjectRecord | null) {
 		this._app = createApp({
 			plugins: [
 				createDefaultPlugin(),
 				createCorePlugin(),
-				createMidiPlugin(),
+				createMidiPlugin(
+					record != null
+						? { song: record.midiSong, selectedTrackId: record.selectedTrackId }
+						: undefined
+				),
 				createTransportPlugin(),
-				createAudioPlugin(),
+				createAudioPlugin(record != null ? { audioSettings: record.audioSettings } : undefined),
 				createPhysicsPlugin(),
 				createRenderPlugin(),
-				createTrajectoryPlugin(),
-				createScenePlugin()
+				createTrajectoryPlugin(
+					record != null ? { trajectoryConfig: record.trajectoryConfig } : undefined
+				),
+				createScenePlugin(
+					record != null
+						? {
+								marble: record.marble,
+								straightTracks: record.straightTracks,
+								notePlatforms: record.notePlatforms
+							}
+						: undefined
+				)
 			] as const,
 			systemSets: [...ENGINE_SYSTEM_SETS]
 		});
+
+		if (record != null) {
+			this._app.seekToTick(record.playheadTick);
+		}
 	}
 
 	public get app(): TRuntimeApp {
@@ -238,6 +265,89 @@ export class Runtime {
 			this._app.requestSimulationSync();
 			this._app.setSceneEditPending(false);
 		});
+	}
+
+	public extractSnapshot(): TProjectRecord {
+		const app = this._app;
+
+		// Marble
+		let marble: TMarbleSnapshot = {
+			position: { ...sceneConfig.marble.spawn.position },
+			rotation: { ...sceneConfig.marble.spawn.rotation },
+			bounce: sceneConfig.marble.physics.defaults.bounce
+		};
+		for (const [, position, rotation, marblePhysics] of app.queryComponents(
+			[Entity, app.c.PositionMixin, app.c.RotationMixin, app.c.MarblePhysicsMixin] as const,
+			With(app.c.MarbleTag)
+		)) {
+			marble = {
+				position: { ...position },
+				rotation: { ...rotation },
+				bounce: marblePhysics.bounce
+			};
+			break;
+		}
+
+		// Note platforms
+		const notePlatforms: TNotePlatformSnapshot[] = [];
+		for (const [, binding, platform] of app.queryComponents(
+			[Entity, app.c.NoteBindingMixin, app.c.NotePlatformMixin] as const,
+			With(app.c.NotePlatformMixin)
+		)) {
+			notePlatforms.push({
+				noteId: binding.noteId,
+				offsetY: platform.offsetY,
+				offsetZ: platform.offsetZ,
+				rotationX: platform.rotationX,
+				length: platform.length,
+				width: platform.width,
+				thickness: platform.thickness,
+				bounce: platform.bounce,
+				color: platform.color
+			});
+		}
+
+		// Straight tracks
+		const straightTracks: TStraightTrackSnapshot[] = [];
+		for (const [, transform, track, linear] of app.queryComponents(
+			[
+				Entity,
+				app.c.AuthoredTransformMixin,
+				app.c.StraightTrackMixin,
+				app.c.LinearElementMixin
+			] as const,
+			With(app.c.StraightTrackMixin)
+		)) {
+			straightTracks.push({
+				position: { ...transform.position },
+				rotation: { ...transform.rotation },
+				scale: { ...transform.scale },
+				length: linear.length,
+				height: track.height,
+				width: track.width,
+				channelWidth: track.channelWidth,
+				channelDepth: track.channelDepth,
+				color: track.color
+			});
+		}
+
+		const { midiSong, selectedTrackId, transport, audioSettings, trajectoryConfig } = app.r;
+
+		return {
+			id: '',
+			name: midiSong?.name ?? 'Untitled',
+			createdAt: 0,
+			updatedAt: Date.now(),
+			midiFileName: midiSong?.name ?? null,
+			midiSong: midiSong ?? null,
+			selectedTrackId,
+			playheadTick: transport.playheadTick,
+			audioSettings: { ...audioSettings },
+			trajectoryConfig: { ...trajectoryConfig },
+			marble,
+			notePlatforms,
+			straightTracks
+		};
 	}
 
 	public seekToTick(tick: number): void {

@@ -1,4 +1,8 @@
 export const audioConfig = {
+	defaults: {
+		enabled: true,
+		masterVolume: 0.32
+	},
 	defaultInstrumentId: 'bell',
 	instrumentOptions: [
 		{ id: 'classic', label: 'Classic' },

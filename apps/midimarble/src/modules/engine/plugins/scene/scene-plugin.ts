@@ -5,11 +5,16 @@ import {
 	createPegboardBundle,
 	createStraightTrackBundle
 } from './bundles';
-import { MIDIMARBLE_SCENE_DEFAULTS, SCENE_MANIPULATION_DEFAULTS } from './config';
+import { sceneConfig } from './config';
 import { createSceneManipulationHandles } from './lib/manipulation-handles';
 import { resetSceneManipulationState } from './lib/manipulation-state';
 import { findNotePlatformEntityId } from './lib/note-platform';
-import { updateMarblePhysicsAuthoring, updateNotePlatformAuthoring } from './lib/scene-authoring';
+import {
+	updateMarblePhysicsAuthoring,
+	updateNotePlatformAuthoring,
+	updateStraightTrackGeometryAuthoring,
+	updateStraightTrackTransformAuthoring
+} from './lib/scene-authoring';
 import { setupSceneManipulation } from './lib/scene-manipulation';
 import { clearSceneEntitySelection, selectSceneEntity } from './lib/scene-selection';
 import {
@@ -26,8 +31,39 @@ import {
 } from './systems';
 import type { TSceneApp, TScenePlugin } from './types';
 
-export function createScenePlugin(): TScenePlugin {
-	const sceneManipulationConfig = SCENE_MANIPULATION_DEFAULTS;
+interface TScenePluginOptions {
+	marble?: {
+		position: { x: number; y: number; z: number };
+		rotation: { x: number; y: number; z: number };
+		bounce: number;
+	};
+	straightTracks?: Array<{
+		position: { x: number; y: number; z: number };
+		rotation: { x: number; y: number; z: number };
+		scale: { x: number; y: number; z: number };
+		length: number;
+		height: number;
+		width: number;
+		channelWidth: number;
+		channelDepth: number;
+		color: string;
+	}>;
+	notePlatforms?: Array<{
+		noteId: number;
+		offsetY: number;
+		offsetZ: number;
+		rotationX: number;
+		length: number;
+		width: number;
+		thickness: number;
+		bounce: number;
+		color: string;
+	}>;
+}
+
+export function createScenePlugin(options?: TScenePluginOptions): TScenePlugin {
+	const sceneManipulationConfig = sceneConfig.manipulation;
+	const pendingNotePlatforms = options?.notePlatforms ? [...options.notePlatforms] : [];
 	let disposeScene: (() => void) | null = null;
 
 	return {
@@ -128,6 +164,20 @@ export function createScenePlugin(): TScenePlugin {
 			) {
 				return updateMarblePhysicsAuthoring(this, entityId, patch);
 			},
+			updateStraightTrackTransform(
+				this: TSceneApp,
+				entityId: number,
+				patch: Partial<TSceneApp['c']['AuthoredTransformMixin'][number]>
+			): boolean {
+				return updateStraightTrackTransformAuthoring(this, entityId, patch);
+			},
+			updateStraightTrackGeometry(
+				this: TSceneApp,
+				entityId: number,
+				patch: Partial<TSceneApp['c']['StraightTrackMixin'][number] & { length: number }>
+			): boolean {
+				return updateStraightTrackGeometryAuthoring(this, entityId, patch);
+			},
 			setSceneEditPending(this: TSceneApp, pending: boolean): void {
 				if (this.r.sceneEditState.pending === pending) {
 					return;
@@ -138,13 +188,49 @@ export function createScenePlugin(): TScenePlugin {
 		},
 		setup(app: TSceneApp) {
 			app.spawnBundle(createPegboardBundle(app));
-			for (const track of MIDIMARBLE_SCENE_DEFAULTS.seedStraightTracks) {
-				app.spawnBundle(createStraightTrackBundle(app, track));
-			}
+
+			const marblePosition = options?.marble?.position ?? sceneConfig.marble.spawn.position;
 			const marbleEntityId = app.spawnBundle(
-				createMarbleBundle(app, { position: MIDIMARBLE_SCENE_DEFAULTS.marbleSpawnPosition })
+				createMarbleBundle(app, {
+					position: marblePosition,
+					rotation: options?.marble?.rotation
+				})
 			);
+			if (options?.marble != null) {
+				updateMarblePhysicsAuthoring(app, marbleEntityId, { bounce: options.marble.bounce });
+			}
 			app.setPreviewTargetEntity(marbleEntityId);
+
+			for (const snapshot of options?.straightTracks ?? []) {
+				app.spawnBundle(createStraightTrackBundle(app, snapshot));
+			}
+
+			if (pendingNotePlatforms.length > 0) {
+				app.addSystem(
+					() => {
+						if (pendingNotePlatforms.length === 0) return;
+						for (let i = pendingNotePlatforms.length - 1; i >= 0; i--) {
+							const snapshot = pendingNotePlatforms[i];
+							if (snapshot == null) continue;
+							const eid = app.createOrSelectNotePlatform(snapshot.noteId);
+							if (eid != null) {
+								app.updateNotePlatform(eid, {
+									offsetY: snapshot.offsetY,
+									offsetZ: snapshot.offsetZ,
+									rotationX: snapshot.rotationX,
+									length: snapshot.length,
+									width: snapshot.width,
+									thickness: snapshot.thickness,
+									bounce: snapshot.bounce,
+									color: snapshot.color
+								});
+								pendingNotePlatforms.splice(i, 1);
+							}
+						}
+					},
+					{ set: 'PostUpdate' }
+				);
+			}
 
 			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'PreUpdate' });
 			app.addSystem(syncMarbleRuntimeMixinsSystem, { set: 'PreUpdate' });
@@ -186,9 +272,9 @@ function resolveStraightTrackSpawnPosition(
 					};
 
 		return {
-			x: MIDIMARBLE_SCENE_DEFAULTS.straightTrackWallLaneX,
-			y: basePosition.y + MIDIMARBLE_SCENE_DEFAULTS.newStraightTrackYOffset,
-			z: basePosition.z + MIDIMARBLE_SCENE_DEFAULTS.newStraightTrackZOffset
+			x: sceneConfig.track.wallLaneX,
+			y: basePosition.y + sceneConfig.track.newTrackYOffset,
+			z: basePosition.z + sceneConfig.track.newTrackZOffset
 		};
 	}
 

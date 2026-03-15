@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MidiRouteImport } from './routes/midi'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EditorProjectIdRouteImport } from './routes/editor.$projectId'
 
 const MidiRoute = MidiRouteImport.update({
   id: '/midi',
@@ -22,31 +23,40 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditorProjectIdRoute = EditorProjectIdRouteImport.update({
+  id: '/editor/$projectId',
+  path: '/editor/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/midi': typeof MidiRoute
+  '/editor/$projectId': typeof EditorProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/midi': typeof MidiRoute
+  '/editor/$projectId': typeof EditorProjectIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/midi': typeof MidiRoute
+  '/editor/$projectId': typeof EditorProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/midi'
+  fullPaths: '/' | '/midi' | '/editor/$projectId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/midi'
-  id: '__root__' | '/' | '/midi'
+  to: '/' | '/midi' | '/editor/$projectId'
+  id: '__root__' | '/' | '/midi' | '/editor/$projectId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MidiRoute: typeof MidiRoute
+  EditorProjectIdRoute: typeof EditorProjectIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/editor/$projectId': {
+      id: '/editor/$projectId'
+      path: '/editor/$projectId'
+      fullPath: '/editor/$projectId'
+      preLoaderRoute: typeof EditorProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MidiRoute: MidiRoute,
+  EditorProjectIdRoute: EditorProjectIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

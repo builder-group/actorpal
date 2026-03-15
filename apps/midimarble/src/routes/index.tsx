@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { LazyEditor } from '@/modules/editor';
+import { ProjectPicker } from '@/modules/projects/components/ProjectPicker';
 
 export const Route = createFileRoute('/')({ component: RouteComponent });
 
 function RouteComponent() {
-	return <LazyEditor />;
+	return <ProjectPicker />;
 }

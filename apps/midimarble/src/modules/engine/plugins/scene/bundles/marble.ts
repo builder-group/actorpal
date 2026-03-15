@@ -12,8 +12,8 @@ export function createMarbleBundle(
 ): TSceneBundle {
 	const {
 		radius = sceneConfig.marble.defaultRadius,
-		position = { x: 0, y: 6, z: -7 },
-		rotation = { x: 0, y: 0, z: 0 },
+		position = sceneConfig.marble.spawn.position,
+		rotation = sceneConfig.marble.spawn.rotation,
 		scale = { x: 1, y: 1, z: 1 }
 	} = options;
 

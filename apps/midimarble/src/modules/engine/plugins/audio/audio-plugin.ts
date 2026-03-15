@@ -1,4 +1,5 @@
 import { findNoteById, findTrackById } from '../midi';
+import { audioConfig } from './config';
 import { getTrackInstrumentId } from './lib/instruments';
 import { getSelectedTrackNotesAtTick } from './lib/playback';
 import {
@@ -18,7 +19,9 @@ import type {
 	TAudioState
 } from './types';
 
-export function createAudioPlugin(): TAudioPlugin {
+export function createAudioPlugin(options?: {
+	audioSettings?: Partial<TAudioSettings>;
+}): TAudioPlugin {
 	let resumePromise: Promise<void> | null = null;
 	let previewRequestId = 0;
 	let audioSessionId = 0;
@@ -30,9 +33,10 @@ export function createAudioPlugin(): TAudioPlugin {
 		resources: {
 			audioState: createInitialAudioState(),
 			audioSettings: {
-				enabled: true,
-				masterVolume: 0.32,
-				trackInstrumentIds: {}
+				enabled: audioConfig.defaults.enabled,
+				masterVolume: audioConfig.defaults.masterVolume,
+				trackInstrumentIds: {},
+				...options?.audioSettings
 			},
 			audioPlaybackFeedback: {
 				activeNoteIds: new Set<number>(),

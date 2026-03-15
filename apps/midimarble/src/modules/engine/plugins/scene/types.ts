@@ -35,6 +35,14 @@ export type TScenePlugin = TPlugin<
 			createOrSelectNotePlatform(noteId: number): number | null;
 			updateNotePlatform(entityId: number, patch: Partial<TCNotePlatformMixin>): boolean;
 			updateMarblePhysics(entityId: number, patch: Partial<TCMarblePhysicsMixin>): boolean;
+			updateStraightTrackTransform(
+				entityId: number,
+				patch: Partial<TCAuthoredTransformMixin>
+			): boolean;
+			updateStraightTrackGeometry(
+				entityId: number,
+				patch: Partial<TCStraightTrackMixin & { length: number }>
+			): boolean;
 			setSceneEditPending(pending: boolean): void;
 		};
 		systemSets: TEngineSystemSet;

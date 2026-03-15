@@ -20,12 +20,14 @@ export function createStraightTrackBundle(
 		position = { x: 0, y: 0, z: 0 },
 		rotation = { x: 0, y: 0, z: 0 },
 		scale = { x: 1, y: 1, z: 1 },
-		length = 14,
+		length = sceneConfig.track.defaultLength,
 		height = sceneConfig.track.defaultHeight,
 		width = sceneConfig.track.defaultWidth,
 		channelWidth = sceneConfig.track.defaultChannelWidth,
 		channelDepth = sceneConfig.track.defaultChannelDepth,
-		color = ['#2a5e92', '#ffeead', '#ff9943', '#8ac6d6'][Math.floor(Math.random() * 4)]
+		color = sceneConfig.track.colorPalette[
+			Math.floor(Math.random() * sceneConfig.track.colorPalette.length)
+		]
 	} = options;
 
 	const authoredTransform = {
@@ -35,9 +37,9 @@ export function createStraightTrackBundle(
 	} satisfies TCAuthoredTransformMixin;
 	const linearElement = {
 		length,
-		minLength: 6,
-		maxLength: 28,
-		handleOffset: 0.8
+		minLength: sceneConfig.track.minLength,
+		maxLength: sceneConfig.track.maxLength,
+		handleOffset: sceneConfig.track.handleOffset
 	} satisfies TCLinearElementMixin;
 	const track = {
 		height,

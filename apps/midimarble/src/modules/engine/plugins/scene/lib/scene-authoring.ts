@@ -1,5 +1,11 @@
 import { Entity, With } from 'ecsify';
-import type { TCMarblePhysicsMixin, TCNotePlatformMixin, TSceneApp } from '../types';
+import type {
+	TCAuthoredTransformMixin,
+	TCMarblePhysicsMixin,
+	TCNotePlatformMixin,
+	TCStraightTrackMixin,
+	TSceneApp
+} from '../types';
 
 export function updateNotePlatformAuthoring(
 	app: TSceneApp,
@@ -51,6 +57,54 @@ export function updateMarblePhysicsAuthoring(
 		}
 
 		app.updateComponent(entityId, app.c.MarblePhysicsMixin, nextMarblePhysics);
+		return true;
+	}
+
+	return false;
+}
+
+export function updateStraightTrackTransformAuthoring(
+	app: TSceneApp,
+	entityId: number,
+	patch: Partial<TCAuthoredTransformMixin>
+): boolean {
+	for (const [eid, transform] of app.queryComponents(
+		[Entity, app.c.AuthoredTransformMixin] as const,
+		With(app.c.StraightTrackMixin)
+	)) {
+		if (eid !== entityId) {
+			continue;
+		}
+
+		const next = { ...transform, ...patch };
+		app.updateComponent(entityId, app.c.AuthoredTransformMixin, next);
+		app.updateComponent(entityId, app.c.PositionMixin, next.position);
+		app.updateComponent(entityId, app.c.RotationMixin, next.rotation);
+		app.updateComponent(entityId, app.c.ScaleMixin, next.scale);
+		return true;
+	}
+
+	return false;
+}
+
+export function updateStraightTrackGeometryAuthoring(
+	app: TSceneApp,
+	entityId: number,
+	patch: Partial<TCStraightTrackMixin & { length: number }>
+): boolean {
+	for (const [eid, track, linear] of app.queryComponents(
+		[Entity, app.c.StraightTrackMixin, app.c.LinearElementMixin] as const,
+		With(app.c.StraightTrackMixin)
+	)) {
+		if (eid !== entityId) {
+			continue;
+		}
+
+		const { length, ...trackPatch } = patch;
+		app.updateComponent(entityId, app.c.StraightTrackMixin, { ...track, ...trackPatch });
+		if (length != null) {
+			app.updateComponent(entityId, app.c.LinearElementMixin, { ...linear, length });
+		}
 		return true;
 	}
 

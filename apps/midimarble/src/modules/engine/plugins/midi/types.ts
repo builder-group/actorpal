@@ -16,6 +16,7 @@ export type TMidiPlugin = TPlugin<
 		};
 		appExtensions: {
 			loadMidiFile(file: File): Promise<void>;
+			loadMidiSongDirect(song: TMidiSong, selectedTrackId: number | null): void;
 			clearMidiSong(): void;
 			selectNote(noteId: number | null): void;
 			selectNotes(noteIds: number[], primaryNoteId: number | null): void;

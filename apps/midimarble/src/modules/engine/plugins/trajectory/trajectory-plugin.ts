@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { trajectoryConfig } from './config';
 import { buildTrajectoryLine } from './lib/line-state';
 import { setupTrajectoryMarkerInteraction } from './lib/marker-interaction';
 import {
@@ -8,18 +9,24 @@ import {
 import { updateTrajectorySystem } from './systems';
 import type { TTrajectoryApp, TTrajectoryNoteMarkerState, TTrajectoryPlugin } from './types';
 
-export function createTrajectoryPlugin(): TTrajectoryPlugin {
-	const futureColor = '#4a90e2';
-	const pastColor = '#ff9943';
+export function createTrajectoryPlugin(options?: {
+	trajectoryConfig?: { enabled?: boolean; futureColor?: string; pastColor?: string };
+}): TTrajectoryPlugin {
+	const futureColor =
+		options?.trajectoryConfig?.futureColor ?? trajectoryConfig.defaults.futureColor;
+	const pastColor = options?.trajectoryConfig?.pastColor ?? trajectoryConfig.defaults.pastColor;
+	const { colors } = trajectoryConfig.marker;
 	const noteMarkerGroup = new THREE.Group();
 	const markerGeometry = new THREE.SphereGeometry(1, 14, 14);
-	const pastMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#ffb05b' });
-	const pastPlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#34d399' });
-	const pastAdjustedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#f59e0b' });
-	const futureMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#68aef2' });
-	const futurePlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#6ee7b7' });
-	const futureAdjustedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#facc15' });
-	const selectedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#f43f5e' });
+	const pastMarkerMaterial = new THREE.MeshBasicMaterial({ color: colors.past });
+	const pastPlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: colors.pastPlaced });
+	const pastAdjustedMarkerMaterial = new THREE.MeshBasicMaterial({ color: colors.pastAdjusted });
+	const futureMarkerMaterial = new THREE.MeshBasicMaterial({ color: colors.future });
+	const futurePlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: colors.futurePlaced });
+	const futureAdjustedMarkerMaterial = new THREE.MeshBasicMaterial({
+		color: colors.futureAdjusted
+	});
+	const selectedMarkerMaterial = new THREE.MeshBasicMaterial({ color: colors.selected });
 	let cleanupMarkerInteraction: (() => void) | null = null;
 
 	return {
@@ -31,7 +38,7 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 		},
 		resources: {
 			trajectoryConfig: {
-				enabled: true,
+				enabled: options?.trajectoryConfig?.enabled ?? trajectoryConfig.defaults.enabled,
 				futureColor,
 				pastColor
 			},

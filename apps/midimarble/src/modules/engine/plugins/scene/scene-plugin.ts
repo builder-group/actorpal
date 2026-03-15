@@ -212,23 +212,32 @@ export function createScenePlugin(options?: TScenePluginOptions): TScenePlugin {
 						for (let i = pendingNotePlatforms.length - 1; i >= 0; i--) {
 							const snapshot = pendingNotePlatforms[i];
 							if (snapshot == null) continue;
-							const eid = app.createOrSelectNotePlatform(snapshot.noteId);
-							if (eid != null) {
-								app.updateNotePlatform(eid, {
-									offsetY: snapshot.offsetY,
-									offsetZ: snapshot.offsetZ,
-									rotationX: snapshot.rotationX,
-									length: snapshot.length,
-									width: snapshot.width,
-									thickness: snapshot.thickness,
-									bounce: snapshot.bounce,
-									color: snapshot.color
-								});
+							// Anchors from the previous PostUpdate trajectory computation persist here
+							const anchor = app.r.trajectoryProjection.noteAnchorsById.get(
+								snapshot.noteId
+							);
+							if (anchor == null) continue;
+							if (findNotePlatformEntityId(app, snapshot.noteId) != null) {
 								pendingNotePlatforms.splice(i, 1);
+								continue;
 							}
+							const eid = app.spawnBundle(
+								createNotePlatformBundle(app, snapshot.noteId, anchor.position)
+							);
+							app.updateNotePlatform(eid, {
+								offsetY: snapshot.offsetY,
+								offsetZ: snapshot.offsetZ,
+								rotationX: snapshot.rotationX,
+								length: snapshot.length,
+								width: snapshot.width,
+								thickness: snapshot.thickness,
+								bounce: snapshot.bounce,
+								color: snapshot.color
+							});
+							pendingNotePlatforms.splice(i, 1);
 						}
 					},
-					{ set: 'PostUpdate' }
+					{ set: 'PreUpdate' }
 				);
 			}
 

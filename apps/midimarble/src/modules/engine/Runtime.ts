@@ -276,13 +276,13 @@ export class Runtime {
 			rotation: { ...sceneConfig.marble.spawn.rotation },
 			bounce: sceneConfig.marble.physics.defaults.bounce
 		};
-		for (const [, position, rotation, marblePhysics] of app.queryComponents(
+		for (const [, , , marblePhysics] of app.queryComponents(
 			[Entity, app.c.PositionMixin, app.c.RotationMixin, app.c.MarblePhysicsMixin] as const,
 			With(app.c.MarbleTag)
 		)) {
 			marble = {
-				position: { ...position },
-				rotation: { ...rotation },
+				position: { ...sceneConfig.marble.spawn.position },
+				rotation: { ...sceneConfig.marble.spawn.rotation },
 				bounce: marblePhysics.bounce
 			};
 			break;

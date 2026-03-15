@@ -10,7 +10,7 @@ export function getTrackInstrumentId(
 		return null;
 	}
 
-	return trackInstrumentIds[trackId] ?? (audioConfig.defaultInstrumentId as TAudioInstrumentId);
+	return trackInstrumentIds[trackId] ?? audioConfig.defaultInstrumentId;
 }
 
 export function isAudioInstrumentId(value: string): value is TAudioInstrumentId {

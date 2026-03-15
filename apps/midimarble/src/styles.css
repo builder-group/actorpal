@@ -1,0 +1,55 @@
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+
+@theme {
+	/* Zinc-based neutral scale (light mode) */
+	--color-base-0: #ffffff;
+	--color-base-50: #fafafa;
+	--color-base-100: #f4f4f5;
+	--color-base-200: #e4e4e7;
+	--color-base-300: #d4d4d8;
+	--color-base-400: #a1a1aa;
+	--color-base-500: #71717a;
+	--color-base-600: #52525b;
+	--color-base-700: #3f3f46;
+	--color-base-800: #27272a;
+	--color-base-900: #18181b;
+	--color-base-950: #09090b;
+
+	/* Semantic colors */
+	--color-primary: #3b82f6;
+	--color-primary-content: #ffffff;
+	--color-secondary: #8b5cf6;
+	--color-secondary-content: #ffffff;
+	--color-accent: #f97316;
+	--color-accent-content: #ffffff;
+	--color-info: #0ea5e9;
+	--color-info-content: #ffffff;
+	--color-success: #22c55e;
+	--color-success-content: #ffffff;
+	--color-warning: #eab308;
+	--color-warning-content: #18181b;
+	--color-error: #ef4444;
+	--color-error-content: #ffffff;
+
+	/* Fonts */
+	--font-sans: 'Inter', system-ui, sans-serif;
+	--font-serif: 'Erode', serif;
+	--font-handwritten: 'Caveat', cursive;
+}
+
+/* Dark mode */
+.dark {
+	--color-base-0: #09090b;
+	--color-base-50: #18181b;
+	--color-base-100: #27272a;
+	--color-base-200: #3f3f46;
+	--color-base-300: #52525b;
+	--color-base-400: #71717a;
+	--color-base-500: #a1a1aa;
+	--color-base-600: #d4d4d8;
+	--color-base-700: #e4e4e7;
+	--color-base-800: #f4f4f5;
+	--color-base-900: #fafafa;
+	--color-base-950: #ffffff;
+}

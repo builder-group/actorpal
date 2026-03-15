@@ -1,0 +1,122 @@
+import { Entity, With } from 'ecsify';
+import * as THREE from 'three';
+import type { TVec3 } from '../../../types';
+import { sceneConfig } from '../config';
+import type { TCNotePlatformMixin, TSceneApp } from '../types';
+import { getLinearElementHandlePositions } from './linear-element';
+
+const NOTE_PLATFORM_COLORS = ['#2a5e92', '#ffeead', '#ff9943', '#8ac6d6'] as const;
+
+export function isNotePlatformAdjusted(
+	platform: Pick<TCNotePlatformMixin, 'offsetY' | 'offsetZ'>
+): boolean {
+	return platform.offsetY !== 0 || platform.offsetZ !== 0;
+}
+
+export function getNotePlatformGeometryKey(
+	platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness'>
+): string {
+	return `${platform.length}:${platform.width}:${platform.thickness}`;
+}
+
+export function findNotePlatformEntityId(app: TSceneApp, noteId: number): number | null {
+	for (const [eid, binding] of app.queryComponents(
+		[Entity, app.c.NoteBindingMixin] as const,
+		With(app.c.NotePlatformMixin)
+	)) {
+		if (binding.noteId === noteId) {
+			return eid;
+		}
+	}
+
+	return null;
+}
+
+export function getNotePlatformNoteState(app: TSceneApp): {
+	placedNoteIds: Set<number>;
+	adjustedNoteIds: Set<number>;
+} {
+	const placedNoteIds = new Set<number>();
+	const adjustedNoteIds = new Set<number>();
+	for (const [, binding, platform] of app.queryComponents(
+		[Entity, app.c.NoteBindingMixin, app.c.NotePlatformMixin] as const,
+		With(app.c.NotePlatformMixin)
+	)) {
+		placedNoteIds.add(binding.noteId);
+		if (isNotePlatformAdjusted(platform)) {
+			adjustedNoteIds.add(binding.noteId);
+		}
+	}
+	return { placedNoteIds, adjustedNoteIds };
+}
+
+export function getDefaultNotePlatformColor(noteId: number): string {
+	return (
+		NOTE_PLATFORM_COLORS[Math.abs(noteId) % NOTE_PLATFORM_COLORS.length] ??
+		sceneConfig.notePlatform.defaultColor
+	);
+}
+
+export function getNotePlatform(
+	app: TSceneApp,
+	entityId: number
+): {
+	position: TSceneApp['c']['PositionMixin'][number];
+	rotation: TSceneApp['c']['RotationMixin'][number];
+	platform: TSceneApp['c']['NotePlatformMixin'][number];
+} | null {
+	for (const [eid, position, rotation, platform] of app.queryComponents(
+		[Entity, app.c.PositionMixin, app.c.RotationMixin, app.c.NotePlatformMixin] as const,
+		With(app.c.NotePlatformMixin)
+	)) {
+		if (eid === entityId) {
+			return { position, rotation, platform };
+		}
+	}
+
+	return null;
+}
+
+export function getNotePlatformHandlePositions(
+	position: { x: number; y: number; z: number },
+	rotationX: number,
+	length: number
+): { start: THREE.Vector3; end: THREE.Vector3 } {
+	return getLinearElementHandlePositions(
+		position,
+		rotationX,
+		length,
+		sceneConfig.notePlatform.handleOffset
+	);
+}
+
+export function resolveNotePlatformTransform(
+	anchorPosition: TVec3,
+	offsetY: number,
+	offsetZ: number,
+	rotationX: number,
+	thickness: number,
+	platformWidth: number,
+	marbleRadius: number = sceneConfig.marble.defaultRadius
+): { position: TVec3; rotation: TVec3 } {
+	const normal = getNotePlatformSurfaceNormal(rotationX);
+	const centerOffset = marbleRadius + thickness / 2;
+	const wallMountOffsetX = (sceneConfig.track.defaultWidth - platformWidth) / 2;
+
+	return {
+		position: {
+			x: anchorPosition.x - wallMountOffsetX - normal.x * centerOffset,
+			y: anchorPosition.y - normal.y * centerOffset + offsetY,
+			z: anchorPosition.z - normal.z * centerOffset + offsetZ
+		},
+		rotation: {
+			x: rotationX,
+			y: 0,
+			z: 0
+		}
+	};
+}
+
+export function getNotePlatformSurfaceNormal(rotationX: number): THREE.Vector3 {
+	return new THREE.Vector3(0, 1, 0).applyEuler(new THREE.Euler(rotationX, 0, 0)).normalize();
+}

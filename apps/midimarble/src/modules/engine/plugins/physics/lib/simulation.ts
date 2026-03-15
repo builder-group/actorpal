@@ -4,12 +4,7 @@ import type { TCheckpointStore, TPhysicsApp, TPhysicsWorldHandles } from '../typ
 type TPhysicsRestoreAccess = {
 	r: Pick<
 		TPhysicsApp['r'],
-		| 'rapier'
-		| 'preloadWorld'
-		| 'preloadStep'
-		| 'fixedTimeStepSeconds'
-		| 'checkpointStore'
-		| 'simulationConfig'
+		'rapier' | 'preloadWorld' | 'preloadStep' | 'fixedTimeStepSeconds' | 'checkpointStore'
 	>;
 	updateResource: TPhysicsApp['updateResource'];
 };

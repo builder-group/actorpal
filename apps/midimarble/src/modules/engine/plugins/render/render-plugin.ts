@@ -1,4 +1,4 @@
-import { PREVIEW_CONFIG_DEFAULTS } from './config';
+import { renderConfig } from './config';
 import { enterPreview, exitPreview } from './lib/preview-camera';
 import { Viewport } from './lib/Viewport';
 import {
@@ -24,7 +24,7 @@ export function createRenderPlugin(): TRenderPlugin {
 		resources: {
 			viewport,
 			sceneObjects: new Map(),
-			previewConfig: { ...PREVIEW_CONFIG_DEFAULTS },
+			previewConfig: { ...renderConfig.preview.initial },
 			previewState: {
 				savedCameraSnapshot: null,
 				lastFollowDirection: null,

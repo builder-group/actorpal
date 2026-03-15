@@ -9,9 +9,7 @@ import {
 	type TMidiNote,
 	type TMidiSong
 } from '../../midi';
-
-export const PLAYBACK_MAX_NOTE_SECONDS = 2.5;
-export const PREVIEW_MAX_NOTE_SECONDS = 0.9;
+import { audioConfig } from '../config';
 
 export function getSelectedTrackNotesInRange(
 	song: TMidiSong | null,

@@ -2,7 +2,8 @@ import { Entity, With } from 'ecsify';
 import React from 'react';
 import { useMemoCleanup } from '@/hooks';
 import { useQueryComponents, useResource } from '@/modules/engine';
-import { AUDIO_INSTRUMENT_OPTIONS, getTrackInstrumentId } from '@/modules/engine/plugins/audio';
+import { getTrackInstrumentId } from '@/modules/engine/plugins/audio';
+import { audioConfig } from '@/modules/engine/plugins/audio/config';
 import {
 	clampMidiTick,
 	findTrackById,
@@ -615,7 +616,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				selectedNoteLabel={selectedNoteLabel}
 				keyboardMode={keyboardMode}
 				instrumentId={selectedTrackInstrumentId}
-				instrumentOptions={AUDIO_INSTRUMENT_OPTIONS}
+				instrumentOptions={audioConfig.instrumentOptions}
 				onOpenMidi={openMidiPicker}
 				onSetInstrument={(instrumentId) => {
 					if (selectedTrack == null) {

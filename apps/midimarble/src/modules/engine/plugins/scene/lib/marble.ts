@@ -1,19 +1,7 @@
 import { Entity, With } from 'ecsify';
 import type { TBallColliderDescriptor } from '../../physics';
+import { sceneConfig } from '../config';
 import type { TSceneApp } from '../types';
-
-export const DEFAULT_MARBLE_RADIUS = 0.36;
-
-export const MARBLE_PHYSICS_DEFAULTS = {
-	bounce: 0.32
-} as const;
-
-export const MARBLE_PHYSICS_LIMITS = {
-	bounce: {
-		min: 0,
-		max: 0.9
-	}
-} as const;
 
 export function createMarbleColliderDescriptors(
 	radius: number,
@@ -37,7 +25,7 @@ export function getMarbleRadius(
 	const descriptor = descriptors.find(
 		(entry): entry is TBallColliderDescriptor => entry.shape === 'ball'
 	);
-	return descriptor?.radius ?? DEFAULT_MARBLE_RADIUS;
+	return descriptor?.radius ?? sceneConfig.marble.defaultRadius;
 }
 
 export function getMarbleEntityId(app: TSceneApp): number | null {

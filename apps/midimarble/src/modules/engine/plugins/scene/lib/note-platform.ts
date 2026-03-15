@@ -1,37 +1,9 @@
 import { Entity, With } from 'ecsify';
 import * as THREE from 'three';
 import type { TVec3 } from '../../../types';
+import { sceneConfig } from '../config';
 import type { TCNotePlatformMixin, TSceneApp } from '../types';
 import { getLinearElementHandlePositions } from './linear-element';
-import { DEFAULT_MARBLE_RADIUS } from './marble';
-import { DEFAULT_TRACK_WIDTH } from './track-shape';
-
-export const NOTE_PLATFORM_DEFAULT_COLOR = '#2a5e92';
-
-export const NOTE_PLATFORM_LIMITS = {
-	offsetY: {
-		min: -4,
-		max: 4
-	},
-	offsetZ: {
-		min: -6,
-		max: 6
-	},
-	rotationX: {
-		min: -1.2,
-		max: 1.2
-	},
-	length: {
-		min: 0.8,
-		max: 1.8
-	},
-	bounce: {
-		min: 0,
-		max: 0.9
-	}
-} as const;
-
-export const NOTE_PLATFORM_HANDLE_OFFSET = 0.22;
 
 const NOTE_PLATFORM_COLORS = ['#2a5e92', '#ffeead', '#ff9943', '#8ac6d6'] as const;
 
@@ -81,7 +53,7 @@ export function getNotePlatformNoteState(app: TSceneApp): {
 export function getDefaultNotePlatformColor(noteId: number): string {
 	return (
 		NOTE_PLATFORM_COLORS[Math.abs(noteId) % NOTE_PLATFORM_COLORS.length] ??
-		NOTE_PLATFORM_DEFAULT_COLOR
+		sceneConfig.notePlatform.defaultColor
 	);
 }
 
@@ -110,7 +82,12 @@ export function getNotePlatformHandlePositions(
 	rotationX: number,
 	length: number
 ): { start: THREE.Vector3; end: THREE.Vector3 } {
-	return getLinearElementHandlePositions(position, rotationX, length, NOTE_PLATFORM_HANDLE_OFFSET);
+	return getLinearElementHandlePositions(
+		position,
+		rotationX,
+		length,
+		sceneConfig.notePlatform.handleOffset
+	);
 }
 
 export function resolveNotePlatformTransform(
@@ -120,11 +97,11 @@ export function resolveNotePlatformTransform(
 	rotationX: number,
 	thickness: number,
 	platformWidth: number,
-	marbleRadius: number = DEFAULT_MARBLE_RADIUS
+	marbleRadius: number = sceneConfig.marble.defaultRadius
 ): { position: TVec3; rotation: TVec3 } {
 	const normal = getNotePlatformSurfaceNormal(rotationX);
 	const centerOffset = marbleRadius + thickness / 2;
-	const wallMountOffsetX = (DEFAULT_TRACK_WIDTH - platformWidth) / 2;
+	const wallMountOffsetX = (sceneConfig.track.defaultWidth - platformWidth) / 2;
 
 	return {
 		position: {

@@ -1,15 +1,13 @@
 import * as THREE from 'three';
 import type { TVec3 } from '../../../types';
 import { getTrackNotesInTickRange, tickToStep, type TMidiLookup, type TMidiSong } from '../../midi';
+import { trajectoryConfig } from '../config';
 import type {
 	TTrajectoryNoteAnchor,
 	TTrajectoryNoteMarkerState,
 	TTrajectoryProjectedMarker
 } from '../types';
 import { getTrajectorySamplePosition, type TTrajectorySampleCache } from './trajectory-samples';
-
-export const MARKER_SCALE = 0.22;
-export const SELECTED_MARKER_SCALE = 0.3;
 
 export interface TTrajectoryMarkerDescriptor {
 	noteId: number;
@@ -105,7 +103,7 @@ export function syncTrajectoryMarkers(
 		const marker = existing instanceof THREE.Mesh ? existing : new THREE.Mesh(geometry, material);
 		marker.material = material;
 		marker.position.set(descriptor.position.x, descriptor.position.y, descriptor.position.z);
-		marker.scale.setScalar(MARKER_SCALE);
+		marker.scale.setScalar(trajectoryConfig.marker.scale);
 		if (existing == null) {
 			group.add(marker);
 			noteIdToMarker.set(descriptor.noteId, marker);
@@ -228,7 +226,11 @@ function applyMarkerStyle(
 		noteState,
 		materials
 	);
-	marker.scale.setScalar(selectedNoteIds.has(noteId) ? SELECTED_MARKER_SCALE : MARKER_SCALE);
+	marker.scale.setScalar(
+		selectedNoteIds.has(noteId)
+			? trajectoryConfig.marker.selectedScale
+			: trajectoryConfig.marker.scale
+	);
 }
 
 function resolveMarkerMaterial(

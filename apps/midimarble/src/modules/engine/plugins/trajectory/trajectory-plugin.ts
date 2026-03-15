@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { buildTrajectoryLine } from './lib/line-state';
 import { setupTrajectoryMarkerInteraction } from './lib/marker-interaction';
 import {
-	syncNoteMarkerPhase as syncTrajectoryNoteMarkerPhase,
-	syncPlacedNoteMarkers
+	syncPlacedNoteMarkers,
+	syncNoteMarkerPhase as syncTrajectoryNoteMarkerPhase
 } from './lib/note-markers';
 import { updateTrajectorySystem } from './systems';
 import type { TTrajectoryApp, TTrajectoryNoteMarkerState, TTrajectoryPlugin } from './types';

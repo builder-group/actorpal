@@ -33,18 +33,10 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 				}
 			]
 		});
-		const descriptors = buildTrajectoryMarkerDescriptors(
-			SONG,
-			midiLookup,
-			1,
-			-1,
-			16,
-			1 / 240,
-			{
-				points: new Float32Array([0, 0, 0, 1, 0, 0, 2, 0, 0]),
-				endStep: 2
-			}
-		);
+		const descriptors = buildTrajectoryMarkerDescriptors(SONG, midiLookup, 1, -1, 16, 1 / 240, {
+			points: new Float32Array([0, 0, 0, 1, 0, 0, 2, 0, 0]),
+			endStep: 2
+		});
 
 		expect(descriptors).toEqual([
 			{
@@ -76,18 +68,10 @@ describe('buildTrajectoryMarkerDescriptors', () => {
 				}
 			]
 		});
-		const descriptors = buildTrajectoryMarkerDescriptors(
-			SONG,
-			midiLookup,
-			4,
-			-1,
-			16,
-			1 / 240,
-			{
-				points: new Float32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 1]),
-				endStep: 3
-			}
-		);
+		const descriptors = buildTrajectoryMarkerDescriptors(SONG, midiLookup, 4, -1, 16, 1 / 240, {
+			points: new Float32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2, 1]),
+			endStep: 3
+		});
 
 		expect(buildTrajectoryProjection(descriptors)).toEqual(
 			new Map([

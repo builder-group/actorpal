@@ -1,4 +1,5 @@
 import * as RAPIER from '@dimforge/rapier3d-compat';
+import { physicsConfig } from './config';
 import { markSimulationDirty, requestSimulationSync } from './lib/simulation-sync';
 import {
 	advanceSimulationSyncSystem,
@@ -29,16 +30,9 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 			world: null,
 			preloadWorld: null,
 			isReady: false,
-			fixedTimeStepSeconds: 1 / 240,
+			fixedTimeStepSeconds: physicsConfig.timeStepSeconds,
 			bufferedStep: 0,
 			liveStep: 0,
-			simulationConfig: {
-				checkpointIntervalSteps: 60,
-				preloadHorizonSteps: 2400,
-				maxPreloadStepsPerUpdate: 120,
-				maxLiveStepsPerUpdate: 12,
-				maxSyncStepsPerUpdate: 240
-			},
 			checkpointStore: new Map(),
 			preloadStep: 0,
 			rigidBodies: new Map(),
@@ -73,7 +67,7 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 		setup(app: TPhysicsApp) {
 			void initPromise.then(() => {
 				app.updateResource('rapier', RAPIER);
-				const world = new RAPIER.World({ x: 0, y: -9.81, z: 0 });
+				const world = new RAPIER.World(physicsConfig.gravity);
 				world.timestep = app.r.fixedTimeStepSeconds;
 				app.updateResource('world', world);
 				app.updateResource('isReady', true);

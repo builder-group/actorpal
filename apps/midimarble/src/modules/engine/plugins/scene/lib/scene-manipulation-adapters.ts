@@ -1,13 +1,10 @@
 import type * as THREE from 'three';
+import { sceneConfig } from '../config';
 import type { TSceneApp } from '../types';
 import { getLinearElement, getLinearElementHandlePositions } from './linear-element';
 import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
 import { resetSceneManipulationState } from './manipulation-state';
-import {
-	getNotePlatform,
-	NOTE_PLATFORM_HANDLE_OFFSET,
-	NOTE_PLATFORM_LIMITS
-} from './note-platform';
+import { getNotePlatform } from './note-platform';
 import { sameVec3 } from './vec3';
 
 export type TSceneManipulationPickTarget =
@@ -168,7 +165,7 @@ const notePlatformManipulationAdapter: TSceneManipulationAdapter = {
 			notePlatform.position,
 			notePlatform.platform.rotationX,
 			notePlatform.platform.length,
-			NOTE_PLATFORM_HANDLE_OFFSET
+			sceneConfig.notePlatform.handleOffset
 		);
 		const dragAnchor =
 			pickedTarget.target === 'handle-start'
@@ -206,9 +203,9 @@ const notePlatformManipulationAdapter: TSceneManipulationAdapter = {
 					y: 0,
 					z: 0
 				},
-				minLength: NOTE_PLATFORM_LIMITS.length.min,
-				maxLength: NOTE_PLATFORM_LIMITS.length.max,
-				handleOffset: NOTE_PLATFORM_HANDLE_OFFSET
+				minLength: sceneConfig.notePlatform.limits.length.min,
+				maxLength: sceneConfig.notePlatform.limits.length.max,
+				handleOffset: sceneConfig.notePlatform.handleOffset
 			},
 			state.mode,
 			draggedPoint

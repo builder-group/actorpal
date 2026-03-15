@@ -1,13 +1,6 @@
 import * as THREE from 'three';
 import type { TPhysicsColliderDescriptor } from '../../physics';
-
-export const DEFAULT_TRACK_WIDTH = 1.5;
-export const DEFAULT_TRACK_HEIGHT = 0.7;
-export const DEFAULT_TRACK_CHANNEL_WIDTH = 1.3;
-export const DEFAULT_TRACK_CHANNEL_DEPTH = 0.2;
-
-const TRACK_CHANNEL_DEPTH_RATIO = DEFAULT_TRACK_CHANNEL_DEPTH / DEFAULT_TRACK_HEIGHT;
-const TRACK_CHANNEL_WIDTH_RATIO = DEFAULT_TRACK_CHANNEL_WIDTH / DEFAULT_TRACK_WIDTH;
+import { sceneConfig } from '../config';
 
 export type TTrackRailMode = 'both' | 'wall-only-negative';
 
@@ -29,11 +22,15 @@ export function getTrackWallWidth(width: number, channelWidth: number): number {
 }
 
 export function getScaledTrackChannelDepth(height: number): number {
-	return Math.min(height * TRACK_CHANNEL_DEPTH_RATIO, height / 2 - 1e-4);
+	const trackChannelDepthRatio =
+		sceneConfig.track.defaultChannelDepth / sceneConfig.track.defaultHeight;
+	return Math.min(height * trackChannelDepthRatio, height / 2 - 1e-4);
 }
 
 export function getScaledTrackChannelWidth(width: number): number {
-	return Math.max(1e-4, width * TRACK_CHANNEL_WIDTH_RATIO);
+	const trackChannelWidthRatio =
+		sceneConfig.track.defaultChannelWidth / sceneConfig.track.defaultWidth;
+	return Math.max(1e-4, width * trackChannelWidthRatio);
 }
 
 export function createTrackProfile(

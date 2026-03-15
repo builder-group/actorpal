@@ -123,8 +123,7 @@ export function deriveSceneSelectionInspectorTarget(
 		const noteMatch = findNoteById(midiSong, binding.noteId, midiLookup);
 		if (noteMatch != null && midiSong != null) {
 			const anchor = trajectoryProjection.noteAnchorsById.get(binding.noteId);
-			const step =
-				anchor?.step ?? tickToStep(noteMatch.note.tick, midiSong, fixedTimeStepSeconds);
+			const step = anchor?.step ?? tickToStep(noteMatch.note.tick, midiSong, fixedTimeStepSeconds);
 			return buildNotePlatformInspectorTarget(
 				noteMatch.track.name,
 				noteMatch.note,

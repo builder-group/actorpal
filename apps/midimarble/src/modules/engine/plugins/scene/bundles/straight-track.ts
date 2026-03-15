@@ -2,14 +2,8 @@ import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import { TVec3 } from '../../../types';
 import type { TPhysicsColliderDescriptor } from '../../physics';
-import {
-	createTrackColliders,
-	createTrackGeometry,
-	DEFAULT_TRACK_CHANNEL_DEPTH,
-	DEFAULT_TRACK_CHANNEL_WIDTH,
-	DEFAULT_TRACK_HEIGHT,
-	DEFAULT_TRACK_WIDTH
-} from '../lib/track-shape';
+import { sceneConfig } from '../config';
+import { createTrackColliders, createTrackGeometry } from '../lib/track-shape';
 import type {
 	TCAuthoredTransformMixin,
 	TCLinearElementMixin,
@@ -27,10 +21,10 @@ export function createStraightTrackBundle(
 		rotation = { x: 0, y: 0, z: 0 },
 		scale = { x: 1, y: 1, z: 1 },
 		length = 14,
-		height = DEFAULT_TRACK_HEIGHT,
-		width = DEFAULT_TRACK_WIDTH,
-		channelWidth = DEFAULT_TRACK_CHANNEL_WIDTH,
-		channelDepth = DEFAULT_TRACK_CHANNEL_DEPTH,
+		height = sceneConfig.track.defaultHeight,
+		width = sceneConfig.track.defaultWidth,
+		channelWidth = sceneConfig.track.defaultChannelWidth,
+		channelDepth = sceneConfig.track.defaultChannelDepth,
 		color = ['#2a5e92', '#ffeead', '#ff9943', '#8ac6d6'][Math.floor(Math.random() * 4)]
 	} = options;
 

@@ -1,21 +1,6 @@
-import type {
-	TAudioConfig,
-	TAudioInstrumentId,
-	TAudioInstrumentOption,
-	TAudioInstrumentPlayer
-} from '../types';
+import { audioConfig } from '../config';
+import type { TAudioConfig, TAudioInstrumentId, TAudioInstrumentPlayer } from '../types';
 import { AMSynth, FMSynth, MonoSynth, PolySynth, Synth } from './tone-runtime';
-
-export const DEFAULT_AUDIO_INSTRUMENT_ID: TAudioInstrumentId = 'bell';
-
-export const AUDIO_INSTRUMENT_OPTIONS: readonly TAudioInstrumentOption[] = [
-	{ id: 'classic', label: 'Classic' },
-	{ id: 'bell', label: 'Bell' },
-	{ id: 'xylophone', label: 'Xylophone' },
-	{ id: 'warm', label: 'Warm' },
-	{ id: 'pluck', label: 'Pluck' },
-	{ id: 'lead', label: 'Lead' }
-];
 
 export function getTrackInstrumentId(
 	trackInstrumentIds: TAudioConfig['trackInstrumentIds'],
@@ -25,11 +10,11 @@ export function getTrackInstrumentId(
 		return null;
 	}
 
-	return trackInstrumentIds[trackId] ?? DEFAULT_AUDIO_INSTRUMENT_ID;
+	return trackInstrumentIds[trackId] ?? (audioConfig.defaultInstrumentId as TAudioInstrumentId);
 }
 
 export function isAudioInstrumentId(value: string): value is TAudioInstrumentId {
-	return AUDIO_INSTRUMENT_OPTIONS.some((option) => option.id === value);
+	return audioConfig.instrumentOptions.some((option) => option.id === value);
 }
 
 export function createInstrumentPlayer(instrumentId: TAudioInstrumentId): TAudioInstrumentPlayer {

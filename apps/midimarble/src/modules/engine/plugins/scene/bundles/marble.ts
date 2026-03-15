@@ -1,11 +1,8 @@
 import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import { TVec3 } from '../../../types';
-import {
-	createMarbleColliderDescriptors,
-	DEFAULT_MARBLE_RADIUS,
-	MARBLE_PHYSICS_DEFAULTS
-} from '../lib/marble';
+import { sceneConfig } from '../config';
+import { createMarbleColliderDescriptors } from '../lib/marble';
 import type { TSceneApp } from '../types';
 import type { TSceneBundle } from './types';
 
@@ -14,7 +11,7 @@ export function createMarbleBundle(
 	options: TCreateMarbleBundleOptions = {}
 ): TSceneBundle {
 	const {
-		radius = DEFAULT_MARBLE_RADIUS,
+		radius = sceneConfig.marble.defaultRadius,
 		position = { x: 0, y: 6, z: -7 },
 		rotation = { x: 0, y: 0, z: 0 },
 		scale = { x: 1, y: 1, z: 1 }
@@ -26,7 +23,7 @@ export function createMarbleBundle(
 		bundleEntry(app.c.ScaleMixin, scale),
 		bundleEntry(app.c.MarbleTag, {}),
 		bundleEntry(app.c.MarblePhysicsMixin, {
-			bounce: MARBLE_PHYSICS_DEFAULTS.bounce
+			bounce: sceneConfig.marble.physics.defaults.bounce
 		}),
 		bundleEntry(app.c.TrajectorySourceTag, {}),
 		bundleEntry(app.c.MeshMixin, { type: 'three', object: createMarbleObject(radius) }),
@@ -37,7 +34,10 @@ export function createMarbleBundle(
 			angularDamping: 0.08
 		}),
 		bundleEntry(app.c.ColliderMixin, {
-			descriptors: createMarbleColliderDescriptors(radius, MARBLE_PHYSICS_DEFAULTS.bounce)
+			descriptors: createMarbleColliderDescriptors(
+				radius,
+				sceneConfig.marble.physics.defaults.bounce
+			)
 		})
 	);
 }

@@ -1,5 +1,32 @@
 import type { TSceneManipulationConfig } from './types';
 
+export const sceneConfig = {
+	marble: {
+		defaultRadius: 0.36,
+		physics: {
+			defaults: { bounce: 0.32 },
+			limits: { bounce: { min: 0, max: 0.9 } }
+		}
+	},
+	notePlatform: {
+		defaultColor: '#2a5e92',
+		handleOffset: 0.22,
+		limits: {
+			offsetY: { min: -4, max: 4 },
+			offsetZ: { min: -6, max: 6 },
+			rotationX: { min: -1.2, max: 1.2 },
+			length: { min: 0.8, max: 1.8 },
+			bounce: { min: 0, max: 0.9 }
+		}
+	},
+	track: {
+		defaultWidth: 1.5,
+		defaultHeight: 0.7,
+		defaultChannelWidth: 1.3,
+		defaultChannelDepth: 0.2
+	}
+} as const;
+
 export const MIDIMARBLE_SCENE_DEFAULTS = {
 	straightTrackWallLaneX: -7.25,
 	newStraightTrackYOffset: -3,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useResource } from '@/modules/engine';
-import { PREVIEW_CONFIG_LIMITS } from '@/modules/engine/plugins/render/config';
+import { renderConfig } from '@/modules/engine/plugins/render/config';
 import { useEditorCx } from '../EditorCx';
 
 export const PreviewCameraInspector: React.FC = () => {
@@ -23,31 +23,31 @@ export const PreviewCameraInspector: React.FC = () => {
 					<SliderField
 						label="FOV"
 						value={config.fov}
-						{...PREVIEW_CONFIG_LIMITS.fov}
+						{...renderConfig.preview.limits.fov}
 						onChange={(value) => runtime.updatePreviewConfig({ fov: value })}
 					/>
 					<SliderField
 						label="Distance"
 						value={config.distance}
-						{...PREVIEW_CONFIG_LIMITS.distance}
+						{...renderConfig.preview.limits.distance}
 						onChange={(value) => runtime.updatePreviewConfig({ distance: value })}
 					/>
 					<SliderField
 						label="Height"
 						value={config.height}
-						{...PREVIEW_CONFIG_LIMITS.height}
+						{...renderConfig.preview.limits.height}
 						onChange={(value) => runtime.updatePreviewConfig({ height: value })}
 					/>
 					<SliderField
 						label="Look Ahead"
 						value={config.lookAhead}
-						{...PREVIEW_CONFIG_LIMITS.lookAhead}
+						{...renderConfig.preview.limits.lookAhead}
 						onChange={(value) => runtime.updatePreviewConfig({ lookAhead: value })}
 					/>
 					<SliderField
 						label="Smoothing"
 						value={config.smoothing}
-						{...PREVIEW_CONFIG_LIMITS.smoothing}
+						{...renderConfig.preview.limits.smoothing}
 						onChange={(value) => runtime.updatePreviewConfig({ smoothing: value })}
 					/>
 				</div>

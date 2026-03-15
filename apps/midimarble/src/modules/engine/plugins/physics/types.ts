@@ -20,7 +20,6 @@ export type TPhysicsPlugin = TPlugin<
 			fixedTimeStepSeconds: number;
 			bufferedStep: number;
 			liveStep: number;
-			simulationConfig: TSimulationConfig;
 			checkpointStore: TCheckpointStore;
 			preloadStep: number;
 			rigidBodies: TRRigidBodies;
@@ -48,14 +47,6 @@ export type TCheckpointStore = Map<number, Uint8Array>;
 export interface TPhysicsWorldHandles {
 	rigidBodies: TRRigidBodies;
 	colliders: TRColliders;
-}
-
-export interface TSimulationConfig {
-	checkpointIntervalSteps: number;
-	preloadHorizonSteps: number;
-	maxPreloadStepsPerUpdate: number;
-	maxLiveStepsPerUpdate: number;
-	maxSyncStepsPerUpdate: number;
 }
 
 export type TSimulationSync =

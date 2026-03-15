@@ -3,8 +3,7 @@ import { Trash2 } from 'lucide-react';
 import React from 'react';
 import { useQueryComponents, useResource } from '@/modules/engine';
 import type { TMidiLookup, TMidiSong } from '@/modules/engine/plugins/midi';
-import { MARBLE_PHYSICS_LIMITS } from '@/modules/engine/plugins/scene/lib/marble';
-import { NOTE_PLATFORM_LIMITS } from '@/modules/engine/plugins/scene/lib/note-platform';
+import { sceneConfig } from '@/modules/engine/plugins/scene/config';
 import { useEditorCx } from '../EditorCx';
 import { deriveInspectorPathState, type TInspectorTarget } from '../lib/inspector-target';
 import { canDeleteStraightTrack } from '../lib/scene-ui';
@@ -204,26 +203,38 @@ const SceneSelectionInspectorPanel: React.FC<{
 				target={target}
 				onLiftChange={(value) =>
 					runtime.updateNotePlatform(target.entityId, {
-						offsetY: clamp(value, NOTE_PLATFORM_LIMITS.offsetY.min, NOTE_PLATFORM_LIMITS.offsetY.max)
+						offsetY: clamp(
+							value,
+							sceneConfig.notePlatform.limits.offsetY.min,
+							sceneConfig.notePlatform.limits.offsetY.max
+						)
 					})
 				}
 				onPushChange={(value) =>
 					runtime.updateNotePlatform(target.entityId, {
-						offsetZ: clamp(value, NOTE_PLATFORM_LIMITS.offsetZ.min, NOTE_PLATFORM_LIMITS.offsetZ.max)
+						offsetZ: clamp(
+							value,
+							sceneConfig.notePlatform.limits.offsetZ.min,
+							sceneConfig.notePlatform.limits.offsetZ.max
+						)
 					})
 				}
 				onRotationChange={(value) =>
 					runtime.updateNotePlatform(target.entityId, {
 						rotationX: clamp(
 							value,
-							NOTE_PLATFORM_LIMITS.rotationX.min,
-							NOTE_PLATFORM_LIMITS.rotationX.max
+							sceneConfig.notePlatform.limits.rotationX.min,
+							sceneConfig.notePlatform.limits.rotationX.max
 						)
 					})
 				}
 				onBounceChange={(value) =>
 					runtime.updateNotePlatform(target.entityId, {
-						bounce: clamp(value, NOTE_PLATFORM_LIMITS.bounce.min, NOTE_PLATFORM_LIMITS.bounce.max)
+						bounce: clamp(
+							value,
+							sceneConfig.notePlatform.limits.bounce.min,
+							sceneConfig.notePlatform.limits.bounce.max
+						)
 					})
 				}
 				onCommit={() => runtime.commitSceneEdit()}
@@ -239,7 +250,11 @@ const SceneSelectionInspectorPanel: React.FC<{
 				target={target}
 				onBounceChange={(value) =>
 					runtime.updateMarblePhysics(target.entityId, {
-						bounce: clamp(value, MARBLE_PHYSICS_LIMITS.bounce.min, MARBLE_PHYSICS_LIMITS.bounce.max)
+						bounce: clamp(
+							value,
+							sceneConfig.marble.physics.limits.bounce.min,
+							sceneConfig.marble.physics.limits.bounce.max
+						)
 					})
 				}
 				onCommit={() => runtime.commitSceneEdit()}
@@ -312,8 +327,8 @@ const NotePlatformInspector: React.FC<{
 		<SliderField
 			label="Lift"
 			value={target.offsetY}
-			min={NOTE_PLATFORM_LIMITS.offsetY.min}
-			max={NOTE_PLATFORM_LIMITS.offsetY.max}
+			min={sceneConfig.notePlatform.limits.offsetY.min}
+			max={sceneConfig.notePlatform.limits.offsetY.max}
 			step={0.01}
 			onChange={onLiftChange}
 			onCommit={onCommit}
@@ -321,8 +336,8 @@ const NotePlatformInspector: React.FC<{
 		<SliderField
 			label="Push"
 			value={target.offsetZ}
-			min={NOTE_PLATFORM_LIMITS.offsetZ.min}
-			max={NOTE_PLATFORM_LIMITS.offsetZ.max}
+			min={sceneConfig.notePlatform.limits.offsetZ.min}
+			max={sceneConfig.notePlatform.limits.offsetZ.max}
 			step={0.01}
 			onChange={onPushChange}
 			onCommit={onCommit}
@@ -330,8 +345,8 @@ const NotePlatformInspector: React.FC<{
 		<SliderField
 			label="Tilt"
 			value={target.rotationX}
-			min={NOTE_PLATFORM_LIMITS.rotationX.min}
-			max={NOTE_PLATFORM_LIMITS.rotationX.max}
+			min={sceneConfig.notePlatform.limits.rotationX.min}
+			max={sceneConfig.notePlatform.limits.rotationX.max}
 			step={0.01}
 			onChange={onRotationChange}
 			onCommit={onCommit}
@@ -339,8 +354,8 @@ const NotePlatformInspector: React.FC<{
 		<SliderField
 			label="Bounce"
 			value={target.bounce}
-			min={NOTE_PLATFORM_LIMITS.bounce.min}
-			max={NOTE_PLATFORM_LIMITS.bounce.max}
+			min={sceneConfig.notePlatform.limits.bounce.min}
+			max={sceneConfig.notePlatform.limits.bounce.max}
 			step={0.01}
 			onChange={onBounceChange}
 			onCommit={onCommit}
@@ -379,8 +394,8 @@ const MarbleInspector: React.FC<{
 		<SliderField
 			label="Bounce"
 			value={target.bounce}
-			min={MARBLE_PHYSICS_LIMITS.bounce.min}
-			max={MARBLE_PHYSICS_LIMITS.bounce.max}
+			min={sceneConfig.marble.physics.limits.bounce.min}
+			max={sceneConfig.marble.physics.limits.bounce.max}
 			step={0.01}
 			onChange={onBounceChange}
 			onCommit={onCommit}

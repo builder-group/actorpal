@@ -1,16 +1,9 @@
 import { getTicksPerSecond, type TMidiNote, type TMidiSong } from '../../midi';
+import { audioConfig } from '../config';
 import type { TActiveVoice, TAudioInstrumentId, TAudioState } from '../types';
 import { createInstrumentPlayer } from './instruments';
-import {
-	getNoteDurationSeconds,
-	getPlaybackDelaySeconds,
-	midiNoteToFrequency,
-	PLAYBACK_MAX_NOTE_SECONDS,
-	PREVIEW_MAX_NOTE_SECONDS
-} from './playback';
+import { getNoteDurationSeconds, getPlaybackDelaySeconds, midiNoteToFrequency } from './playback';
 import { getContext, setContext } from './tone-runtime';
-
-const VOICE_CLEANUP_PADDING_SECONDS = 1.6;
 
 export async function ensureAudioGraph(
 	state: TAudioState,
@@ -64,7 +57,7 @@ export function previewTrackNotesAtTick(
 	notes: TMidiNote[],
 	instrumentId: TAudioInstrumentId | null
 ): void {
-	previewTrackNotes(state, song, notes, PREVIEW_MAX_NOTE_SECONDS, instrumentId);
+	previewTrackNotes(state, song, notes, audioConfig.playback.previewMaxNoteSeconds, instrumentId);
 }
 
 export function previewSelectedTrackNote(
@@ -87,7 +80,7 @@ export function previewMidiKeyNote(
 ): void {
 	const previewDurationTicks = Math.max(
 		1,
-		Math.round(getTicksPerSecond(song) * PREVIEW_MAX_NOTE_SECONDS)
+		Math.round(getTicksPerSecond(song) * audioConfig.playback.previewMaxNoteSeconds)
 	);
 	previewTrackNotes(
 		state,
@@ -102,7 +95,7 @@ export function previewMidiKeyNote(
 				channel: 0
 			}
 		],
-		PREVIEW_MAX_NOTE_SECONDS,
+		audioConfig.playback.previewMaxNoteSeconds,
 		instrumentId
 	);
 }
@@ -133,7 +126,7 @@ export function playTrackNotes(
 	for (const note of notes) {
 		playTrackNote(state, song, note, {
 			delaySeconds: getPlaybackDelaySeconds(song, note.tick, startTick),
-			maxDurationSeconds: PLAYBACK_MAX_NOTE_SECONDS,
+			maxDurationSeconds: audioConfig.playback.maxNoteSeconds,
 			instrumentId
 		});
 	}
@@ -219,7 +212,10 @@ function playTrackNote(
 
 			state.activeVoices.set(note.id, next);
 		},
-		Math.ceil((options.delaySeconds + sustainSeconds + VOICE_CLEANUP_PADDING_SECONDS) * 1000)
+		Math.ceil(
+			(options.delaySeconds + sustainSeconds + audioConfig.playback.voiceCleanupPaddingSeconds) *
+				1000
+		)
 	);
 }
 

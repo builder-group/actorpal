@@ -1,12 +1,7 @@
 import type { TVec3 } from '../../../types';
+import { renderConfig } from '../config';
 import type { TPreviewConfig, TPreviewState } from '../types';
 import type { TCameraSnapshot } from './Viewport';
-
-export const PREVIEW_FORWARD_FALLBACK: TVec3 = {
-	x: 0,
-	y: 0,
-	z: 1
-};
 
 export interface TPreviewCameraPose {
 	position: TVec3;
@@ -69,8 +64,8 @@ export function computePreviewCameraPose(
 ): TPreviewCameraPose {
 	const forward = normalizeOrFallback(
 		flattenTravelDirection(velocity),
-		flattenTravelDirection(lastFollowDirection ?? PREVIEW_FORWARD_FALLBACK) ??
-			PREVIEW_FORWARD_FALLBACK
+		flattenTravelDirection(lastFollowDirection ?? renderConfig.camera.forwardFallback) ??
+			renderConfig.camera.forwardFallback
 	);
 	const normalizedSideSign = sideSign < 0 ? -1 : 1;
 	const sideDistance = config.distance * 0.88;

@@ -3,7 +3,7 @@ import { buildTrajectoryLine } from './lib/line-state';
 import { setupTrajectoryMarkerInteraction } from './lib/marker-interaction';
 import { syncPlacedNoteMarkers } from './lib/note-markers';
 import { updateTrajectorySystem } from './systems';
-import type { TTrajectoryApp, TTrajectoryPlugin } from './types';
+import type { TTrajectoryApp, TTrajectoryNoteMarkerState, TTrajectoryPlugin } from './types';
 
 export function createTrajectoryPlugin(): TTrajectoryPlugin {
 	const futureColor = '#4a90e2';
@@ -12,8 +12,10 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 	const markerGeometry = new THREE.SphereGeometry(1, 14, 14);
 	const pastMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#ffb05b' });
 	const pastPlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#34d399' });
+	const pastAdjustedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#f59e0b' });
 	const futureMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#68aef2' });
 	const futurePlacedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#6ee7b7' });
+	const futureAdjustedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#facc15' });
 	const selectedMarkerMaterial = new THREE.MeshBasicMaterial({ color: '#f43f5e' });
 	let cleanupMarkerInteraction: (() => void) | null = null;
 
@@ -39,8 +41,10 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				markerGeometry,
 				pastMarkerMaterial,
 				pastPlacedMarkerMaterial,
+				pastAdjustedMarkerMaterial,
 				futureMarkerMaterial,
 				futurePlacedMarkerMaterial,
+				futureAdjustedMarkerMaterial,
 				selectedMarkerMaterial
 			},
 			trajectoryProjection: {
@@ -55,22 +59,26 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				state.markerGeometry.dispose();
 				state.pastMarkerMaterial.dispose();
 				state.pastPlacedMarkerMaterial.dispose();
+				state.pastAdjustedMarkerMaterial.dispose();
 				state.futureMarkerMaterial.dispose();
 				state.futurePlacedMarkerMaterial.dispose();
+				state.futureAdjustedMarkerMaterial.dispose();
 				state.selectedMarkerMaterial.dispose();
 			},
-			syncPlacedNoteMarkers(this: TTrajectoryApp, placedNoteIds: Set<number>): void {
+			syncNoteMarkers(this: TTrajectoryApp, noteState: TTrajectoryNoteMarkerState): void {
 				const state = this.r.trajectoryState;
 				syncPlacedNoteMarkers(
 					state.noteIdToMarker,
 					this.r.trajectoryProjection.noteAnchorsById,
 					this.r.selectedNoteId,
-					placedNoteIds,
+					noteState,
 					{
 						past: state.pastMarkerMaterial,
 						pastPlaced: state.pastPlacedMarkerMaterial,
+						pastAdjusted: state.pastAdjustedMarkerMaterial,
 						future: state.futureMarkerMaterial,
 						futurePlaced: state.futurePlacedMarkerMaterial,
+						futureAdjusted: state.futureAdjustedMarkerMaterial,
 						selected: state.selectedMarkerMaterial
 					}
 				);

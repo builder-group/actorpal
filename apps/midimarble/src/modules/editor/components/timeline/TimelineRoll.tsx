@@ -113,6 +113,7 @@ const PianoRollGrid: React.FC<{
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
 	selectedNoteId: number | null;
 	placedNoteIds: Set<number>;
+	adjustedNoteIds: Set<number>;
 	onSelectNote: (noteId: number, tick: number) => void;
 }> = ({
 	noteRows,
@@ -123,6 +124,7 @@ const PianoRollGrid: React.FC<{
 	notes,
 	selectedNoteId,
 	placedNoteIds,
+	adjustedNoteIds,
 	onSelectNote
 }) => {
 	const noteIndexByNumber = React.useMemo(
@@ -169,6 +171,8 @@ const PianoRollGrid: React.FC<{
 				if (noteRow == null) {
 					return null;
 				}
+				const isAdjusted = adjustedNoteIds.has(note.id);
+				const isPlaced = placedNoteIds.has(note.id);
 
 				return (
 					<button
@@ -180,8 +184,10 @@ const PianoRollGrid: React.FC<{
 							top: noteRow * NOTE_ROW_HEIGHT + 2,
 							width: Math.max(note.durationTicks * pixelsPerTick, 3),
 							height: NOTE_ROW_HEIGHT - 4,
-							background: placedNoteIds.has(note.id)
-								? `hsl(${145 + Math.round((note.velocity / 127) * 12)} 55% 48%)`
+							background: isAdjusted
+								? `hsl(${36 + Math.round((note.velocity / 127) * 8)} 88% 56%)`
+								: isPlaced
+									? `hsl(${145 + Math.round((note.velocity / 127) * 12)} 55% 48%)`
 								: `hsl(${210 + Math.round((note.velocity / 127) * 25)} 70% 56%)`,
 							borderColor:
 								note.id === selectedNoteId ? 'rgba(244, 63, 94, 0.92)' : 'rgba(15, 23, 42, 0.18)',
@@ -219,6 +225,7 @@ export const TimelineRoll: React.FC<{
 	notes: Array<Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>>;
 	selectedNoteId: number | null;
 	placedNoteIds: Set<number>;
+	adjustedNoteIds: Set<number>;
 	canScrub: boolean;
 	isDragging: boolean;
 	onPointerDown: (event: React.PointerEvent<HTMLDivElement>) => void;
@@ -237,6 +244,7 @@ export const TimelineRoll: React.FC<{
 	notes,
 	selectedNoteId,
 	placedNoteIds,
+	adjustedNoteIds,
 	canScrub,
 	isDragging,
 	onPointerDown,
@@ -290,6 +298,7 @@ export const TimelineRoll: React.FC<{
 							notes={notes}
 							selectedNoteId={selectedNoteId}
 							placedNoteIds={placedNoteIds}
+							adjustedNoteIds={adjustedNoteIds}
 							onSelectNote={onSelectNote}
 						/>
 					</div>

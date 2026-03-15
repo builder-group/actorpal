@@ -201,6 +201,16 @@ export const SelectionInspector: React.FC = () => {
 				{target.kind === 'note-platform' ? (
 					<NotePlatformInspector
 						target={target}
+						onLiftChange={(value) =>
+							runtime.updateNotePlatform(target.entityId, {
+								offsetY: clamp(value, NOTE_PLATFORM_LIMITS.offsetY.min, NOTE_PLATFORM_LIMITS.offsetY.max)
+							})
+						}
+						onPushChange={(value) =>
+							runtime.updateNotePlatform(target.entityId, {
+								offsetZ: clamp(value, NOTE_PLATFORM_LIMITS.offsetZ.min, NOTE_PLATFORM_LIMITS.offsetZ.max)
+							})
+						}
 						onRotationChange={(value) =>
 							runtime.updateNotePlatform(target.entityId, {
 								rotationX: clamp(
@@ -283,10 +293,12 @@ const NoteInspector: React.FC<{
 
 const NotePlatformInspector: React.FC<{
 	target: Extract<TInspectorTarget, { kind: 'note-platform' }>;
+	onLiftChange: (value: number) => void;
+	onPushChange: (value: number) => void;
 	onRotationChange: (value: number) => void;
 	onBounceChange: (value: number) => void;
 	onCommit: () => void;
-}> = ({ target, onRotationChange, onBounceChange, onCommit }) => (
+}> = ({ target, onLiftChange, onPushChange, onRotationChange, onBounceChange, onCommit }) => (
 	<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
 		<InspectorTitle title={target.title} subtitle={`Entity ${target.entityId}`} />
 		<InspectorField label="Note" value={target.noteName} />
@@ -295,7 +307,25 @@ const NotePlatformInspector: React.FC<{
 		<InspectorField label="Path" value={capitalize(target.pathState)} />
 		{target.position != null ? <Vec3Field label="Position" value={target.position} /> : null}
 		<SliderField
-			label="Rotation"
+			label="Lift"
+			value={target.offsetY}
+			min={NOTE_PLATFORM_LIMITS.offsetY.min}
+			max={NOTE_PLATFORM_LIMITS.offsetY.max}
+			step={0.01}
+			onChange={onLiftChange}
+			onCommit={onCommit}
+		/>
+		<SliderField
+			label="Push"
+			value={target.offsetZ}
+			min={NOTE_PLATFORM_LIMITS.offsetZ.min}
+			max={NOTE_PLATFORM_LIMITS.offsetZ.max}
+			step={0.01}
+			onChange={onPushChange}
+			onCommit={onCommit}
+		/>
+		<SliderField
+			label="Tilt"
 			value={target.rotationX}
 			min={NOTE_PLATFORM_LIMITS.rotationX.min}
 			max={NOTE_PLATFORM_LIMITS.rotationX.max}

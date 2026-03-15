@@ -107,12 +107,17 @@ export function syncPlacedNoteMarkers(
 	noteIdToMarker: Map<number, THREE.Object3D>,
 	noteAnchorsById: Map<number, TTrajectoryNoteAnchor>,
 	selectedNoteId: number | null,
-	placedNoteIds: Set<number>,
+	noteState: {
+		placedNoteIds: Set<number>;
+		adjustedNoteIds: Set<number>;
+	},
 	materials: {
 		past: THREE.Material;
 		pastPlaced: THREE.Material;
+		pastAdjusted: THREE.Material;
 		future: THREE.Material;
 		futurePlaced: THREE.Material;
+		futureAdjusted: THREE.Material;
 		selected: THREE.Material;
 	}
 ): void {
@@ -123,16 +128,23 @@ export function syncPlacedNoteMarkers(
 		}
 
 		const isSelected = noteId === selectedNoteId;
-		const isPlaced = placedNoteIds.has(noteId);
-		marker.material = isSelected
-			? materials.selected
-			: anchor.phase === 'past'
-				? isPlaced
+		const isAdjusted = noteState.adjustedNoteIds.has(noteId);
+		const isPlaced = noteState.placedNoteIds.has(noteId);
+		if (isSelected) {
+			marker.material = materials.selected;
+		} else if (anchor.phase === 'past') {
+			marker.material = isAdjusted
+				? materials.pastAdjusted
+				: isPlaced
 					? materials.pastPlaced
-					: materials.past
+					: materials.past;
+		} else {
+			marker.material = isAdjusted
+				? materials.futureAdjusted
 				: isPlaced
 					? materials.futurePlaced
 					: materials.future;
+		}
 		marker.scale.setScalar(isSelected ? SELECTED_MARKER_SCALE : MARKER_SCALE);
 	}
 }

@@ -13,6 +13,8 @@ describe('scene authoring helpers', () => {
 				[
 					17,
 					{
+						offsetY: 0,
+						offsetZ: 0,
 						rotationX: 0.2,
 						length: 1.2,
 						width: 0.84,
@@ -31,6 +33,8 @@ describe('scene authoring helpers', () => {
 
 		expect(updateNotePlatformAuthoring(sceneApp, 17, { bounce: 0.72 })).toBe(true);
 		expect(updateComponent).toHaveBeenCalledWith(17, components.NotePlatformMixin, {
+			offsetY: 0,
+			offsetZ: 0,
 			rotationX: 0.2,
 			length: 1.2,
 			width: 0.84,

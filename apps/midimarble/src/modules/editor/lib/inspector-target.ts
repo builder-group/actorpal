@@ -41,6 +41,8 @@ export interface TNotePlatformInspectorTarget {
 	step: number;
 	pathState: 'past' | 'future' | 'unresolved';
 	position: TVec3 | null;
+	offsetY: number;
+	offsetZ: number;
 	rotationX: number;
 	length: number;
 	width: number;
@@ -115,6 +117,8 @@ export function buildNotePlatformInspectorTarget(
 	pathState: 'past' | 'future' | 'unresolved',
 	position: TVec3 | null,
 	platform: {
+		offsetY: number;
+		offsetZ: number;
 		rotationX: number;
 		length: number;
 		width: number;
@@ -133,6 +137,8 @@ export function buildNotePlatformInspectorTarget(
 		step,
 		pathState,
 		position,
+		offsetY: platform.offsetY,
+		offsetZ: platform.offsetZ,
 		rotationX: platform.rotationX,
 		length: platform.length,
 		width: platform.width,

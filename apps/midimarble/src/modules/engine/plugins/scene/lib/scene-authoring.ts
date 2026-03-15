@@ -59,6 +59,8 @@ export function updateMarblePhysicsAuthoring(
 
 function areNotePlatformsEqual(left: TCNotePlatformMixin, right: TCNotePlatformMixin): boolean {
 	return (
+		left.offsetY === right.offsetY &&
+		left.offsetZ === right.offsetZ &&
 		left.rotationX === right.rotationX &&
 		left.length === right.length &&
 		left.width === right.width &&

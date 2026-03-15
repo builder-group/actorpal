@@ -1,5 +1,9 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import {
+	createNotePlatformColliders,
+	createNotePlatformObject
+} from './bundles/note-platform';
 import { DEFAULT_TRACK_WIDTH } from './lib/track-shape';
 import {
 	syncNotePlatformRuntimeSystem,
@@ -48,6 +52,8 @@ describe('syncNotePlatformRuntimeSystem', () => {
 					12,
 					{ noteId: 7 },
 					{
+						offsetY: 0.25,
+						offsetZ: -0.5,
 						rotationX: 0,
 						length: 1.2,
 						width: 0.84,
@@ -78,7 +84,7 @@ describe('syncNotePlatformRuntimeSystem', () => {
 		expect(updateComponent).toHaveBeenCalledWith(
 			12,
 			app.c.PositionMixin,
-			expect.objectContaining({ x: 1 - (DEFAULT_TRACK_WIDTH - 0.84) / 2, z: 3 })
+			expect.objectContaining({ x: 1 - (DEFAULT_TRACK_WIDTH - 0.84) / 2, y: 2 - (0.36 + 0.11) + 0.25, z: 2.5 })
 		);
 		expect(markSimulationDirty).toHaveBeenCalledOnce();
 		expect(requestSimulationSync).toHaveBeenCalledOnce();
@@ -103,6 +109,75 @@ describe('syncNotePlatformRuntimeSystem', () => {
 		expect(app.updateComponent).not.toHaveBeenCalled();
 		expect(app.markSimulationDirty).not.toHaveBeenCalled();
 		expect(app.requestSimulationSync).not.toHaveBeenCalled();
+	});
+
+	it('keeps note-platform geometry and colliders intact for transform-only edits', () => {
+		const updateComponent = vi.fn();
+		const platform = {
+			offsetY: 0.25,
+			offsetZ: -0.5,
+			rotationX: 0.1,
+			length: 1.2,
+			width: 0.84,
+			thickness: 0.22,
+			bounce: 0.58,
+			color: '#2a5e92'
+		};
+		const notePlatformMesh = createNotePlatformObject(platform) as THREE.Mesh;
+		const originalGeometry = notePlatformMesh.geometry;
+		const app = {
+			c: {
+				NotePlatformMixin: Symbol('NotePlatformMixin'),
+				NoteBindingMixin: Symbol('NoteBindingMixin'),
+				PositionMixin: Symbol('PositionMixin'),
+				RotationMixin: Symbol('RotationMixin'),
+				MeshMixin: Symbol('MeshMixin'),
+				ColliderMixin: Symbol('ColliderMixin')
+			},
+			r: {
+				simulationSync: { mode: 'idle' },
+				trajectoryProjection: {
+					noteAnchorsById: new Map([
+						[
+							7,
+							{
+								tick: 120,
+								step: 30,
+								position: { x: 1, y: 2, z: 3 },
+								phase: 'future'
+							}
+						]
+					])
+				}
+			},
+			wasResourceChanged: vi.fn(() => false),
+			queryEntities: vi.fn(() => [12]),
+			queryComponents: vi.fn(() => [
+				[
+					12,
+					{ noteId: 7 },
+					platform,
+					{ x: 0, y: 0, z: 0 },
+					{ x: 0, y: 0, z: 0 },
+					{ type: 'three', object: notePlatformMesh },
+					{
+						descriptors: createNotePlatformColliders(platform)
+					}
+				]
+			]),
+			updateComponent,
+			markSimulationDirty: vi.fn(),
+			requestSimulationSync: vi.fn()
+		};
+
+		syncNotePlatformRuntimeSystem(app as never);
+
+		expect(notePlatformMesh.geometry).toBe(originalGeometry);
+		expect(updateComponent).not.toHaveBeenCalledWith(
+			12,
+			app.c.ColliderMixin,
+			expect.anything()
+		);
 	});
 
 	it('hides manipulation handles while preview mode is active', () => {

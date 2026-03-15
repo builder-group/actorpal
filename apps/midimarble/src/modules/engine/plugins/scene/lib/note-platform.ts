@@ -1,7 +1,7 @@
 import { Entity, With } from 'ecsify';
 import * as THREE from 'three';
 import type { TVec3 } from '../../../types';
-import type { TSceneApp } from '../types';
+import type { TCNotePlatformMixin, TSceneApp } from '../types';
 import { getLinearElementHandlePositions } from './linear-element';
 import { DEFAULT_MARBLE_RADIUS } from './marble';
 import { DEFAULT_TRACK_WIDTH } from './track-shape';
@@ -9,6 +9,14 @@ import { DEFAULT_TRACK_WIDTH } from './track-shape';
 export const NOTE_PLATFORM_DEFAULT_COLOR = '#2a5e92';
 
 export const NOTE_PLATFORM_LIMITS = {
+	offsetY: {
+		min: -4,
+		max: 4
+	},
+	offsetZ: {
+		min: -6,
+		max: 6
+	},
 	rotationX: {
 		min: -1.2,
 		max: 1.2
@@ -27,6 +35,18 @@ export const NOTE_PLATFORM_HANDLE_OFFSET = 0.22;
 
 const NOTE_PLATFORM_COLORS = ['#2a5e92', '#ffeead', '#ff9943', '#8ac6d6'] as const;
 
+export function isNotePlatformAdjusted(
+	platform: Pick<TCNotePlatformMixin, 'offsetY' | 'offsetZ'>
+): boolean {
+	return platform.offsetY !== 0 || platform.offsetZ !== 0;
+}
+
+export function getNotePlatformGeometryKey(
+	platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness'>
+): string {
+	return `${platform.length}:${platform.width}:${platform.thickness}`;
+}
+
 export function findNotePlatformEntityId(app: TSceneApp, noteId: number): number | null {
 	for (const [eid, binding] of app.queryComponents(
 		[Entity, app.c.NoteBindingMixin] as const,
@@ -40,15 +60,22 @@ export function findNotePlatformEntityId(app: TSceneApp, noteId: number): number
 	return null;
 }
 
-export function getPlacedNoteIds(app: TSceneApp): Set<number> {
+export function getNotePlatformNoteState(app: TSceneApp): {
+	placedNoteIds: Set<number>;
+	adjustedNoteIds: Set<number>;
+} {
 	const placedNoteIds = new Set<number>();
-	for (const [, binding] of app.queryComponents(
-		[Entity, app.c.NoteBindingMixin] as const,
+	const adjustedNoteIds = new Set<number>();
+	for (const [, binding, platform] of app.queryComponents(
+		[Entity, app.c.NoteBindingMixin, app.c.NotePlatformMixin] as const,
 		With(app.c.NotePlatformMixin)
 	)) {
 		placedNoteIds.add(binding.noteId);
+		if (isNotePlatformAdjusted(platform)) {
+			adjustedNoteIds.add(binding.noteId);
+		}
 	}
-	return placedNoteIds;
+	return { placedNoteIds, adjustedNoteIds };
 }
 
 export function getDefaultNotePlatformColor(noteId: number): string {
@@ -88,6 +115,8 @@ export function getNotePlatformHandlePositions(
 
 export function resolveNotePlatformTransform(
 	anchorPosition: TVec3,
+	offsetY: number,
+	offsetZ: number,
 	rotationX: number,
 	thickness: number,
 	platformWidth: number,
@@ -100,8 +129,8 @@ export function resolveNotePlatformTransform(
 	return {
 		position: {
 			x: anchorPosition.x - wallMountOffsetX - normal.x * centerOffset,
-			y: anchorPosition.y - normal.y * centerOffset,
-			z: anchorPosition.z - normal.z * centerOffset
+			y: anchorPosition.y - normal.y * centerOffset + offsetY,
+			z: anchorPosition.z - normal.z * centerOffset + offsetZ
 		},
 		rotation: {
 			x: rotationX,

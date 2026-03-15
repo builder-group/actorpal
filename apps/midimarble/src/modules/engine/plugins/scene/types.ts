@@ -87,6 +87,8 @@ export interface TCNoteBindingMixin {
 }
 
 export interface TCNotePlatformMixin {
+	offsetY: number;
+	offsetZ: number;
 	rotationX: number;
 	length: number;
 	width: number;

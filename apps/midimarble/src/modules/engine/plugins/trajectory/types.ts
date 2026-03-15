@@ -23,7 +23,7 @@ export type TTrajectoryPlugin = TPlugin<
 		};
 		appExtensions: {
 			disposeTrajectory(): void;
-			syncPlacedNoteMarkers(placedNoteIds: Set<number>): void;
+			syncNoteMarkers(noteState: TTrajectoryNoteMarkerState): void;
 		};
 		systemSets: TEngineSystemSet;
 	},
@@ -70,8 +70,10 @@ export interface TTrajectoryState {
 	markerGeometry: THREE.SphereGeometry;
 	pastMarkerMaterial: THREE.MeshBasicMaterial;
 	pastPlacedMarkerMaterial: THREE.MeshBasicMaterial;
+	pastAdjustedMarkerMaterial: THREE.MeshBasicMaterial;
 	futureMarkerMaterial: THREE.MeshBasicMaterial;
 	futurePlacedMarkerMaterial: THREE.MeshBasicMaterial;
+	futureAdjustedMarkerMaterial: THREE.MeshBasicMaterial;
 	selectedMarkerMaterial: THREE.MeshBasicMaterial;
 }
 
@@ -84,6 +86,11 @@ export interface TTrajectoryNoteAnchor {
 	step: number;
 	position: TVec3;
 	phase: 'past' | 'future';
+}
+
+export interface TTrajectoryNoteMarkerState {
+	placedNoteIds: Set<number>;
+	adjustedNoteIds: Set<number>;
 }
 
 // MARK: - Components

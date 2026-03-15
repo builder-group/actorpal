@@ -8,7 +8,7 @@ import { createMarbleColliderDescriptors, getMarbleRadius } from './lib/marble';
 import {
 	getNotePlatform,
 	getNotePlatformHandlePositions,
-	getPlacedNoteIds
+	getNotePlatformNoteState
 } from './lib/note-platform';
 import { syncResolvedNotePlatform, syncUnresolvedNotePlatform } from './lib/note-platform-runtime';
 import { clearSceneEntitySelection } from './lib/scene-selection';
@@ -127,8 +127,7 @@ export function syncNotePlatformRuntimeSystem(app: TSceneApp) {
 			rotation,
 			collider.descriptors,
 			mesh.type === 'three' ? mesh.object : null,
-			anchor.position,
-			changedPlatformEntities.has(eid)
+			anchor.position
 		);
 		if (shouldSyncProjection && didRuntimeChange) {
 			didProjectionAffectSimulation = true;
@@ -255,5 +254,5 @@ export function syncNotePlatformMarkerStateSystem(app: TSceneApp) {
 		return;
 	}
 
-	app.syncPlacedNoteMarkers(getPlacedNoteIds(app));
+	app.syncNoteMarkers(getNotePlatformNoteState(app));
 }

@@ -1,7 +1,11 @@
 import { bundleEntry, defineBundle } from 'ecsify';
 import * as THREE from 'three';
 import type { TPhysicsColliderDescriptor } from '../../physics';
-import { getDefaultNotePlatformColor, resolveNotePlatformTransform } from '../lib/note-platform';
+import {
+	getDefaultNotePlatformColor,
+	getNotePlatformGeometryKey,
+	resolveNotePlatformTransform
+} from '../lib/note-platform';
 import {
 	createTrackColliders,
 	createTrackGeometry,
@@ -12,6 +16,8 @@ import type { TCNoteBindingMixin, TCNotePlatformMixin, TSceneApp } from '../type
 import type { TSceneBundle } from './types';
 
 const NOTE_PLATFORM_DEFAULTS = {
+	offsetY: 0,
+	offsetZ: 0,
 	rotationX: 0,
 	length: 1.2,
 	width: 1.5,
@@ -36,6 +42,8 @@ export function createNotePlatformBundle(
 	} satisfies TCNoteBindingMixin;
 	const transform = resolveNotePlatformTransform(
 		anchorPosition,
+		platform.offsetY,
+		platform.offsetZ,
 		platform.rotationX,
 		platform.thickness,
 		platform.width
@@ -77,7 +85,9 @@ export function createNotePlatformObject(
 export function createNotePlatformGeometry(
 	platform: Pick<TCNotePlatformMixin, 'length' | 'width' | 'thickness'>
 ): THREE.ExtrudeGeometry {
-	return createTrackGeometry(getNotePlatformShape(platform), 'wall-only-negative');
+	const geometry = createTrackGeometry(getNotePlatformShape(platform), 'wall-only-negative');
+	geometry.userData['notePlatformGeometryKey'] = getNotePlatformGeometryKey(platform);
+	return geometry;
 }
 
 export function createNotePlatformColliders(

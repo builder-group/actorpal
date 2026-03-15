@@ -3,6 +3,7 @@ import React from 'react';
 import { useMemoCleanup } from '@/hooks';
 import { useQueryComponents, useResource } from '@/modules/engine';
 import { clampMidiTick, findTrackById, stepToTick } from '@/modules/engine/plugins/midi';
+import { isNotePlatformAdjusted } from '@/modules/engine/plugins/scene/lib/note-platform';
 import { useEditorCx } from '../EditorCx';
 import {
 	buildNoteRows,
@@ -42,7 +43,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const sceneEditState = useResource(app, 'sceneEditState');
 	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
 	const notePlatforms = useQueryComponents(app, {
-		components: [Entity, app.c.NoteBindingMixin] as const,
+		components: [Entity, app.c.NoteBindingMixin, app.c.NotePlatformMixin] as const,
 		queryOrFilter: With(app.c.NotePlatformMixin),
 		watchComponents: [app.c.NoteBindingMixin, app.c.NotePlatformMixin]
 	});
@@ -86,6 +87,15 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 			: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
 	const placedNoteIds = React.useMemo(
 		() => new Set(notePlatforms.map(([, binding]) => binding.noteId)),
+		[notePlatforms]
+	);
+	const adjustedNoteIds = React.useMemo(
+		() =>
+			new Set(
+				notePlatforms.flatMap(([, binding, platform]) =>
+					isNotePlatformAdjusted(platform) ? [binding.noteId] : []
+				)
+			),
 		[notePlatforms]
 	);
 	const contentHeight = Math.max(noteRows.length * NOTE_ROW_HEIGHT, MIN_ROLL_HEIGHT);
@@ -278,6 +288,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 						notes={selectedTrack?.notes ?? []}
 						selectedNoteId={selectedNoteId}
 						placedNoteIds={placedNoteIds}
+						adjustedNoteIds={adjustedNoteIds}
 						canScrub={canControlPlayback}
 						isDragging={isDragging}
 						onPointerDown={handlePointerDown}

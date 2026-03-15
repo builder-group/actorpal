@@ -5,7 +5,7 @@ import type { TAudioApp } from './types';
 
 export function syncAudioPlaybackSystem(app: TAudioApp) {
 	const {
-		audioConfig,
+		audioSettings,
 		audioState,
 		audioPlaybackFeedback,
 		midiSong,
@@ -27,10 +27,10 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 		});
 	}
 
-	syncMasterVolume(audioState, audioConfig.masterVolume);
+	syncMasterVolume(audioState, audioSettings.masterVolume);
 
 	if (
-		!audioConfig.enabled ||
+		!audioSettings.enabled ||
 		!audioState.isEnabled ||
 		audioState.context == null ||
 		audioState.masterGain == null
@@ -78,7 +78,7 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 			transport.playheadTick - 0.0001,
 			transport.playheadTick
 		);
-		const instrumentId = getTrackInstrumentId(audioConfig.trackInstrumentIds, selectedTrackId);
+		const instrumentId = getTrackInstrumentId(audioSettings.trackInstrumentIds, selectedTrackId);
 		syncPlaybackFeedback(app, notesAtCurrentTick);
 		playTrackNotes(
 			audioState,
@@ -104,7 +104,7 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 		audioState.lastProcessedTick,
 		transport.playheadTick
 	);
-	const instrumentId = getTrackInstrumentId(audioConfig.trackInstrumentIds, selectedTrackId);
+	const instrumentId = getTrackInstrumentId(audioSettings.trackInstrumentIds, selectedTrackId);
 	syncPlaybackFeedback(app, notes);
 	playTrackNotes(audioState, midiSong, notes, audioState.lastProcessedTick, instrumentId);
 	syncAudioCursor(app, transport.playheadTick, 'running');

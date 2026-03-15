@@ -66,7 +66,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const midiImportError = useResource(app, 'midiImportError');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
 	const selectedNoteIds = useResource(app, 'selectedNoteIds');
-	const audioConfig = useResource(app, 'audioConfig');
+	const audioSettings = useResource(app, 'audioSettings');
 	const audioPlaybackFeedback = useResource(app, 'audioPlaybackFeedback');
 	const transport = useResource(app, 'transport');
 	const previewConfig = useResource(app, 'previewConfig');
@@ -141,7 +141,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				? null
 				: `${getNoteName(selectedNote.noteNumber)} @ ${Math.round(selectedNote.tick)}`;
 	const selectedTrackInstrumentId = getTrackInstrumentId(
-		audioConfig.trackInstrumentIds,
+		audioSettings.trackInstrumentIds,
 		selectedTrack?.id ?? null
 	);
 	const placedNoteIds = React.useMemo(

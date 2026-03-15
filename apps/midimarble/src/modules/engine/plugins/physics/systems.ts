@@ -1,5 +1,6 @@
 import { Entity, With } from 'ecsify';
 import { updateTransport } from '../transport';
+import { physicsConfig } from './config';
 import {
 	replaceLiveWorld,
 	restoreWorldAtStep,
@@ -116,18 +117,18 @@ export function stepPhysicsWorldSystem(app: TPhysicsApp) {
 		return;
 	}
 
-	const config = app.r.simulationConfig;
+	const { simulation } = physicsConfig;
 	const targetStep = getTransportTargetStep(app);
 	let liveStep = app.r.liveStep;
 	let bufferedStep = app.r.bufferedStep;
 	let stepsRun = 0;
 
-	while (liveStep < targetStep && stepsRun < config.maxLiveStepsPerUpdate) {
+	while (liveStep < targetStep && stepsRun < simulation.maxLiveStepsPerUpdate) {
 		world.step();
 		liveStep++;
 		stepsRun++;
 
-		if (liveStep % config.checkpointIntervalSteps === 0) {
+		if (liveStep % simulation.checkpointIntervalSteps === 0) {
 			storeCheckpoint(app.r.checkpointStore, liveStep, world.takeSnapshot());
 		}
 	}
@@ -147,16 +148,16 @@ export function advanceSimulationSyncSystem(app: TPhysicsApp) {
 		return;
 	}
 
-	const config = app.r.simulationConfig;
+	const { simulation } = physicsConfig;
 	let currentStep = simulationSync.currentStep;
 	let stepsRun = 0;
 
-	while (currentStep < simulationSync.targetStep && stepsRun < config.maxSyncStepsPerUpdate) {
+	while (currentStep < simulationSync.targetStep && stepsRun < simulation.maxSyncStepsPerUpdate) {
 		simulationSync.world.step();
 		currentStep++;
 		stepsRun++;
 
-		if (currentStep % config.checkpointIntervalSteps === 0) {
+		if (currentStep % simulation.checkpointIntervalSteps === 0) {
 			storeCheckpoint(
 				simulationSync.checkpointStore,
 				currentStep,
@@ -223,8 +224,8 @@ export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
 		return;
 	}
 
-	const { simulationConfig } = app.r;
-	const targetBufferedStep = getTransportTargetStep(app) + simulationConfig.preloadHorizonSteps;
+	const { simulation } = physicsConfig;
+	const targetBufferedStep = getTransportTargetStep(app) + simulation.preloadHorizonSteps;
 	if (app.r.bufferedStep >= targetBufferedStep) {
 		return;
 	}
@@ -233,16 +234,13 @@ export function preloadPhysicsWorldSystem(app: TPhysicsApp) {
 	let bufferedStep = app.r.bufferedStep;
 	let stepsRun = 0;
 
-	while (
-		bufferedStep < targetBufferedStep &&
-		stepsRun < simulationConfig.maxPreloadStepsPerUpdate
-	) {
+	while (bufferedStep < targetBufferedStep && stepsRun < simulation.maxPreloadStepsPerUpdate) {
 		preloadWorld.step();
 		preloadStep++;
 		bufferedStep = preloadStep;
 		stepsRun++;
 
-		if (preloadStep % simulationConfig.checkpointIntervalSteps === 0) {
+		if (preloadStep % simulation.checkpointIntervalSteps === 0) {
 			storeCheckpoint(app.r.checkpointStore, preloadStep, preloadWorld.takeSnapshot());
 		}
 	}

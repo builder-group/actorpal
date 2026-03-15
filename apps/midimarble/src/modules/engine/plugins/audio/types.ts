@@ -8,7 +8,7 @@ export type TAudioPlugin = TPlugin<
 		name: 'Audio';
 		resources: {
 			audioState: TAudioState;
-			audioConfig: TAudioConfig;
+			audioSettings: TAudioSettings;
 			audioPlaybackFeedback: TAudioPlaybackFeedback;
 		};
 		appExtensions: {
@@ -17,7 +17,7 @@ export type TAudioPlugin = TPlugin<
 			previewNote(noteId: number): Promise<void>;
 			previewMidiNote(noteNumber: number): Promise<void>;
 			previewTrackInstrument(trackId: number): Promise<void>;
-			updateAudioConfig(patch: Partial<TAudioConfig>): void;
+			updateAudioSettings(patch: Partial<TAudioSettings>): void;
 			setTrackInstrument(trackId: number, instrumentId: TAudioInstrumentId): void;
 			clearTrackInstruments(): void;
 			disposeAudio(): void;
@@ -43,7 +43,7 @@ export interface TAudioState {
 
 export type TAudioInstrumentId = 'classic' | 'bell' | 'xylophone' | 'warm' | 'pluck' | 'lead';
 
-export interface TAudioConfig {
+export interface TAudioSettings {
 	enabled: boolean;
 	masterVolume: number;
 	trackInstrumentIds: Record<number, TAudioInstrumentId>;

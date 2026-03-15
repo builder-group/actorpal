@@ -1,9 +1,9 @@
 import { audioConfig } from '../config';
-import type { TAudioConfig, TAudioInstrumentId, TAudioInstrumentPlayer } from '../types';
+import type { TAudioInstrumentId, TAudioInstrumentPlayer, TAudioSettings } from '../types';
 import { AMSynth, FMSynth, MonoSynth, PolySynth, Synth } from './tone-runtime';
 
 export function getTrackInstrumentId(
-	trackInstrumentIds: TAudioConfig['trackInstrumentIds'],
+	trackInstrumentIds: TAudioSettings['trackInstrumentIds'],
 	trackId: number | null | undefined
 ): TAudioInstrumentId | null {
 	if (trackId == null) {

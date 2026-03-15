@@ -184,7 +184,7 @@ describe('audio plugin', () => {
 		expect(player?.dispose).toHaveBeenCalledOnce();
 		expect(app.r.audioState.activeVoices.size).toBe(0);
 		expect(app.r.audioPlaybackFeedback.activeNoteNumbers).toEqual(new Set());
-		expect(app.r.audioConfig.trackInstrumentIds).toEqual({ 0: 'lead' });
+		expect(app.r.audioSettings.trackInstrumentIds).toEqual({ 0: 'lead' });
 	});
 
 	it('uses the selected preset during playback after transport advances', async () => {

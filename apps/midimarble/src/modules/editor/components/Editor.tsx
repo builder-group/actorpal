@@ -58,11 +58,11 @@ const TrajectorySection: React.FC = () => {
 const AudioSection: React.FC = () => {
 	const runtime = useEditorCx().runtime;
 	const app = runtime.app;
-	const config = useResource(app, 'audioConfig');
+	const settings = useResource(app, 'audioSettings');
 	const state = useResource(app, 'audioState');
-	const update = (patch: Partial<typeof config>) => runtime.updateAudioConfig(patch);
+	const update = (patch: Partial<typeof settings>) => runtime.updateAudioSettings(patch);
 
-	const status = !config.enabled
+	const status = !settings.enabled
 		? 'Muted'
 		: state.isEnabled && state.context != null
 			? 'Ready'
@@ -74,18 +74,18 @@ const AudioSection: React.FC = () => {
 			<label className="text-base-700 mt-3 flex items-center gap-2 text-sm">
 				<input
 					type="checkbox"
-					checked={config.enabled}
+					checked={settings.enabled}
 					onChange={(e) => update({ enabled: e.target.checked })}
 				/>
 				Enabled
 			</label>
 			<label className="text-base-700 mt-3 block text-sm">
-				Volume: {Math.round(config.masterVolume * 100)}%
+				Volume: {Math.round(settings.masterVolume * 100)}%
 				<input
 					type="range"
 					min={0}
 					max={100}
-					value={Math.round(config.masterVolume * 100)}
+					value={Math.round(settings.masterVolume * 100)}
 					className="mt-1 block w-full"
 					onChange={(e) => update({ masterVolume: Number(e.target.value) / 100 })}
 				/>

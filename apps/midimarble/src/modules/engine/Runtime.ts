@@ -119,9 +119,9 @@ export class Runtime {
 		});
 	}
 
-	public updateAudioConfig(patch: Partial<TRuntimeApp['r']['audioConfig']>): void {
+	public updateAudioSettings(patch: Partial<TRuntimeApp['r']['audioSettings']>): void {
 		this._runImmediateCommand(() => {
-			this._app.updateAudioConfig(patch);
+			this._app.updateAudioSettings(patch);
 		});
 	}
 

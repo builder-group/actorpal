@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-	AUDIO_INSTRUMENT_OPTIONS,
-	DEFAULT_AUDIO_INSTRUMENT_ID,
-	getTrackInstrumentId,
-	isAudioInstrumentId
-} from './instruments';
+import { audioConfig } from '../config';
+import { getTrackInstrumentId, isAudioInstrumentId } from './instruments';
 
 describe('audio instrument helpers', () => {
 	it('falls back to the bell preset when a track has no override', () => {
-		expect(getTrackInstrumentId({}, 4)).toBe(DEFAULT_AUDIO_INSTRUMENT_ID);
+		expect(getTrackInstrumentId({}, 4)).toBe(audioConfig.defaultInstrumentId);
 	});
 
 	it('returns the explicit track override when present', () => {
@@ -16,7 +12,7 @@ describe('audio instrument helpers', () => {
 	});
 
 	it('recognizes instrument ids from the catalog', () => {
-		expect(AUDIO_INSTRUMENT_OPTIONS.map((option) => option.id)).toEqual([
+		expect(audioConfig.instrumentOptions.map((option) => option.id)).toEqual([
 			'classic',
 			'bell',
 			'xylophone',

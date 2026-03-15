@@ -10,7 +10,13 @@ import {
 	stopAllVoices
 } from './lib/synth';
 import { syncAudioPlaybackSystem } from './systems';
-import type { TAudioApp, TAudioInstrumentId, TAudioPlugin, TAudioState } from './types';
+import type {
+	TAudioApp,
+	TAudioInstrumentId,
+	TAudioPlugin,
+	TAudioSettings,
+	TAudioState
+} from './types';
 
 export function createAudioPlugin(): TAudioPlugin {
 	let resumePromise: Promise<void> | null = null;
@@ -23,7 +29,7 @@ export function createAudioPlugin(): TAudioPlugin {
 		deps: ['Default', 'Midi', 'Transport'],
 		resources: {
 			audioState: createInitialAudioState(),
-			audioConfig: {
+			audioSettings: {
 				enabled: true,
 				masterVolume: 0.32,
 				trackInstrumentIds: {}
@@ -36,7 +42,7 @@ export function createAudioPlugin(): TAudioPlugin {
 		},
 		appExtensions: {
 			async resumeAudio(this: TAudioApp): Promise<void> {
-				if (!this.r.audioConfig.enabled) {
+				if (!this.r.audioSettings.enabled) {
 					return;
 				}
 
@@ -49,7 +55,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				resumePromise = (async () => {
 					const nextState = await ensureAudioGraph(
 						this.r.audioState,
-						this.r.audioConfig.masterVolume
+						this.r.audioSettings.masterVolume
 					);
 					if (sessionId !== audioSessionId) {
 						disposeAudioGraph(nextState);
@@ -67,7 +73,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				}
 			},
 			async previewNotesAtTick(this: TAudioApp, tick: number): Promise<void> {
-				if (!this.r.audioConfig.enabled) {
+				if (!this.r.audioSettings.enabled) {
 					return;
 				}
 
@@ -83,7 +89,7 @@ export function createAudioPlugin(): TAudioPlugin {
 
 				const notes = getSelectedTrackNotesAtTick(midiSong, midiLookup, selectedTrackId, tick);
 				const instrumentId = getTrackInstrumentId(
-					this.r.audioConfig.trackInstrumentIds,
+					this.r.audioSettings.trackInstrumentIds,
 					selectedTrackId
 				);
 				stopAllVoices(audioState);
@@ -96,7 +102,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				});
 			},
 			async previewNote(this: TAudioApp, noteId: number): Promise<void> {
-				if (!this.r.audioConfig.enabled) {
+				if (!this.r.audioSettings.enabled) {
 					return;
 				}
 
@@ -117,7 +123,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				}
 
 				const instrumentId = getTrackInstrumentId(
-					this.r.audioConfig.trackInstrumentIds,
+					this.r.audioSettings.trackInstrumentIds,
 					noteMatch.track.id
 				);
 				stopAllVoices(audioState);
@@ -130,7 +136,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				});
 			},
 			async previewMidiNote(this: TAudioApp, noteNumber: number): Promise<void> {
-				if (!this.r.audioConfig.enabled) {
+				if (!this.r.audioSettings.enabled) {
 					return;
 				}
 
@@ -152,7 +158,7 @@ export function createAudioPlugin(): TAudioPlugin {
 
 				const clampedNoteNumber = Math.max(0, Math.min(127, Math.round(noteNumber)));
 				const instrumentId = getTrackInstrumentId(
-					this.r.audioConfig.trackInstrumentIds,
+					this.r.audioSettings.trackInstrumentIds,
 					selectedTrackId
 				);
 				stopAllVoices(audioState);
@@ -175,7 +181,7 @@ export function createAudioPlugin(): TAudioPlugin {
 				});
 			},
 			async previewTrackInstrument(this: TAudioApp, trackId: number): Promise<void> {
-				if (!this.r.audioConfig.enabled) {
+				if (!this.r.audioSettings.enabled) {
 					return;
 				}
 
@@ -196,7 +202,10 @@ export function createAudioPlugin(): TAudioPlugin {
 					return;
 				}
 
-				const instrumentId = getTrackInstrumentId(this.r.audioConfig.trackInstrumentIds, track.id);
+				const instrumentId = getTrackInstrumentId(
+					this.r.audioSettings.trackInstrumentIds,
+					track.id
+				);
 				stopAllVoices(audioState);
 				previewMidiKeyNote(
 					audioState,
@@ -211,35 +220,35 @@ export function createAudioPlugin(): TAudioPlugin {
 					expiresAtMs: Date.now() + 120
 				});
 			},
-			updateAudioConfig(this: TAudioApp, patch: Partial<TAudioApp['r']['audioConfig']>): void {
-				this.updateResource('audioConfig', {
-					...this.r.audioConfig,
+			updateAudioSettings(this: TAudioApp, patch: Partial<TAudioSettings>): void {
+				this.updateResource('audioSettings', {
+					...this.r.audioSettings,
 					...patch
 				});
 			},
 			setTrackInstrument(this: TAudioApp, trackId: number, instrumentId: TAudioInstrumentId): void {
-				if (this.r.audioConfig.trackInstrumentIds[trackId] === instrumentId) {
+				if (this.r.audioSettings.trackInstrumentIds[trackId] === instrumentId) {
 					return;
 				}
 
 				stopAllVoices(this.r.audioState);
-				this.updateResource('audioConfig', {
-					...this.r.audioConfig,
+				this.updateResource('audioSettings', {
+					...this.r.audioSettings,
 					trackInstrumentIds: {
-						...this.r.audioConfig.trackInstrumentIds,
+						...this.r.audioSettings.trackInstrumentIds,
 						[trackId]: instrumentId
 					}
 				});
 				this.updateResource('audioPlaybackFeedback', createEmptyPlaybackFeedback());
 			},
 			clearTrackInstruments(this: TAudioApp): void {
-				if (Object.keys(this.r.audioConfig.trackInstrumentIds).length === 0) {
+				if (Object.keys(this.r.audioSettings.trackInstrumentIds).length === 0) {
 					return;
 				}
 
 				stopAllVoices(this.r.audioState);
-				this.updateResource('audioConfig', {
-					...this.r.audioConfig,
+				this.updateResource('audioSettings', {
+					...this.r.audioSettings,
 					trackInstrumentIds: {}
 				});
 				this.updateResource('audioPlaybackFeedback', createEmptyPlaybackFeedback());

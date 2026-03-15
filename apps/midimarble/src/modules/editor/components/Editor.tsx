@@ -17,10 +17,10 @@ export const Editor: React.FC = () => {
 };
 
 const TrajectorySection: React.FC = () => {
-	const app = useEditorCx().runtime.app;
+	const runtime = useEditorCx().runtime;
+	const app = runtime.app;
 	const config = useResource(app, 'trajectoryConfig');
-	const update = (patch: Partial<typeof config>) =>
-		app.updateResource('trajectoryConfig', { ...config, ...patch });
+	const update = (patch: Partial<typeof config>) => runtime.updateTrajectoryConfig(patch);
 
 	return (
 		<section>
@@ -56,11 +56,11 @@ const TrajectorySection: React.FC = () => {
 };
 
 const AudioSection: React.FC = () => {
-	const app = useEditorCx().runtime.app;
+	const runtime = useEditorCx().runtime;
+	const app = runtime.app;
 	const config = useResource(app, 'audioConfig');
 	const state = useResource(app, 'audioState');
-	const update = (patch: Partial<typeof config>) =>
-		app.updateResource('audioConfig', { ...config, ...patch });
+	const update = (patch: Partial<typeof config>) => runtime.updateAudioConfig(patch);
 
 	const status = !config.enabled
 		? 'Muted'

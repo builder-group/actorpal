@@ -258,7 +258,7 @@ export function syncPreviewInteractionSystem(app: TSceneApp) {
 	if (state.didEdit) {
 		app.markSimulationDirty();
 		app.requestSimulationSync();
-		app.updateResource('sceneEditState', { pending: false });
+		app.setSceneEditPending(false);
 	}
 
 	app.updateResource('sceneManipulationState', resetSceneManipulationState());

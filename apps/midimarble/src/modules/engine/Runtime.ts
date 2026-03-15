@@ -56,7 +56,7 @@ export class Runtime {
 	public run(): void {
 		const app = this._app;
 		void app.resumeAudio();
-		if (updateSimulationResumeWhenReady(app, true)) {
+		if (app.setSimulationResumeWhenReady(true)) {
 			return;
 		}
 
@@ -64,73 +64,91 @@ export class Runtime {
 	}
 
 	public pause(): void {
-		updateSimulationResumeWhenReady(this._app, false);
-		this._app.pause();
-		this._flushImmediateUpdate();
+		this._app.setSimulationResumeWhenReady(false);
+		this._runImmediateCommand(() => {
+			this._app.pause();
+		});
 	}
 
 	public reset(): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return;
-		}
-		this._app.resetTransport();
-		this._flushImmediateUpdate();
+		this._runSimulationCommand(undefined, () => {
+			this._app.resetTransport();
+		});
 	}
 
 	public async loadMidiFile(file: File): Promise<void> {
 		await this._app.loadMidiFile(file);
-		this._app.resetTransport();
-		this._setSceneEditPending(false);
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.resetTransport();
+			this._app.setSceneEditPending(false);
+		});
 	}
 
 	public clearMidiSong(): void {
-		this._app.clearMidiSong();
-		this._app.resetTransport();
-		this._setSceneEditPending(false);
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.clearMidiSong();
+			this._app.resetTransport();
+			this._app.setSceneEditPending(false);
+		});
 	}
 
 	public setPreviewEnabled(enabled: boolean): void {
-		this._app.setPreviewEnabled(enabled);
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.setPreviewEnabled(enabled);
+		});
 	}
 
 	public togglePreview(): void {
-		this._app.togglePreview();
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.togglePreview();
+		});
 	}
 
 	public updatePreviewConfig(patch: Partial<TRuntimeApp['r']['previewConfig']>): void {
-		this._app.updatePreviewConfig(patch);
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.updatePreviewConfig(patch);
+		});
+	}
+
+	public updateTrajectoryConfig(patch: Partial<TRuntimeApp['r']['trajectoryConfig']>): void {
+		this._runImmediateCommand(() => {
+			this._app.updateTrajectoryConfig(patch);
+		});
+	}
+
+	public updateAudioConfig(patch: Partial<TRuntimeApp['r']['audioConfig']>): void {
+		this._runImmediateCommand(() => {
+			this._app.updateAudioConfig(patch);
+		});
 	}
 
 	public selectNote(noteId: number, tick: number): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return;
+		const didSelect = this._runTransportEditCommand(false, () => {
+			this._app.seekToTick(tick);
+			this._app.selectNote(noteId);
+			return true;
+		});
+		if (didSelect) {
+			void this._app.previewNote(noteId);
 		}
-
-		this._app.pause();
-		this._app.seekToTick(tick);
-		this._app.selectNote(noteId);
-		this._flushImmediateUpdate();
-		void this._app.previewNote(noteId);
 	}
 
 	public selectNotes(noteIds: number[], primaryNoteId: number | null): void {
-		this._app.selectNotes(noteIds, primaryNoteId);
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.selectNotes(noteIds, primaryNoteId);
+		});
 	}
 
 	public selectAllTrackNotes(trackId?: number): void {
-		this._app.selectAllTrackNotes(trackId);
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.selectAllTrackNotes(trackId);
+		});
 	}
 
 	public clearNoteSelection(): void {
-		this._app.clearNoteSelection();
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.clearNoteSelection();
+		});
 	}
 
 	public previewNotesAtTick(tick: number): void {
@@ -146,107 +164,49 @@ export class Runtime {
 	}
 
 	public createNote(input: TMidiCreateNoteInput): number | null {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return null;
-		}
-
-		this._app.pause();
-		const noteId = this._app.createNote(input);
-		this._flushImmediateUpdate();
-		return noteId;
+		return this._runTransportEditCommand(null, () => this._app.createNote(input));
 	}
 
 	public moveSelectedNotes(deltaTick: number, deltaNoteNumber: number): boolean {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return false;
-		}
-
-		this._app.pause();
-		const didMove = this._app.moveSelectedNotes(deltaTick, deltaNoteNumber);
-		this._flushImmediateUpdate();
-		return didMove;
+		return this._runTransportEditCommand(false, () =>
+			this._app.moveSelectedNotes(deltaTick, deltaNoteNumber)
+		);
 	}
 
 	public resizePrimarySelectedNote(edge: 'start' | 'end', deltaTick: number): boolean {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return false;
-		}
-
-		this._app.pause();
-		const didResize = this._app.resizePrimarySelectedNote(edge, deltaTick);
-		this._flushImmediateUpdate();
-		return didResize;
+		return this._runTransportEditCommand(false, () =>
+			this._app.resizePrimarySelectedNote(edge, deltaTick)
+		);
 	}
 
 	public deleteSelectedNotes(): number {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return 0;
-		}
-
-		this._app.pause();
-		const deletedCount = this._app.deleteSelectedNotes();
-		this._flushImmediateUpdate();
-		return deletedCount;
+		return this._runTransportEditCommand(0, () => this._app.deleteSelectedNotes());
 	}
 
 	public createOrSelectNotePlatform(noteId: number): number | null {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return null;
-		}
-
-		const entityId = this._app.createOrSelectNotePlatform(noteId);
-		this._flushImmediateUpdate();
-		return entityId;
+		return this._runSimulationCommand(null, () => this._app.createOrSelectNotePlatform(noteId));
 	}
 
 	public createStraightTrack(): number | null {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return null;
-		}
-
-		const entityId = this._app.createStraightTrack();
-		if (entityId == null) {
-			return null;
-		}
-
-		this._flushImmediateUpdate();
-		return entityId;
+		return this._runSimulationCommand(null, () => this._app.createStraightTrack());
 	}
 
 	public deleteStraightTrack(entityId: number): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return;
-		}
-
-		if (!this._app.deleteStraightTrack(entityId)) {
-			return;
-		}
-
-		this._flushImmediateUpdate();
+		void this._runSimulationCommand(false, () => this._app.deleteStraightTrack(entityId));
 	}
 
 	public updateNotePlatform(
 		entityId: number,
 		patch: Partial<TRuntimeApp['c']['NotePlatformMixin'][number]>
 	): void {
-		if (!this._app.updateNotePlatform(entityId, patch)) {
-			return;
-		}
-
-		this._setSceneEditPending(true);
-		this._flushImmediateUpdate();
+		this._runDeferredSceneEdit(() => this._app.updateNotePlatform(entityId, patch));
 	}
 
 	public updateMarblePhysics(
 		entityId: number,
 		patch: Partial<TRuntimeApp['c']['MarblePhysicsMixin'][number]>
 	): void {
-		if (!this._app.updateMarblePhysics(entityId, patch)) {
-			return;
-		}
-
-		this._setSceneEditPending(true);
-		this._flushImmediateUpdate();
+		this._runDeferredSceneEdit(() => this._app.updateMarblePhysics(entityId, patch));
 	}
 
 	public commitSceneEdit(): void {
@@ -254,43 +214,44 @@ export class Runtime {
 			return;
 		}
 
-		this._app.markSimulationDirty();
-		this._app.requestSimulationSync();
-		this._setSceneEditPending(false);
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.markSimulationDirty();
+			this._app.requestSimulationSync();
+			this._app.setSceneEditPending(false);
+		});
 	}
 
 	public seekToTick(tick: number): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
-			return;
-		}
-		this._app.seekToTick(tick);
-		this._flushImmediateUpdate();
+		this._runSimulationCommand(undefined, () => {
+			this._app.seekToTick(tick);
+		});
 	}
 
 	public stepBackwardTick(): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
+		if (this._app.setSimulationResumeWhenReady(false)) {
 			return;
 		}
 
 		const wasPaused = this._app.r.transport.mode === 'paused';
 		const prevTick = this._app.r.transport.playheadTick;
-		this._app.stepBackwardTick();
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.stepBackwardTick();
+		});
 		if (wasPaused && this._app.r.transport.playheadTick !== prevTick) {
 			void this._app.previewNotesAtTick(this._app.r.transport.playheadTick);
 		}
 	}
 
 	public stepForwardTick(): void {
-		if (updateSimulationResumeWhenReady(this._app, false)) {
+		if (this._app.setSimulationResumeWhenReady(false)) {
 			return;
 		}
 
 		const wasPaused = this._app.r.transport.mode === 'paused';
 		const prevTick = this._app.r.transport.playheadTick;
-		this._app.stepForwardTick();
-		this._flushImmediateUpdate();
+		this._runImmediateCommand(() => {
+			this._app.stepForwardTick();
+		});
 		if (wasPaused && this._app.r.transport.playheadTick !== prevTick) {
 			void this._app.previewNotesAtTick(this._app.r.transport.playheadTick);
 		}
@@ -354,27 +315,38 @@ export class Runtime {
 		this._app.update(0);
 	}
 
-	private _setSceneEditPending(pending: boolean): void {
-		if (this._app.r.sceneEditState.pending === pending) {
+	private _runImmediateCommand<T>(command: () => T): T {
+		const result = command();
+		this._flushImmediateUpdate();
+		return result;
+	}
+
+	private _runSimulationCommand<T>(fallback: T, command: () => T): T {
+		if (this._app.setSimulationResumeWhenReady(false)) {
+			return fallback;
+		}
+
+		return this._runImmediateCommand(command);
+	}
+
+	private _runTransportEditCommand<T>(fallback: T, command: () => T): T {
+		if (this._app.setSimulationResumeWhenReady(false)) {
+			return fallback;
+		}
+
+		this._app.pause();
+		return this._runImmediateCommand(command);
+	}
+
+	private _runDeferredSceneEdit(command: () => boolean): void {
+		if (!command()) {
 			return;
 		}
 
-		this._app.updateResource('sceneEditState', {
-			pending
+		this._runImmediateCommand(() => {
+			this._app.setSceneEditPending(true);
 		});
 	}
-}
-
-function updateSimulationResumeWhenReady(app: TRuntimeApp, resumeWhenReady: boolean): boolean {
-	if (app.r.simulationSync.mode === 'idle') {
-		return false;
-	}
-
-	app.updateResource('simulationSync', {
-		...app.r.simulationSync,
-		resumeWhenReady
-	});
-	return true;
 }
 
 export type TRuntimeApp = TApp<

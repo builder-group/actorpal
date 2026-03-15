@@ -70,6 +70,16 @@ export function createRenderPlugin(): TRenderPlugin {
 					...patch
 				});
 			},
+			setPreviewTargetEntity(this: TRenderApp, entityId: number | null): void {
+				if (this.r.previewState.targetEntityId === entityId) {
+					return;
+				}
+
+				this.updateResource('previewState', {
+					...this.r.previewState,
+					targetEntityId: entityId
+				});
+			},
 			disposeRender(this: TRenderApp): void {
 				this.r.sceneObjects.clear();
 				this.r.viewport.dispose();

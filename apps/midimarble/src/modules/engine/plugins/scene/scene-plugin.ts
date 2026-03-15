@@ -135,6 +135,13 @@ export function createScenePlugin(): TScenePlugin {
 				patch: Partial<TSceneApp['c']['MarblePhysicsMixin'][number]>
 			) {
 				return updateMarblePhysicsAuthoring(this, entityId, patch);
+			},
+			setSceneEditPending(this: TSceneApp, pending: boolean): void {
+				if (this.r.sceneEditState.pending === pending) {
+					return;
+				}
+
+				this.updateResource('sceneEditState', { pending });
 			}
 		},
 		setup(app: TSceneApp) {
@@ -163,10 +170,7 @@ export function createScenePlugin(): TScenePlugin {
 			const marbleEntityId = app.spawnBundle(
 				createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION })
 			);
-			app.updateResource('previewState', {
-				...app.r.previewState,
-				targetEntityId: marbleEntityId
-			});
+			app.setPreviewTargetEntity(marbleEntityId);
 
 			app.addSystem(syncAuthoredTransformsToLiveSystem, { set: 'PreUpdate' });
 			app.addSystem(syncMarbleRuntimeMixinsSystem, { set: 'PreUpdate' });

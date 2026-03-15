@@ -24,6 +24,7 @@ export type TTrajectoryPlugin = TPlugin<
 		appExtensions: {
 			disposeTrajectory(): void;
 			syncNoteMarkers(noteState: TTrajectoryNoteMarkerState): void;
+			updateTrajectoryConfig(patch: Partial<TTrajectoryConfig>): void;
 		};
 		systemSets: TEngineSystemSet;
 	},

@@ -12,7 +12,7 @@ describe('Runtime scene edit lifecycle', () => {
 
 		expect(runtime._app.loadMidiFile).toHaveBeenCalledOnce();
 		expect(runtime._app.resetTransport).toHaveBeenCalledOnce();
-		expect(runtime._setSceneEditPending).toHaveBeenCalledWith(false);
+		expect(runtime._app.setSceneEditPending).toHaveBeenCalledWith(false);
 		expect(runtime._flushImmediateUpdate).toHaveBeenCalledOnce();
 	});
 
@@ -23,13 +23,14 @@ describe('Runtime scene edit lifecycle', () => {
 
 		expect(runtime._app.clearMidiSong).toHaveBeenCalledOnce();
 		expect(runtime._app.resetTransport).toHaveBeenCalledOnce();
-		expect(runtime._setSceneEditPending).toHaveBeenCalledWith(false);
+		expect(runtime._app.setSceneEditPending).toHaveBeenCalledWith(false);
 		expect(runtime._flushImmediateUpdate).toHaveBeenCalledOnce();
 	});
 
 	it('does not create a straight track while simulation sync is active', () => {
 		const runtime = createRuntimeHarness({
 			_app: {
+				setSimulationResumeWhenReady: vi.fn(() => true),
 				r: {
 					simulationSync: {
 						mode: 'dirty',
@@ -44,17 +45,14 @@ describe('Runtime scene edit lifecycle', () => {
 
 		expect(entityId).toBeNull();
 		expect(runtime._app.createStraightTrack).not.toHaveBeenCalled();
-		expect(runtime._app.updateResource).toHaveBeenCalledWith('simulationSync', {
-			mode: 'dirty',
-			requested: false,
-			resumeWhenReady: false
-		});
+		expect(runtime._app.setSimulationResumeWhenReady).toHaveBeenCalledWith(false);
 		expect(runtime._flushImmediateUpdate).not.toHaveBeenCalled();
 	});
 
 	it('does not delete a straight track while simulation sync is active', () => {
 		const runtime = createRuntimeHarness({
 			_app: {
+				setSimulationResumeWhenReady: vi.fn(() => true),
 				r: {
 					simulationSync: {
 						mode: 'dirty',
@@ -68,11 +66,7 @@ describe('Runtime scene edit lifecycle', () => {
 		Runtime.prototype.deleteStraightTrack.call(runtime, 41);
 
 		expect(runtime._app.deleteStraightTrack).not.toHaveBeenCalled();
-		expect(runtime._app.updateResource).toHaveBeenCalledWith('simulationSync', {
-			mode: 'dirty',
-			requested: false,
-			resumeWhenReady: false
-		});
+		expect(runtime._app.setSimulationResumeWhenReady).toHaveBeenCalledWith(false);
 		expect(runtime._flushImmediateUpdate).not.toHaveBeenCalled();
 	});
 });
@@ -80,18 +74,18 @@ describe('Runtime scene edit lifecycle', () => {
 function createRuntimeHarness(
 	overrides: {
 		_app?: Record<string, unknown>;
-		_setSceneEditPending?: ReturnType<typeof vi.fn>;
 		_flushImmediateUpdate?: ReturnType<typeof vi.fn>;
 	} = {}
 ): any {
-	return {
+	const harness: any = {
 		_app: {
 			loadMidiFile: vi.fn().mockResolvedValue(undefined),
 			clearMidiSong: vi.fn(),
 			resetTransport: vi.fn(),
 			createStraightTrack: vi.fn(() => 41),
 			deleteStraightTrack: vi.fn(() => true),
-			updateResource: vi.fn(),
+			setSceneEditPending: vi.fn(),
+			setSimulationResumeWhenReady: vi.fn(() => false),
 			r: {
 				simulationSync: {
 					mode: 'idle'
@@ -99,7 +93,20 @@ function createRuntimeHarness(
 			},
 			...overrides._app
 		},
-		_setSceneEditPending: overrides._setSceneEditPending ?? vi.fn(),
 		_flushImmediateUpdate: overrides._flushImmediateUpdate ?? vi.fn()
 	};
+
+	harness._runImmediateCommand = (command: () => unknown) => {
+		const result = command();
+		harness._flushImmediateUpdate();
+		return result;
+	};
+	harness._runSimulationCommand = (fallback: unknown, command: () => unknown) => {
+		if (harness._app.setSimulationResumeWhenReady(false)) {
+			return fallback;
+		}
+		return harness._runImmediateCommand(command);
+	};
+
+	return harness;
 }

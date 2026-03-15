@@ -254,6 +254,7 @@ describe('syncNotePlatformRuntimeSystem', () => {
 	it('commits pending scene edits before clearing manipulation state for preview', () => {
 		const markSimulationDirty = vi.fn();
 		const requestSimulationSync = vi.fn();
+		const setSceneEditPending = vi.fn();
 		const updateResource = vi.fn();
 
 		syncPreviewInteractionSystem({
@@ -272,11 +273,13 @@ describe('syncNotePlatformRuntimeSystem', () => {
 			wasResourceChanged: vi.fn((resource: string) => resource === 'previewConfig'),
 			markSimulationDirty,
 			requestSimulationSync,
+			setSceneEditPending,
 			updateResource
 		} as never);
 
 		expect(markSimulationDirty).toHaveBeenCalledOnce();
 		expect(requestSimulationSync).toHaveBeenCalledOnce();
-		expect(updateResource).toHaveBeenCalledTimes(2);
+		expect(setSceneEditPending).toHaveBeenCalledWith(false);
+		expect(updateResource).toHaveBeenCalledTimes(1);
 	});
 });

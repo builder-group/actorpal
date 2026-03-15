@@ -1,26 +1,18 @@
 import { With } from 'ecsify';
 import * as THREE from 'three';
-import type { TVec3 } from '../../../types';
 import type { TSceneApp } from '../types';
-import {
-	getLinearElement,
-	getLinearElementEntityIds,
-	getLinearElementHandlePositions
-} from './linear-element';
+import { getLinearElementEntityIds } from './linear-element';
 import {
 	disposeSceneManipulationHandles,
 	getLinearElementHandleKind
 } from './manipulation-handles';
-import { computeLinearResizeResult, getDraggedHandlePoint } from './manipulation-math';
 import { resetSceneManipulationState } from './manipulation-state';
 import {
-	getNotePlatform,
-	getNotePlatformHandlePositions,
-	NOTE_PLATFORM_HANDLE_OFFSET,
-	NOTE_PLATFORM_LIMITS
-} from './note-platform';
+	beginSceneManipulation,
+	getSceneManipulationPlaneX,
+	updateSceneManipulation
+} from './scene-manipulation-adapters';
 import { clearSceneEntitySelection, selectSceneEntity } from './scene-selection';
-import { sameVec3 } from './vec3';
 
 const dragPlaneNormal = new THREE.Vector3(1, 0, 0);
 
@@ -89,101 +81,34 @@ function handlePointerDown(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 
 	app.r.viewport.setControlsEnabled(false);
 
-	const linearElement = getLinearElement(app, pickedTarget.entityId);
-	if (linearElement != null) {
-		selectSceneEntity(app, pickedTarget.entityId);
-
-		const planePoint = raycastScenePlane(
-			app,
-			raycaster,
-			pointer,
-			linearElement.transform.position.x
-		);
-		if (planePoint == null) {
-			app.updateResource('sceneManipulationState', resetSceneManipulationState());
-			app.r.viewport.setControlsEnabled(true);
-			return;
-		}
-
-		const mode =
-			pickedTarget.target === 'handle-start'
-				? 'resizeStart'
-				: pickedTarget.target === 'handle-end'
-					? 'resizeEnd'
-					: 'move';
-		const handlePositions = getLinearElementHandlePositions(
-			linearElement.transform.position,
-			linearElement.transform.rotation.x,
-			linearElement.linear.length,
-			linearElement.linear.handleOffset
-		);
-		const dragAnchor =
-			mode === 'move'
-				? linearElement.transform.position
-				: mode === 'resizeStart'
-					? toVec3(handlePositions.start)
-					: toVec3(handlePositions.end);
-
-		app.updateResource(
-			'sceneManipulationState',
-			resetSceneManipulationState({
-				mode,
-				entityId: pickedTarget.entityId,
-				pointerDownClient: { x: event.clientX, y: event.clientY },
-				dragPlaneX: linearElement.transform.position.x,
-				dragOffset: {
-					x: 0,
-					y: planePoint.y - dragAnchor.y,
-					z: planePoint.z - dragAnchor.z
-				}
-			})
-		);
-		return;
-	}
-
-	const notePlatform = getNotePlatform(app, pickedTarget.entityId);
-	if (
-		notePlatform == null ||
-		(pickedTarget.target !== 'handle-start' && pickedTarget.target !== 'handle-end')
-	) {
+	const dragPlaneX = getSceneManipulationPlaneX(app, pickedTarget.entityId);
+	if (dragPlaneX == null) {
 		app.updateResource('sceneManipulationState', resetSceneManipulationState());
 		app.r.viewport.setControlsEnabled(true);
 		return;
 	}
 
-	selectSceneEntity(app, pickedTarget.entityId);
-
-	const planePoint = raycastScenePlane(app, raycaster, pointer, notePlatform.position.x);
+	const planePoint = raycastScenePlane(app, raycaster, pointer, dragPlaneX);
 	if (planePoint == null) {
 		app.updateResource('sceneManipulationState', resetSceneManipulationState());
 		app.r.viewport.setControlsEnabled(true);
 		return;
 	}
 
-	const handlePositions = getNotePlatformHandlePositions(
-		notePlatform.position,
-		notePlatform.platform.rotationX,
-		notePlatform.platform.length
+	const nextState = beginSceneManipulation(
+		app,
+		pickedTarget,
+		{ x: event.clientX, y: event.clientY },
+		planePoint
 	);
-	const dragAnchor =
-		pickedTarget.target === 'handle-start'
-			? toVec3(handlePositions.start)
-			: toVec3(handlePositions.end);
+	if (nextState == null) {
+		app.updateResource('sceneManipulationState', resetSceneManipulationState());
+		app.r.viewport.setControlsEnabled(true);
+		return;
+	}
 
-	app.updateResource(
-		'sceneManipulationState',
-		resetSceneManipulationState({
-			mode: pickedTarget.target === 'handle-start' ? 'resizeStart' : 'resizeEnd',
-			entityId: pickedTarget.entityId,
-			pointerDownClient: { x: event.clientX, y: event.clientY },
-			dragPlaneX: notePlatform.position.x,
-			dragOffset: {
-				x: 0,
-				y: planePoint.y - dragAnchor.y,
-				z: planePoint.z - dragAnchor.z
-			}
-		})
-	);
+	selectSceneEntity(app, pickedTarget.entityId);
+	app.updateResource('sceneManipulationState', nextState);
 }
 
 function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: PointerEvent): void {
@@ -220,113 +145,7 @@ function handlePointerMove(app: TSceneApp, raycaster: THREE.Raycaster, event: Po
 		});
 	}
 
-	const notePlatform = getNotePlatform(app, state.entityId);
-	if (notePlatform != null && (state.mode === 'resizeStart' || state.mode === 'resizeEnd')) {
-		const draggedPoint = getDraggedHandlePoint(state.dragPlaneX, planePoint, state.dragOffset);
-		const resized = computeLinearResizeResult(
-			{
-				position: notePlatform.position,
-				rotation: {
-					x: notePlatform.platform.rotationX,
-					y: 0,
-					z: 0
-				},
-				minLength: NOTE_PLATFORM_LIMITS.length.min,
-				maxLength: NOTE_PLATFORM_LIMITS.length.max,
-				handleOffset: NOTE_PLATFORM_HANDLE_OFFSET
-			},
-			state.mode,
-			draggedPoint
-		);
-		if (
-			Math.abs(resized.rotation.x - notePlatform.platform.rotationX) < 1e-4 &&
-			Math.abs(resized.length - notePlatform.platform.length) < 1e-4
-		) {
-			return;
-		}
-
-		app.updateComponent(state.entityId, app.c.NotePlatformMixin, {
-			...notePlatform.platform,
-			rotationX: resized.rotation.x,
-			length: resized.length
-		});
-		app.updateResource('sceneEditState', { pending: true });
-		app.updateResource('sceneManipulationState', {
-			...app.r.sceneManipulationState,
-			didEdit: true
-		});
-		return;
-	}
-
-	const linearElement = getLinearElement(app, state.entityId);
-	if (linearElement == null) {
-		return;
-	}
-
-	if (state.mode === 'move' && state.dragOffset != null) {
-		const nextPosition = {
-			x: linearElement.transform.position.x,
-			y: planePoint.y - state.dragOffset.y,
-			z: planePoint.z - state.dragOffset.z
-		};
-		if (!sameVec3(linearElement.transform.position, nextPosition)) {
-			app.updateComponent(state.entityId, app.c.AuthoredTransformMixin, {
-				...linearElement.transform,
-				position: nextPosition
-			});
-			app.updateResource('sceneEditState', { pending: true });
-			app.updateResource('sceneManipulationState', {
-				...app.r.sceneManipulationState,
-				didEdit: true
-			});
-		}
-		return;
-	}
-
-	if (state.mode !== 'resizeStart' && state.mode !== 'resizeEnd') {
-		return;
-	}
-
-	const draggedPoint = getDraggedHandlePoint(state.dragPlaneX, planePoint, state.dragOffset);
-	const resized = computeLinearResizeResult(
-		{
-			position: linearElement.transform.position,
-			rotation: linearElement.transform.rotation,
-			minLength: linearElement.linear.minLength,
-			maxLength: linearElement.linear.maxLength,
-			handleOffset: linearElement.linear.handleOffset
-		},
-		state.mode,
-		draggedPoint
-	);
-
-	let didChange = false;
-	if (
-		!sameVec3(linearElement.transform.position, resized.position) ||
-		!sameVec3(linearElement.transform.rotation, resized.rotation)
-	) {
-		app.updateComponent(state.entityId, app.c.AuthoredTransformMixin, {
-			...linearElement.transform,
-			position: resized.position,
-			rotation: resized.rotation
-		});
-		didChange = true;
-	}
-	if (linearElement.linear.length !== resized.length) {
-		app.updateComponent(state.entityId, app.c.LinearElementMixin, {
-			...linearElement.linear,
-			length: resized.length
-		});
-		didChange = true;
-	}
-
-	if (didChange) {
-		app.updateResource('sceneEditState', { pending: true });
-		app.updateResource('sceneManipulationState', {
-			...app.r.sceneManipulationState,
-			didEdit: true
-		});
-	}
+	updateSceneManipulation(app, state.entityId, state, planePoint);
 }
 
 function handlePointerUp(app: TSceneApp): void {
@@ -338,7 +157,7 @@ function handlePointerUp(app: TSceneApp): void {
 	if (state.didEdit) {
 		app.markSimulationDirty();
 		app.requestSimulationSync();
-		app.updateResource('sceneEditState', { pending: false });
+		app.setSceneEditPending(false);
 	}
 
 	app.updateResource('sceneManipulationState', resetSceneManipulationState());
@@ -444,12 +263,4 @@ function getNormalizedPointer(app: TSceneApp, event: PointerEvent): THREE.Vector
 		((event.clientX - rect.left) / rect.width) * 2 - 1,
 		-((event.clientY - rect.top) / rect.height) * 2 + 1
 	);
-}
-
-function toVec3(vector: THREE.Vector3): TVec3 {
-	return {
-		x: vector.x,
-		y: vector.y,
-		z: vector.z
-	};
 }

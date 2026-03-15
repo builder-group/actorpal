@@ -16,6 +16,7 @@ export type TAudioPlugin = TPlugin<
 			previewNotesAtTick(tick: number): Promise<void>;
 			previewNote(noteId: number): Promise<void>;
 			previewMidiNote(noteNumber: number): Promise<void>;
+			updateAudioConfig(patch: Partial<TAudioConfig>): void;
 			disposeAudio(): void;
 		};
 		systemSets: TEngineSystemSet;

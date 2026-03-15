@@ -24,6 +24,7 @@ export type TRenderPlugin = TPlugin<
 			setPreviewEnabled(enabled: boolean): void;
 			togglePreview(): void;
 			updatePreviewConfig(patch: Partial<TPreviewConfig>): void;
+			setPreviewTargetEntity(entityId: number | null): void;
 			disposeRender(): void;
 		};
 		systemSets: TEngineSystemSet;

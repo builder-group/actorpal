@@ -443,10 +443,7 @@ export const TimelineRoll: React.FC<{
 		() => new Set(draftNotes.flatMap((note) => (note.sourceId == null ? [] : [note.sourceId]))),
 		[draftNotes]
 	);
-	const renderedTimelineWidth = Math.max(
-		timelineWidth,
-		Math.max(totalTicks * pixelsPerTick, 1)
-	);
+	const renderedTimelineWidth = Math.max(timelineWidth, Math.max(totalTicks * pixelsPerTick, 1));
 	const renderedTotalTicks = Math.max(
 		totalTicks,
 		Math.ceil(renderedTimelineWidth / Math.max(pixelsPerTick, 0.0001))

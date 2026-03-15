@@ -2,18 +2,12 @@ import { Entity, With } from 'ecsify';
 import { Trash2 } from 'lucide-react';
 import React from 'react';
 import { useQueryComponents, useResource } from '@/modules/engine';
-import { findNoteById, findTrackById, tickToStep } from '@/modules/engine/plugins/midi';
 import { MARBLE_PHYSICS_LIMITS } from '@/modules/engine/plugins/scene/lib/marble';
 import { NOTE_PLATFORM_LIMITS } from '@/modules/engine/plugins/scene/lib/note-platform';
 import { useEditorCx } from '../EditorCx';
-import {
-	buildEmptyInspectorTarget,
-	buildNoteInspectorTarget,
-	buildNotePlatformInspectorTarget,
-	buildStraightTrackInspectorTarget,
-	type TInspectorTarget
-} from '../lib/inspector-target';
+import { type TInspectorTarget } from '../lib/inspector-target';
 import { canDeleteStraightTrack, getInspectorDeleteEntityId } from '../lib/scene-ui';
+import { deriveSelectionInspectorTarget } from '../lib/selection-inspector-target';
 
 export const SelectionInspector: React.FC = () => {
 	const runtime = useEditorCx().runtime;
@@ -59,106 +53,34 @@ export const SelectionInspector: React.FC = () => {
 		watchComponents: [app.c.NoteBindingMixin, app.c.NotePlatformMixin, app.c.PositionMixin]
 	});
 
-	const selectedTrack = React.useMemo(
-		() => findTrackById(midiSong, selectedTrackId),
-		[midiSong, selectedTrackId]
-	);
-	const selectedNote = React.useMemo(
-		() => selectedTrack?.notes.find((note) => note.id === selectedNoteId) ?? null,
-		[selectedNoteId, selectedTrack]
-	);
-	const notePlatformByNoteId = React.useMemo(
-		() => new Map(notePlatforms.map(([eid, binding]) => [binding.noteId, eid])),
-		[notePlatforms]
-	);
-
 	const target = React.useMemo<TInspectorTarget>(() => {
-		if (midiSong != null && selectedTrack != null && selectedNote != null) {
-			const anchor = trajectoryProjection.noteAnchorsById.get(selectedNote.id) ?? null;
-			return buildNoteInspectorTarget(
-				midiSong,
-				selectedTrack.name,
-				selectedNote,
-				liveStep,
-				bufferedStep,
-				fixedTimeStepSeconds,
-				anchor?.position ?? null,
-				notePlatformByNoteId.get(selectedNote.id) ?? null
-			);
-		}
-
-		if (sceneSelection.entityId != null) {
-			const selectedNotePlatform = notePlatforms.find(([eid]) => eid === sceneSelection.entityId);
-			if (selectedNotePlatform != null) {
-				const [eid, binding, platform, position] = selectedNotePlatform;
-				const noteMatch = findNoteById(midiSong, binding.noteId);
-				if (noteMatch != null && midiSong != null) {
-					const anchor = trajectoryProjection.noteAnchorsById.get(binding.noteId);
-					const step =
-						anchor?.step ?? tickToStep(noteMatch.note.tick, midiSong, fixedTimeStepSeconds);
-					return buildNotePlatformInspectorTarget(
-						noteMatch.track.name,
-						noteMatch.note,
-						eid,
-						step,
-						anchor?.phase ?? 'unresolved',
-						anchor?.position ?? null,
-						platform
-					);
-				}
-			}
-
-			const selectedTrackEntity = tracks.find(([eid]) => eid === sceneSelection.entityId);
-			if (selectedTrackEntity != null) {
-				const [eid, transform, linear, track] = selectedTrackEntity;
-				return buildStraightTrackInspectorTarget(eid, {
-					position: transform.position,
-					rotation: transform.rotation,
-					length: linear.length,
-					width: track.width,
-					channelWidth: track.channelWidth,
-					channelDepth: track.channelDepth,
-					color: track.color
-				});
-			}
-
-			const selectedMarble = marbles.find(([eid]) => eid === sceneSelection.entityId);
-			if (selectedMarble != null) {
-				const [eid, position, marblePhysics] = selectedMarble;
-				const velocity = app.r.rigidBodies.get(eid)?.linvel();
-				return {
-					kind: 'marble',
-					title: 'Marble',
-					entityId: eid,
-					position,
-					bounce: marblePhysics.bounce,
-					velocity:
-						velocity == null
-							? null
-							: {
-									x: velocity.x,
-									y: velocity.y,
-									z: velocity.z
-								}
-				};
-			}
-		}
-
-		return buildEmptyInspectorTarget();
+		return deriveSelectionInspectorTarget({
+			midiSong,
+			selectedTrackId,
+			selectedNoteId,
+			sceneSelectionEntityId: sceneSelection.entityId,
+			liveStep,
+			bufferedStep,
+			fixedTimeStepSeconds,
+			trajectoryProjection,
+			tracks,
+			marbles,
+			notePlatforms,
+			rigidBodies: app.r.rigidBodies
+		});
 	}, [
-		app,
 		bufferedStep,
 		fixedTimeStepSeconds,
 		liveStep,
 		marbles,
 		midiSong,
-		notePlatformByNoteId,
 		notePlatforms,
 		sceneSelection.entityId,
-		selectedNote,
-		selectedTrack,
+		selectedNoteId,
+		selectedTrackId,
 		tracks,
-		trajectoryProjection.noteAnchorsById
+		trajectoryProjection,
+		app.r.rigidBodies
 	]);
 	const deleteEntityId = React.useMemo(() => getInspectorDeleteEntityId(target), [target]);
 	const canDelete = React.useMemo(

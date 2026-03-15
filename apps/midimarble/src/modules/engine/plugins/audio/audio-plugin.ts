@@ -157,6 +157,12 @@ export function createAudioPlugin(): TAudioPlugin {
 					lastMode: transport.mode
 				});
 			},
+			updateAudioConfig(this: TAudioApp, patch: Partial<TAudioApp['r']['audioConfig']>): void {
+				this.updateResource('audioConfig', {
+					...this.r.audioConfig,
+					...patch
+				});
+			},
 			disposeAudio(this: TAudioApp): void {
 				audioSessionId += 1;
 				disposeAudioGraph(this.r.audioState);

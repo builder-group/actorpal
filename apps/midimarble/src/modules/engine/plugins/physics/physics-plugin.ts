@@ -53,6 +53,21 @@ export function createPhysicsPlugin(): TPhysicsPlugin {
 			},
 			requestSimulationSync(this: TPhysicsApp): void {
 				requestSimulationSync(this);
+			},
+			setSimulationResumeWhenReady(this: TPhysicsApp, resumeWhenReady: boolean): boolean {
+				if (this.r.simulationSync.mode === 'idle') {
+					return false;
+				}
+
+				if (this.r.simulationSync.resumeWhenReady === resumeWhenReady) {
+					return true;
+				}
+
+				this.updateResource('simulationSync', {
+					...this.r.simulationSync,
+					resumeWhenReady
+				});
+				return true;
 			}
 		},
 		setup(app: TPhysicsApp) {

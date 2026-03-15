@@ -82,6 +82,15 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 						selected: state.selectedMarkerMaterial
 					}
 				);
+			},
+			updateTrajectoryConfig(
+				this: TTrajectoryApp,
+				patch: Partial<TTrajectoryApp['r']['trajectoryConfig']>
+			): void {
+				this.updateResource('trajectoryConfig', {
+					...this.r.trajectoryConfig,
+					...patch
+				});
 			}
 		},
 		setup(app: TTrajectoryApp) {

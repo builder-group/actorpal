@@ -30,6 +30,7 @@ export type TPhysicsPlugin = TPlugin<
 		appExtensions: {
 			markSimulationDirty(): void;
 			requestSimulationSync(): void;
+			setSimulationResumeWhenReady(resumeWhenReady: boolean): boolean;
 		};
 		systemSets: TEngineSystemSet;
 	},

@@ -1,10 +1,10 @@
-import { FileUp } from 'lucide-react';
+import { FilePlus, FileUp } from 'lucide-react';
 import React from 'react';
 import { useProjects } from '../hooks/use-projects';
 import { ProjectCard } from './ProjectCard';
 
 export const ProjectPicker: React.FC = () => {
-	const { projects, isLoading, createProject, deleteProject, openProject } = useProjects();
+	const { projects, isLoading, createProject, createBlankProject, deleteProject, openProject } = useProjects();
 	const fileInputRef = React.useRef<HTMLInputElement>(null);
 	const [isCreating, setIsCreating] = React.useState(false);
 
@@ -41,20 +41,31 @@ export const ProjectPicker: React.FC = () => {
 						</p>
 						<h1 className="text-base-950 mt-1 text-2xl font-semibold tracking-tight">Projects</h1>
 					</div>
-					<button
-						type="button"
-						className="bg-base-900 text-base-0 hover:bg-base-800 inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-medium transition disabled:opacity-60"
-						disabled={isCreating}
-						onClick={() => fileInputRef.current?.click()}
-					>
-						<FileUp className="h-4 w-4" />
-						<span>{isCreating ? 'Importing…' : 'Open MIDI file'}</span>
-					</button>
+					<div className="flex items-center gap-2">
+						<button
+							type="button"
+							className="border-base-200 text-base-700 hover:bg-base-50 inline-flex h-10 items-center gap-2 rounded-md border px-4 text-sm font-medium transition disabled:opacity-60"
+							disabled={isCreating}
+							onClick={() => void createBlankProject()}
+						>
+							<FilePlus className="h-4 w-4" />
+							<span>New project</span>
+						</button>
+						<button
+							type="button"
+							className="bg-base-900 text-base-0 hover:bg-base-800 inline-flex h-10 items-center gap-2 rounded-md px-4 text-sm font-medium transition disabled:opacity-60"
+							disabled={isCreating}
+							onClick={() => fileInputRef.current?.click()}
+						>
+							<FileUp className="h-4 w-4" />
+							<span>{isCreating ? 'Importing\u2026' : 'Open MIDI file'}</span>
+						</button>
+					</div>
 				</div>
 
 				<div className="mt-10">
 					{isLoading ? (
-						<p className="text-base-500 text-sm">Loading projects…</p>
+						<p className="text-base-500 text-sm">Loading projects\u2026</p>
 					) : projects.length === 0 ? (
 						<div className="border-base-200 rounded-xl border border-dashed py-20 text-center">
 							<p className="text-base-600 text-sm font-medium">No projects yet</p>

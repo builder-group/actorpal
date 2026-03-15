@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { createNotePlatformColliders, createNotePlatformObject } from './bundles/note-platform';
-import { DEFAULT_TRACK_WIDTH } from './lib/track-shape';
+import { sceneConfig } from './config';
 import {
 	syncNotePlatformRuntimeSystem,
 	syncOrphanedNotePlatformsSystem,
@@ -83,7 +83,7 @@ describe('syncNotePlatformRuntimeSystem', () => {
 			12,
 			app.c.PositionMixin,
 			expect.objectContaining({
-				x: 1 - (DEFAULT_TRACK_WIDTH - 0.84) / 2,
+				x: 1 - (sceneConfig.track.defaultWidth - 0.84) / 2,
 				y: 2 - (0.36 + 0.11) + 0.25,
 				z: 2.5
 			})

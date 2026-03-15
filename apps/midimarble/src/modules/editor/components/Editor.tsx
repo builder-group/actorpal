@@ -61,14 +61,7 @@ const AudioSection: React.FC = () => {
 	const runtime = useEditorCx().runtime;
 	const app = runtime.app;
 	const settings = useResource(app, 'audioSettings');
-	const state = useResource(app, 'audioState');
 	const update = (patch: Partial<typeof settings>) => runtime.updateAudioSettings(patch);
-
-	const status = !settings.enabled
-		? 'Muted'
-		: state.isEnabled && state.context != null
-			? 'Ready'
-			: 'Waiting for gesture';
 
 	return (
 		<section>
@@ -92,7 +85,6 @@ const AudioSection: React.FC = () => {
 					onChange={(e) => update({ masterVolume: Number(e.target.value) / 100 })}
 				/>
 			</label>
-			<p className="text-base-500 mt-2 text-xs tracking-wide uppercase">{status}</p>
 		</section>
 	);
 };
@@ -114,7 +106,8 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 		() => midiSong?.tracks.find((track) => track.id === selectedTrackId) ?? null,
 		[midiSong, selectedTrackId]
 	);
-	const projectLabel = midiSong?.name ?? 'Untitled';
+	const [projectName, setProjectName] = React.useState(midiSong?.name ?? 'Untitled');
+	const projectLabel = projectName;
 	// Only show the "no MIDI" splash when there's no project context
 	const needsMidiStart = projectId == null && (midiSong == null || selectedTrack == null);
 	const canAddStraightTrack = React.useMemo(
@@ -155,6 +148,13 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 		void cx.runtime.createStraightTrack();
 	}, [canAddStraightTrack, cx.runtime]);
 
+	const handleNameSave = React.useCallback(async (name: string) => {
+		if (projectId == null) return;
+		const existing = await projectRepository.getProject(projectId);
+		if (existing == null) return;
+		await projectRepository.saveProject({ ...existing, name, updatedAt: Date.now() });
+	}, [projectId]);
+
 	const handleSave = React.useCallback(async () => {
 		if (projectId == null || isSaving) return;
 		setIsSaving(true);
@@ -165,14 +165,14 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 			await projectRepository.saveProject({
 				...snapshot,
 				id: existing.id,
-				name: existing.name,
+				name: projectName,
 				createdAt: existing.createdAt,
 				updatedAt: Date.now()
 			});
 		} finally {
 			setIsSaving(false);
 		}
-	}, [projectId, isSaving, cx.runtime]);
+	}, [projectId, isSaving, projectName, cx.runtime]);
 
 	React.useEffect(() => {
 		if (!canAddStraightTrack) {
@@ -270,6 +270,19 @@ const InnerEditor: React.FC<{ projectId?: string }> = ({ projectId }) => {
 														</div>
 														<div className="border-base-100 border-t" />
 														<div className="flex flex-col gap-5 p-4">
+															<section>
+																<h3 className="text-base-900 text-xs font-semibold tracking-wide uppercase">Project</h3>
+																<input
+																	type="text"
+																	value={projectName}
+																	className="border-base-200 text-base-900 mt-3 w-full rounded-md border px-2.5 py-1.5 text-sm focus:outline-none"
+																	onChange={(e) => setProjectName(e.target.value)}
+																	onBlur={(e) => void handleNameSave(e.target.value)}
+																	onKeyDown={(e) => {
+																		if (e.key === 'Enter') e.currentTarget.blur();
+																	}}
+																/>
+															</section>
 															<TrajectorySection />
 															<AudioSection />
 														</div>

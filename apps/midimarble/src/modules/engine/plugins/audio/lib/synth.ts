@@ -60,10 +60,27 @@ export function previewTrackNotesAtTick(
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
 	notes: TMidiNote[]
 ): void {
+	previewTrackNotes(state, song, notes, PREVIEW_MAX_NOTE_SECONDS);
+}
+
+export function previewSelectedTrackNote(
+	state: TAudioState,
+	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
+	note: TMidiNote
+): void {
+	previewTrackNotes(state, song, [note], Number.POSITIVE_INFINITY);
+}
+
+function previewTrackNotes(
+	state: TAudioState,
+	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
+	notes: TMidiNote[],
+	maxDurationSeconds: number
+): void {
 	for (const note of notes) {
 		playTrackNote(state, song, note, {
 			delaySeconds: 0,
-			maxDurationSeconds: PREVIEW_MAX_NOTE_SECONDS
+			maxDurationSeconds
 		});
 	}
 }

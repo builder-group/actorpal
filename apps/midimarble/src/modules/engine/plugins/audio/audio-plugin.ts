@@ -1,7 +1,9 @@
+import { findNoteById } from '../midi';
 import { getSelectedTrackNotesAtTick } from './lib/playback';
 import {
 	disposeAudioGraph,
 	ensureAudioGraph,
+	previewSelectedTrackNote,
 	previewTrackNotesAtTick,
 	stopAllVoices
 } from './lib/synth';
@@ -83,6 +85,36 @@ export function createAudioPlugin(): TAudioPlugin {
 				this.updateResource('audioState', {
 					...audioState,
 					lastProcessedTick: tick,
+					lastMode: transport.mode
+				});
+			},
+			async previewNote(this: TAudioApp, noteId: number): Promise<void> {
+				if (!this.r.audioConfig.enabled) {
+					return;
+				}
+
+				const requestId = ++previewRequestId;
+				await this.resumeAudio();
+				if (requestId !== previewRequestId) {
+					return;
+				}
+
+				const { audioState, midiSong, selectedTrackId, transport } = this.r;
+				if (!audioState.isEnabled || midiSong == null || selectedTrackId == null) {
+					return;
+				}
+
+				const noteMatch = findNoteById(midiSong, noteId);
+				if (noteMatch == null || noteMatch.track.id !== selectedTrackId) {
+					return;
+				}
+
+				stopAllVoices(audioState);
+				previewSelectedTrackNote(audioState, midiSong, noteMatch.note);
+				this.updateResource('audioPlaybackFeedback', createPlaybackFeedback([noteMatch.note]));
+				this.updateResource('audioState', {
+					...audioState,
+					lastProcessedTick: noteMatch.note.tick,
 					lastMode: transport.mode
 				});
 			},

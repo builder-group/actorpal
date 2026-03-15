@@ -421,9 +421,10 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 
 		if (currentInteractionState.mode === 'moving') {
 			if (!currentInteractionState.didDrag) {
-				if (transport.mode === 'paused') {
-					cx.runtime.previewNotesAtTick(currentInteractionState.clickedNote.tick);
-				}
+				cx.runtime.selectNote(
+					currentInteractionState.clickedNote.id,
+					currentInteractionState.clickedNote.tick
+				);
 				timelineCx.clearInteractionState();
 				return;
 			}

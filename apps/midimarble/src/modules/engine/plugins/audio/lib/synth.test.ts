@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { playTrackNotes, stopAllVoices } from './synth';
+import { playTrackNotes, previewSelectedTrackNote, stopAllVoices } from './synth';
 
 describe('audio synth helpers', () => {
 	afterEach(() => {
@@ -33,6 +33,37 @@ describe('audio synth helpers', () => {
 		expect(oscillators).toHaveLength(2);
 		expect(oscillators[0]?.start).toHaveBeenCalledWith(10);
 		expect(oscillators[1]?.start).toHaveBeenCalledWith(10 + 4 / 960);
+
+		stopAllVoices(state);
+	});
+
+	it('previews a selected note for its full duration instead of a fixed cap', () => {
+		const oscillators: FakeOscillatorNode[] = [];
+		const context = new FakeAudioContext(oscillators);
+		const state = {
+			context: context as unknown as AudioContext,
+			masterGain: context.createGain() as unknown as GainNode,
+			isEnabled: true,
+			lastProcessedTick: 0,
+			lastMode: 'paused' as const,
+			activeVoices: new Map()
+		};
+
+		previewSelectedTrackNote(
+			state,
+			{ bpm: 120, ticksPerBeat: 480 },
+			{
+				id: 1,
+				tick: 0,
+				durationTicks: 6000,
+				noteNumber: 60,
+				velocity: 100,
+				channel: 0
+			}
+		);
+
+		expect(oscillators).toHaveLength(1);
+		expect(oscillators[0]?.stop.mock.calls[0]?.[0]).toBeCloseTo(16.33, 6);
 
 		stopAllVoices(state);
 	});

@@ -14,6 +14,7 @@ export type TAudioPlugin = TPlugin<
 		appExtensions: {
 			resumeAudio(): Promise<void>;
 			previewNotesAtTick(tick: number): Promise<void>;
+			previewNote(noteId: number): Promise<void>;
 			disposeAudio(): void;
 		};
 		systemSets: TEngineSystemSet;

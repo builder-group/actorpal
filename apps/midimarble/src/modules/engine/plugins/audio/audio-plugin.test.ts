@@ -158,6 +158,64 @@ describe('audio plugin', () => {
 		app.disposeAudio();
 	});
 
+	it('previews a selected note by id with its own playback feedback', async () => {
+		class FakeGainNode {
+			public readonly gain = {
+				value: 0,
+				setValueAtTime: vi.fn(),
+				cancelScheduledValues: vi.fn(),
+				linearRampToValueAtTime: vi.fn()
+			};
+			public connect = vi.fn();
+			public disconnect = vi.fn();
+		}
+
+		class FakeOscillatorNode {
+			public type = 'triangle';
+			public readonly frequency = { value: 0 };
+			public connect = vi.fn();
+			public disconnect = vi.fn();
+			public start = vi.fn();
+			public stop = vi.fn();
+		}
+
+		class FakeAudioContext {
+			public readonly destination = {};
+			public readonly currentTime = 0;
+			public readonly state = 'running';
+			public createGain = vi.fn(() => new FakeGainNode());
+			public createOscillator = vi.fn(() => new FakeOscillatorNode());
+			public resume = vi.fn(async () => undefined);
+			public close = vi.fn(async () => undefined);
+		}
+
+		Object.defineProperty(globalThis, 'AudioContext', {
+			value: FakeAudioContext,
+			configurable: true,
+			writable: true
+		});
+
+		const app = createApp({
+			plugins: [
+				createDefaultPlugin(),
+				createMidiPlugin(),
+				createTransportPlugin(),
+				createAudioPlugin()
+			] as const,
+			systemSets: [...ENGINE_SYSTEM_SETS]
+		});
+
+		app.updateResource('midiSong', SONG as never);
+		app.updateResource('selectedTrackId', 0);
+
+		await app.previewNote(2);
+
+		expect(app.r.audioState.lastProcessedTick).toBe(8);
+		expect([...app.r.audioState.activeVoices.keys()]).toEqual([2]);
+		expect(app.r.audioPlaybackFeedback.activeNoteIds).toEqual(new Set([2]));
+		expect(app.r.audioPlaybackFeedback.activeNoteNumbers).toEqual(new Set([62]));
+	});
+
 	it('expires playback feedback after the tap window', async () => {
 		vi.useFakeTimers();
 

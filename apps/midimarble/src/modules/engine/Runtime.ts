@@ -115,7 +115,7 @@ export class Runtime {
 		this._app.seekToTick(tick);
 		this._app.selectNote(noteId);
 		this._flushImmediateUpdate();
-		void this._app.previewNotesAtTick(tick);
+		void this._app.previewNote(noteId);
 	}
 
 	public selectNotes(noteIds: number[], primaryNoteId: number | null): void {
@@ -135,6 +135,10 @@ export class Runtime {
 
 	public previewNotesAtTick(tick: number): void {
 		void this._app.previewNotesAtTick(tick);
+	}
+
+	public previewNote(noteId: number): void {
+		void this._app.previewNote(noteId);
 	}
 
 	public createNote(input: TMidiCreateNoteInput): number | null {

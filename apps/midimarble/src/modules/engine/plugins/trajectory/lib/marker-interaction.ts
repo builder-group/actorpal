@@ -31,7 +31,7 @@ export function setupTrajectoryMarkerInteraction(app: TTrajectoryApp): () => voi
 export function applyTrajectoryMarkerSelection(
 	app: Pick<
 		TTrajectoryApp,
-		'pause' | 'seekToTick' | 'selectNote' | 'previewNotesAtTick' | 'update' | 'updateResource'
+		'pause' | 'seekToTick' | 'selectNote' | 'previewNote' | 'update' | 'updateResource'
 	> & {
 		r: Pick<TTrajectoryApp['r'], 'simulationSync'>;
 	},
@@ -49,7 +49,7 @@ export function applyTrajectoryMarkerSelection(
 	app.seekToTick(tick);
 	app.selectNote(noteId);
 	app.update(0);
-	void app.previewNotesAtTick(tick);
+	void app.previewNote(noteId);
 }
 
 function pickTrajectoryMarker(

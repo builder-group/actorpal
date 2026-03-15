@@ -1,8 +1,9 @@
-import { findNoteById } from '../midi';
+import { findNoteById, findTrackById } from '../midi';
 import { getSelectedTrackNotesAtTick } from './lib/playback';
 import {
 	disposeAudioGraph,
 	ensureAudioGraph,
+	previewMidiKeyNote,
 	previewSelectedTrackNote,
 	previewTrackNotesAtTick,
 	stopAllVoices
@@ -115,6 +116,44 @@ export function createAudioPlugin(): TAudioPlugin {
 				this.updateResource('audioState', {
 					...audioState,
 					lastProcessedTick: noteMatch.note.tick,
+					lastMode: transport.mode
+				});
+			},
+			async previewMidiNote(this: TAudioApp, noteNumber: number): Promise<void> {
+				if (!this.r.audioConfig.enabled) {
+					return;
+				}
+
+				const requestId = ++previewRequestId;
+				await this.resumeAudio();
+				if (requestId !== previewRequestId) {
+					return;
+				}
+
+				const { audioState, midiSong, selectedTrackId, transport } = this.r;
+				if (!audioState.isEnabled || midiSong == null || selectedTrackId == null) {
+					return;
+				}
+
+				const track = findTrackById(midiSong, selectedTrackId);
+				if (track == null) {
+					return;
+				}
+
+				const clampedNoteNumber = Math.max(0, Math.min(127, Math.round(noteNumber)));
+				stopAllVoices(audioState);
+				previewMidiKeyNote(audioState, midiSong, clampedNoteNumber, {
+					channel: track.notes[0]?.channel ?? 0,
+					velocity: 100
+				});
+				this.updateResource('audioPlaybackFeedback', {
+					activeNoteIds: new Set<number>(),
+					activeNoteNumbers: new Set([clampedNoteNumber]),
+					expiresAtMs: Date.now() + 120
+				});
+				this.updateResource('audioState', {
+					...audioState,
+					lastProcessedTick: transport.playheadTick,
 					lastMode: transport.mode
 				});
 			},

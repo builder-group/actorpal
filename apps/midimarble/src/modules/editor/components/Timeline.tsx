@@ -503,6 +503,21 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 		]
 	);
 
+	const handlePianoKeyPointerDown = React.useCallback(
+		(noteNumber: number) => {
+			if (selectedTrack == null) {
+				return;
+			}
+
+			if (transport.mode === 'running') {
+				cx.runtime.pause();
+			}
+
+			cx.runtime.previewMidiNote(noteNumber);
+		},
+		[cx.runtime, selectedTrack, transport.mode]
+	);
+
 	const handleKeyDown = React.useCallback(
 		(event: React.KeyboardEvent<HTMLDivElement>) => {
 			if (event.key === 'Escape') {
@@ -600,6 +615,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 						selectedNoteIds={selectedNoteIds}
 						activeNoteIds={audioPlaybackFeedback.activeNoteIds}
 						activeNoteNumbers={audioPlaybackFeedback.activeNoteNumbers}
+						onPianoKeyPointerDown={handlePianoKeyPointerDown}
 						placedNoteIds={placedNoteIds}
 						adjustedNoteIds={adjustedNoteIds}
 						canScrub={canControlPlayback}

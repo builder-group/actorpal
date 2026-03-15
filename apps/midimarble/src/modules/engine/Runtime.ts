@@ -141,6 +141,10 @@ export class Runtime {
 		void this._app.previewNote(noteId);
 	}
 
+	public previewMidiNote(noteNumber: number): void {
+		void this._app.previewMidiNote(noteNumber);
+	}
+
 	public createNote(input: TMidiCreateNoteInput): number | null {
 		if (updateSimulationResumeWhenReady(this._app, false)) {
 			return null;

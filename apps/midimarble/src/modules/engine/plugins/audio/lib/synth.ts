@@ -1,4 +1,4 @@
-import type { TMidiNote, TMidiSong } from '../../midi';
+import { getTicksPerSecond, type TMidiNote, type TMidiSong } from '../../midi';
 import type { TActiveVoice, TAudioState } from '../types';
 import {
 	getNoteDurationSeconds,
@@ -69,6 +69,36 @@ export function previewSelectedTrackNote(
 	note: TMidiNote
 ): void {
 	previewTrackNotes(state, song, [note], Number.POSITIVE_INFINITY);
+}
+
+export function previewMidiKeyNote(
+	state: TAudioState,
+	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
+	noteNumber: number,
+	options: {
+		channel: number;
+		velocity: number;
+	}
+): void {
+	const previewDurationTicks = Math.max(
+		1,
+		Math.round(getTicksPerSecond(song) * PREVIEW_MAX_NOTE_SECONDS)
+	);
+	previewTrackNotes(
+		state,
+		song,
+		[
+			{
+				id: -1000 - noteNumber,
+				tick: 0,
+				durationTicks: previewDurationTicks,
+				noteNumber,
+				velocity: options.velocity,
+				channel: options.channel
+			}
+		],
+		PREVIEW_MAX_NOTE_SECONDS
+	);
 }
 
 function previewTrackNotes(

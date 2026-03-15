@@ -35,14 +35,15 @@ const PianoColumn: React.FC<{
 	noteRows: number[];
 	contentHeight: number;
 	activeNoteNumbers: Set<number>;
-}> = ({ noteRows, contentHeight, activeNoteNumbers }) => (
+	onKeyPointerDown: (noteNumber: number) => void;
+}> = ({ noteRows, contentHeight, activeNoteNumbers, onKeyPointerDown }) => (
 	<div
-		className="border-base-200 bg-base-50 sticky left-0 z-10 flex shrink-0 flex-col border-r"
-		style={{ width: PIANO_WIDTH }}
+		className="border-base-200 sticky left-0 z-10 flex shrink-0 flex-col border-r"
+		style={{ width: PIANO_WIDTH, background: '#ffffff' }}
 	>
 		<div
-			className="border-base-200 bg-base-50 sticky top-0 z-20 border-b"
-			style={{ height: RULER_HEIGHT }}
+			className="border-base-200 sticky top-0 z-20 border-b"
+			style={{ height: RULER_HEIGHT, background: '#ffffff' }}
 		/>
 
 		<div className="relative flex-1" style={{ minHeight: MIN_ROLL_HEIGHT }}>
@@ -53,6 +54,7 @@ const PianoColumn: React.FC<{
 						noteNumber={noteNumber}
 						top={index * NOTE_ROW_HEIGHT}
 						isActive={activeNoteNumbers.has(noteNumber)}
+						onPointerDown={onKeyPointerDown}
 					/>
 				))}
 			</div>
@@ -64,35 +66,52 @@ const PianoKeyRow: React.FC<{
 	noteNumber: number;
 	top: number;
 	isActive: boolean;
-}> = ({ noteNumber, top, isActive }) => {
+	onPointerDown: (noteNumber: number) => void;
+}> = ({ noteNumber, top, isActive, onPointerDown }) => {
 	const blackKey = isBlackKey(noteNumber);
 	const cNote = noteNumber % 12 === 0;
 
 	return (
-		<div
-			className="border-base-200 absolute inset-x-0 border-b transition-colors"
+		<button
+			type="button"
+			className="border-base-200 absolute inset-x-0 border-b text-left transition-colors"
 			style={{
 				top,
 				height: NOTE_ROW_HEIGHT,
-				background: blackKey ? '#f0f0f0' : cNote ? '#f8f8f8' : '#ffffff',
-				boxShadow: isActive ? 'inset 0 0 0 999px rgba(250, 204, 21, 0.18)' : undefined
+				background: '#ffffff',
+				boxShadow: isActive ? 'inset 0 0 0 999px rgba(59, 130, 246, 0.14)' : undefined
+			}}
+			title={`Play ${getNoteName(noteNumber)}`}
+			tabIndex={-1}
+			onPointerDown={(event) => {
+				event.preventDefault();
+				onPointerDown(noteNumber);
 			}}
 		>
 			<div
 				className="absolute inset-y-0 left-0 w-10 transition-transform"
 				style={{
-					background: blackKey ? '#111111' : 'transparent',
-					transform: isActive ? 'translateX(1px) scaleX(0.98)' : undefined,
-					boxShadow: isActive ? 'inset 0 0 0 1px rgba(250,204,21,0.28)' : undefined
+					background: blackKey
+						? 'linear-gradient(90deg, #05070b 0%, #111827 72%, #2f3542 100%)'
+						: 'transparent',
+					transform: isActive ? 'translateX(1px) scaleX(0.985)' : undefined,
+					boxShadow: blackKey
+						? isActive
+							? 'inset 0 0 0 999px rgba(59, 130, 246, 0.18), 1px 1px 0 rgba(0,0,0,0.2)'
+							: '1px 1px 0 rgba(0,0,0,0.2)'
+						: undefined
 				}}
 			/>
 
 			{cNote ? (
-				<span className="text-base-500 absolute top-1/2 right-2 -translate-y-1/2 font-mono text-[10px] font-semibold">
+				<span
+					className="absolute top-1/2 right-2 -translate-y-1/2 font-mono text-[10px] font-semibold"
+					style={{ color: isActive ? '#2563eb' : '#6b7280' }}
+				>
 					{getNoteName(noteNumber)}
 				</span>
 			) : null}
-		</div>
+		</button>
 	);
 };
 
@@ -287,7 +306,7 @@ const PianoRollGrid: React.FC<{
 									? 'rgba(244, 63, 94, 0.72)'
 									: 'rgba(15, 23, 42, 0.18)',
 							boxShadow: isActive
-								? '0 0 0 2px rgba(250,204,21,0.28), inset 0 1px 0 rgba(255,255,255,0.35)'
+								? '0 0 0 2px rgba(59,130,246,0.28), inset 0 1px 0 rgba(255,255,255,0.35)'
 								: isPrimarySelected
 									? '0 0 0 2px rgba(244,63,94,0.26), inset 0 1px 0 rgba(255,255,255,0.35)'
 									: isSelected
@@ -374,6 +393,7 @@ export const TimelineRoll: React.FC<{
 	selectedNoteIds: Set<number>;
 	activeNoteIds: Set<number>;
 	activeNoteNumbers: Set<number>;
+	onPianoKeyPointerDown: (noteNumber: number) => void;
 	placedNoteIds: Set<number>;
 	adjustedNoteIds: Set<number>;
 	canScrub: boolean;
@@ -402,6 +422,7 @@ export const TimelineRoll: React.FC<{
 	selectedNoteIds,
 	activeNoteIds,
 	activeNoteNumbers,
+	onPianoKeyPointerDown,
 	placedNoteIds,
 	adjustedNoteIds,
 	canScrub,
@@ -542,6 +563,7 @@ export const TimelineRoll: React.FC<{
 					noteRows={noteRows}
 					contentHeight={contentHeight}
 					activeNoteNumbers={activeNoteNumbers}
+					onKeyPointerDown={onPianoKeyPointerDown}
 				/>
 
 				<div

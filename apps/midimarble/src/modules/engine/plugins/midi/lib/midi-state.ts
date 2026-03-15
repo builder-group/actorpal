@@ -1,11 +1,17 @@
 import type { TMidiApp, TMidiCreateNoteInput, TMidiNote, TMidiSong, TMidiTrack } from '../types';
+import { buildMidiLookup, createEmptyMidiLookup, getTrackLookup } from './midi-lookup';
 import { parseMidi } from './midi-parser';
 import { findFirstTrackWithNotes, findTrackById } from './timing';
 
 type TMidiStateAccess = {
 	r?: Pick<
 		TMidiApp['r'],
-		'midiSong' | 'selectedTrackId' | 'selectedNoteId' | 'selectedNoteIds' | 'nextMidiNoteId'
+		| 'midiSong'
+		| 'midiLookup'
+		| 'selectedTrackId'
+		| 'selectedNoteId'
+		| 'selectedNoteIds'
+		| 'nextMidiNoteId'
 	>;
 	updateResource: TMidiApp['updateResource'];
 };
@@ -13,7 +19,12 @@ type TMidiStateAccess = {
 type TMidiMutableStateAccess = TMidiStateAccess & {
 	r: Pick<
 		TMidiApp['r'],
-		'midiSong' | 'selectedTrackId' | 'selectedNoteId' | 'selectedNoteIds' | 'nextMidiNoteId'
+		| 'midiSong'
+		| 'midiLookup'
+		| 'selectedTrackId'
+		| 'selectedNoteId'
+		| 'selectedNoteIds'
+		| 'nextMidiNoteId'
 	>;
 };
 
@@ -23,6 +34,7 @@ export async function loadMidiFileIntoState(app: TMidiStateAccess, file: File): 
 		const selectedTrack = findFirstTrackWithNotes(song);
 
 		app.updateResource('midiSong', song);
+		app.updateResource('midiLookup', buildMidiLookup(song));
 		app.updateResource('selectedTrackId', selectedTrack?.id ?? null);
 		app.updateResource('selectedNoteId', null);
 		app.updateResource('selectedNoteIds', new Set<number>());
@@ -30,6 +42,7 @@ export async function loadMidiFileIntoState(app: TMidiStateAccess, file: File): 
 		app.updateResource('midiImportError', null);
 	} catch (error) {
 		app.updateResource('midiSong', null);
+		app.updateResource('midiLookup', createEmptyMidiLookup());
 		app.updateResource('selectedTrackId', null);
 		app.updateResource('selectedNoteId', null);
 		app.updateResource('selectedNoteIds', new Set<number>());
@@ -43,6 +56,7 @@ export async function loadMidiFileIntoState(app: TMidiStateAccess, file: File): 
 
 export function clearMidiSongState(app: TMidiStateAccess): void {
 	app.updateResource('midiSong', null);
+	app.updateResource('midiLookup', createEmptyMidiLookup());
 	app.updateResource('selectedTrackId', null);
 	app.updateResource('selectedNoteId', null);
 	app.updateResource('selectedNoteIds', new Set<number>());
@@ -59,14 +73,19 @@ export function selectMidiNotes(
 	noteIds: number[],
 	primaryNoteId: number | null
 ): void {
-	const track = getSelectedTrack(app.r?.midiSong ?? null, app.r?.selectedTrackId ?? null);
-	if (track == null) {
+	const trackLookup = getSelectedTrackLookup(
+		app.r?.midiSong ?? null,
+		app.r?.midiLookup ?? null,
+		app.r?.selectedTrackId ?? null
+	);
+	if (trackLookup == null) {
 		clearMidiNoteSelection(app);
 		return;
 	}
 
-	const trackNoteIds = new Set(track.notes.map((note) => note.id));
-	const validNoteIds = Array.from(new Set(noteIds)).filter((noteId) => trackNoteIds.has(noteId));
+	const validNoteIds = Array.from(new Set(noteIds)).filter((noteId) =>
+		trackLookup.noteIds.has(noteId)
+	);
 	const selectedNoteIds = new Set(validNoteIds);
 	const selectedNoteId =
 		primaryNoteId != null && selectedNoteIds.has(primaryNoteId)
@@ -86,8 +105,10 @@ export function selectAllTrackMidiNotes(
 	app: TMidiMutableStateAccess,
 	trackId: number | undefined
 ): void {
-	const track = findTrackById(app.r.midiSong, trackId ?? app.r.selectedTrackId);
-	if (track == null || track.notes.length === 0) {
+	const resolvedTrackId = trackId ?? app.r.selectedTrackId;
+	const track = findTrackById(app.r.midiSong, resolvedTrackId, app.r.midiLookup);
+	const trackLookup = getTrackLookup(app.r.midiLookup, resolvedTrackId, track);
+	if (trackLookup == null || track == null || track.notes.length === 0) {
 		clearMidiNoteSelection(app);
 		return;
 	}
@@ -105,7 +126,11 @@ export function createMidiNote(
 	app: TMidiMutableStateAccess,
 	input: TMidiCreateNoteInput
 ): number | null {
-	const track = findTrackById(app.r.midiSong, input.trackId ?? app.r.selectedTrackId);
+	const track = findTrackById(
+		app.r.midiSong,
+		input.trackId ?? app.r.selectedTrackId,
+		app.r.midiLookup
+	);
 	if (track == null || app.r.midiSong == null) {
 		return null;
 	}
@@ -122,6 +147,7 @@ export function createMidiNote(
 
 	const nextSong = updateTrackNotes(app.r.midiSong, track.id, (notes) => [...notes, note]);
 	app.updateResource('midiSong', nextSong);
+	app.updateResource('midiLookup', buildMidiLookup(nextSong));
 	app.updateResource('nextMidiNoteId', noteId + 1);
 	selectMidiNotes(app, [noteId], noteId);
 	return noteId;
@@ -132,7 +158,7 @@ export function moveSelectedMidiNotes(
 	deltaTick: number,
 	deltaNoteNumber: number
 ): boolean {
-	const track = findTrackById(app.r.midiSong, app.r.selectedTrackId);
+	const track = findTrackById(app.r.midiSong, app.r.selectedTrackId, app.r.midiLookup);
 	if (track == null || app.r.midiSong == null || app.r.selectedNoteIds.size === 0) {
 		return false;
 	}
@@ -161,6 +187,7 @@ export function moveSelectedMidiNotes(
 		)
 	);
 	app.updateResource('midiSong', nextSong);
+	app.updateResource('midiLookup', buildMidiLookup(nextSong));
 	return true;
 }
 
@@ -169,7 +196,7 @@ export function resizePrimarySelectedMidiNote(
 	edge: 'start' | 'end',
 	deltaTick: number
 ): boolean {
-	const track = findTrackById(app.r.midiSong, app.r.selectedTrackId);
+	const track = findTrackById(app.r.midiSong, app.r.selectedTrackId, app.r.midiLookup);
 	const primaryNoteId = app.r.selectedNoteId;
 	if (track == null || app.r.midiSong == null || primaryNoteId == null) {
 		return false;
@@ -207,18 +234,23 @@ export function resizePrimarySelectedMidiNote(
 		notes.map((entry) => (entry.id === note.id ? nextNote : entry))
 	);
 	app.updateResource('midiSong', nextSong);
+	app.updateResource('midiLookup', buildMidiLookup(nextSong));
 	return true;
 }
 
 export function deleteSelectedMidiNotes(app: TMidiMutableStateAccess): number {
-	const track = getSelectedTrack(app.r.midiSong, app.r.selectedTrackId);
-	if (track == null || app.r.midiSong == null || app.r.selectedNoteIds.size === 0) {
+	const trackLookup = getSelectedTrackLookup(
+		app.r.midiSong,
+		app.r.midiLookup,
+		app.r.selectedTrackId
+	);
+	if (trackLookup == null || app.r.midiSong == null || app.r.selectedNoteIds.size === 0) {
 		return 0;
 	}
+	const track = trackLookup.track;
 
-	const selectedTrackNoteIds = new Set(track.notes.map((note) => note.id));
 	const noteIdsToDelete = new Set(
-		Array.from(app.r.selectedNoteIds).filter((noteId) => selectedTrackNoteIds.has(noteId))
+		Array.from(app.r.selectedNoteIds).filter((noteId) => trackLookup.noteIds.has(noteId))
 	);
 	if (noteIdsToDelete.size === 0) {
 		clearMidiNoteSelection(app);
@@ -234,6 +266,7 @@ export function deleteSelectedMidiNotes(app: TMidiMutableStateAccess): number {
 	}
 
 	app.updateResource('midiSong', nextSong);
+	app.updateResource('midiLookup', buildMidiLookup(nextSong));
 	clearMidiNoteSelection(app);
 	return removedCount;
 }
@@ -312,16 +345,17 @@ function getNextMidiNoteId(song: TMidiSong | null): number {
 	);
 }
 
-function hasMidiNote(song: TMidiSong | null, noteId: number): boolean {
-	return song?.tracks.some((track) => track.notes.some((note) => note.id === noteId)) ?? false;
-}
-
-function getSelectedTrack(song: TMidiSong | null, trackId: number | null): TMidiTrack | null {
+function getSelectedTrackLookup(
+	song: TMidiSong | null,
+	midiLookup: TMidiApp['r']['midiLookup'] | null,
+	trackId: number | null
+) {
 	if (song == null || trackId == null) {
 		return null;
 	}
 
-	return findTrackById(song, trackId) ?? null;
+	const track = findTrackById(song, trackId, midiLookup);
+	return getTrackLookup(midiLookup, trackId, track);
 }
 
 function sortMidiNotes(notes: TMidiNote[]): TMidiNote[] {

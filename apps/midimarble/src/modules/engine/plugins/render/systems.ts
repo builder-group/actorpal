@@ -106,10 +106,7 @@ export function syncPreviewCameraSystem(app: TRenderApp, delta = 0) {
 	);
 
 	if (!areVec3Close(app.r.previewState.lastFollowDirection, desiredPose.forward)) {
-		app.updateResource('previewState', {
-			...app.r.previewState,
-			lastFollowDirection: desiredPose.forward
-		});
+		app.r.previewState.lastFollowDirection = desiredPose.forward;
 	}
 }
 

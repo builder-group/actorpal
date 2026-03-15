@@ -27,8 +27,17 @@ export function setTrajectoryLinePoints(
 	points: Float32Array,
 	pointCount: number
 ): void {
+	setTrajectoryLinePointSlice(line, points, 0, pointCount);
+}
+
+export function setTrajectoryLinePointSlice(
+	line: THREE.Line,
+	points: Float32Array,
+	startPoint: number,
+	pointCount: number
+): void {
 	const positions = ensureLineCapacity(line, pointCount);
-	positions.set(points.subarray(0, pointCount * 3));
+	positions.set(points.subarray(startPoint * 3, (startPoint + pointCount) * 3));
 	const attribute = line.geometry.getAttribute('position') as THREE.BufferAttribute;
 	attribute.needsUpdate = true;
 	line.geometry.setDrawRange(0, pointCount);
@@ -38,6 +47,12 @@ export function clearTrajectoryVisuals(app: TTrajectoryApp): void {
 	const state = app.r.trajectoryState;
 	state.pastLine.geometry.setDrawRange(0, 0);
 	state.futureLine.geometry.setDrawRange(0, 0);
+	state.sampledPoints = new Float32Array(0);
+	state.sampledEndStep = -1;
+	state.projectedTrackId = null;
+	state.projectedBufferedTick = -1;
+	state.projectedMarkers = [];
+	state.styledLiveStep = app.r.liveStep;
 	clearNoteMarkers(state.noteMarkerGroup, state.noteIdToMarker, state.markerToNoteId);
 	if (app.r.trajectoryProjection.noteAnchorsById.size > 0) {
 		app.updateResource('trajectoryProjection', {

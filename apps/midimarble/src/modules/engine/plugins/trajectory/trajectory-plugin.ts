@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 import { buildTrajectoryLine } from './lib/line-state';
 import { setupTrajectoryMarkerInteraction } from './lib/marker-interaction';
-import { syncPlacedNoteMarkers } from './lib/note-markers';
+import {
+	syncNoteMarkerPhase as syncTrajectoryNoteMarkerPhase,
+	syncPlacedNoteMarkers
+} from './lib/note-markers';
 import { updateTrajectorySystem } from './systems';
 import type { TTrajectoryApp, TTrajectoryNoteMarkerState, TTrajectoryPlugin } from './types';
 
@@ -39,6 +42,16 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				noteIdToMarker: new Map(),
 				markerToNoteId: new Map(),
 				markerGeometry,
+				sampledPoints: new Float32Array(0),
+				sampledEndStep: -1,
+				projectedTrackId: null,
+				projectedBufferedTick: -1,
+				projectedMarkers: [],
+				styledLiveStep: 0,
+				lastNoteMarkerState: {
+					placedNoteIds: new Set<number>(),
+					adjustedNoteIds: new Set<number>()
+				},
 				pastMarkerMaterial,
 				pastPlacedMarkerMaterial,
 				pastAdjustedMarkerMaterial,
@@ -66,11 +79,18 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 				state.selectedMarkerMaterial.dispose();
 			},
 			syncNoteMarkers(this: TTrajectoryApp, noteState: TTrajectoryNoteMarkerState): void {
+				if (this.r.previewConfig.enabled) {
+					return;
+				}
+
 				const state = this.r.trajectoryState;
+				state.lastNoteMarkerState = noteState;
+				state.styledLiveStep = this.r.liveStep;
 				syncPlacedNoteMarkers(
 					state.noteIdToMarker,
 					this.r.trajectoryProjection.noteAnchorsById,
 					this.r.selectedNoteIds,
+					this.r.liveStep,
 					noteState,
 					{
 						past: state.pastMarkerMaterial,
@@ -82,6 +102,37 @@ export function createTrajectoryPlugin(): TTrajectoryPlugin {
 						selected: state.selectedMarkerMaterial
 					}
 				);
+			},
+			syncNoteMarkerPhase(this: TTrajectoryApp): void {
+				if (this.r.previewConfig.enabled) {
+					return;
+				}
+
+				const state = this.r.trajectoryState;
+				if (state.projectedMarkers.length === 0 || state.styledLiveStep === this.r.liveStep) {
+					state.styledLiveStep = this.r.liveStep;
+					return;
+				}
+
+				syncTrajectoryNoteMarkerPhase(
+					state.noteIdToMarker,
+					this.r.trajectoryProjection.noteAnchorsById,
+					state.projectedMarkers,
+					state.styledLiveStep,
+					this.r.liveStep,
+					this.r.selectedNoteIds,
+					state.lastNoteMarkerState,
+					{
+						past: state.pastMarkerMaterial,
+						pastPlaced: state.pastPlacedMarkerMaterial,
+						pastAdjusted: state.pastAdjustedMarkerMaterial,
+						future: state.futureMarkerMaterial,
+						futurePlaced: state.futurePlacedMarkerMaterial,
+						futureAdjusted: state.futureAdjustedMarkerMaterial,
+						selected: state.selectedMarkerMaterial
+					}
+				);
+				state.styledLiveStep = this.r.liveStep;
 			},
 			updateTrajectoryConfig(
 				this: TTrajectoryApp,

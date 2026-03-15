@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { findTrackById } from '../../midi';
 import type { TTrajectoryApp } from '../types';
 
 type TPointerTarget = {
@@ -71,11 +70,6 @@ function pickTrajectoryMarker(
 		return null;
 	}
 
-	const selectedTrack = findTrackById(app.r.midiSong, app.r.selectedTrackId);
-	if (selectedTrack == null) {
-		return null;
-	}
-
 	raycaster.setFromCamera(pointer, app.r.viewport.camera);
 	const intersections = raycaster.intersectObjects(
 		app.r.trajectoryState.noteMarkerGroup.children,
@@ -86,8 +80,8 @@ function pickTrajectoryMarker(
 		while (current != null) {
 			const noteId = app.r.trajectoryState.markerToNoteId.get(current);
 			if (noteId != null) {
-				const note = selectedTrack.notes.find((entry) => entry.id === noteId);
-				return note == null ? null : { noteId, tick: note.tick };
+				const anchor = app.r.trajectoryProjection.noteAnchorsById.get(noteId);
+				return anchor == null ? null : { noteId, tick: anchor.tick };
 			}
 			current = current.parent;
 		}

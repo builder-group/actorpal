@@ -26,7 +26,6 @@ export interface TNoteInspectorTarget {
 	velocity: number;
 	channel: number;
 	trackName: string;
-	pathState: 'past' | 'future' | 'unresolved';
 	position: TVec3 | null;
 	notePlatformEntityId: number | null;
 }
@@ -39,7 +38,6 @@ export interface TNotePlatformInspectorTarget {
 	noteName: string;
 	tick: number;
 	step: number;
-	pathState: 'past' | 'future' | 'unresolved';
 	position: TVec3 | null;
 	offsetY: number;
 	offsetZ: number;
@@ -69,16 +67,15 @@ export interface TMarbleInspectorTarget {
 	title: string;
 	entityId: number;
 	position: TVec3;
-	velocity: TVec3 | null;
 	bounce: number;
 }
+
+export type TInspectorPathState = 'past' | 'future' | 'unresolved';
 
 export function buildNoteInspectorTarget(
 	song: Pick<TMidiSong, 'bpm' | 'ticksPerBeat'>,
 	trackName: string,
 	note: TMidiNote,
-	liveStep: number,
-	bufferedStep: number,
 	fixedTimeStepSeconds: number,
 	position: TVec3 | null,
 	notePlatformEntityId: number | null
@@ -96,14 +93,6 @@ export function buildNoteInspectorTarget(
 		velocity: note.velocity,
 		channel: note.channel,
 		trackName,
-		pathState:
-			position == null
-				? 'unresolved'
-				: step <= liveStep
-					? 'past'
-					: step <= bufferedStep
-						? 'future'
-						: 'unresolved',
 		position,
 		notePlatformEntityId
 	};
@@ -114,7 +103,6 @@ export function buildNotePlatformInspectorTarget(
 	note: TMidiNote,
 	entityId: number,
 	step: number,
-	pathState: 'past' | 'future' | 'unresolved',
 	position: TVec3 | null,
 	platform: {
 		offsetY: number;
@@ -135,7 +123,6 @@ export function buildNotePlatformInspectorTarget(
 		noteName: `${getNoteName(note.noteNumber)} · ${trackName}`,
 		tick: note.tick,
 		step,
-		pathState,
 		position,
 		offsetY: platform.offsetY,
 		offsetZ: platform.offsetZ,
@@ -179,4 +166,22 @@ export function buildEmptyInspectorTarget(): TEmptyInspectorTarget {
 		kind: 'empty',
 		message: 'Select a note, straight track, or marble to inspect it.'
 	};
+}
+
+export function deriveInspectorPathState(
+	step: number,
+	position: TVec3 | null,
+	liveStep: number,
+	bufferedStep: number
+): TInspectorPathState {
+	if (position == null) {
+		return 'unresolved';
+	}
+	if (step <= liveStep) {
+		return 'past';
+	}
+	if (step <= bufferedStep) {
+		return 'future';
+	}
+	return 'unresolved';
 }

@@ -31,43 +31,55 @@ export interface TTimelineNotePointerInput extends TTimelineGridPointerInput {
 	additive: boolean;
 }
 
-const PianoColumn: React.FC<{
+const PianoColumn = React.memo(function PianoColumn({
+	noteRows,
+	contentHeight,
+	activeNoteNumbers,
+	onKeyPointerDown
+}: {
 	noteRows: number[];
 	contentHeight: number;
 	activeNoteNumbers: Set<number>;
 	onKeyPointerDown: (noteNumber: number) => void;
-}> = ({ noteRows, contentHeight, activeNoteNumbers, onKeyPointerDown }) => (
-	<div
-		className="border-base-200 sticky left-0 z-10 flex shrink-0 flex-col border-r"
-		style={{ width: PIANO_WIDTH, background: '#ffffff' }}
-	>
+}) {
+	return (
 		<div
-			className="border-base-200 sticky top-0 z-20 border-b"
-			style={{ height: RULER_HEIGHT, background: '#ffffff' }}
-		/>
+			className="border-base-200 sticky left-0 z-10 flex shrink-0 flex-col border-r"
+			style={{ width: PIANO_WIDTH, background: '#ffffff' }}
+		>
+			<div
+				className="border-base-200 sticky top-0 z-20 border-b"
+				style={{ height: RULER_HEIGHT, background: '#ffffff' }}
+			/>
 
-		<div className="relative flex-1" style={{ minHeight: MIN_ROLL_HEIGHT }}>
-			<div className="relative min-h-full" style={{ height: contentHeight }}>
-				{noteRows.map((noteNumber, index) => (
-					<PianoKeyRow
-						key={noteNumber}
-						noteNumber={noteNumber}
-						top={index * NOTE_ROW_HEIGHT}
-						isActive={activeNoteNumbers.has(noteNumber)}
-						onPointerDown={onKeyPointerDown}
-					/>
-				))}
+			<div className="relative flex-1" style={{ minHeight: MIN_ROLL_HEIGHT }}>
+				<div className="relative min-h-full" style={{ height: contentHeight }}>
+					{noteRows.map((noteNumber, index) => (
+						<PianoKeyRow
+							key={noteNumber}
+							noteNumber={noteNumber}
+							top={index * NOTE_ROW_HEIGHT}
+							isActive={activeNoteNumbers.has(noteNumber)}
+							onPointerDown={onKeyPointerDown}
+						/>
+					))}
+				</div>
 			</div>
 		</div>
-	</div>
-);
+	);
+});
 
-const PianoKeyRow: React.FC<{
+const PianoKeyRow = React.memo(function PianoKeyRow({
+	noteNumber,
+	top,
+	isActive,
+	onPointerDown
+}: {
 	noteNumber: number;
 	top: number;
 	isActive: boolean;
 	onPointerDown: (noteNumber: number) => void;
-}> = ({ noteNumber, top, isActive, onPointerDown }) => {
+}) {
 	const blackKey = isBlackKey(noteNumber);
 	const cNote = noteNumber % 12 === 0;
 
@@ -113,7 +125,7 @@ const PianoKeyRow: React.FC<{
 			) : null}
 		</button>
 	);
-};
+});
 
 const TimelineRuler: React.FC<{
 	ticksPerBeat: number;
@@ -196,7 +208,22 @@ const TimelineRuler: React.FC<{
 	);
 };
 
-const PianoRollGrid: React.FC<{
+const PianoRollGrid = React.memo(function PianoRollGrid({
+	noteRows,
+	ticksPerBeat,
+	pixelsPerTick,
+	contentHeight,
+	beatTicks,
+	notes,
+	draftNotes,
+	selectedNoteId,
+	selectedNoteIds,
+	hiddenNoteIds,
+	activeNoteIds,
+	placedNoteIds,
+	adjustedNoteIds,
+	onNotePointerDown
+}: {
 	noteRows: number[];
 	ticksPerBeat: number;
 	pixelsPerTick: number;
@@ -214,22 +241,7 @@ const PianoRollGrid: React.FC<{
 		event: React.PointerEvent<HTMLButtonElement>,
 		note: Pick<TMidiNote, 'id' | 'tick' | 'durationTicks' | 'noteNumber' | 'velocity'>
 	) => void;
-}> = ({
-	noteRows,
-	ticksPerBeat,
-	pixelsPerTick,
-	contentHeight,
-	beatTicks,
-	notes,
-	draftNotes,
-	selectedNoteId,
-	selectedNoteIds,
-	hiddenNoteIds,
-	activeNoteIds,
-	placedNoteIds,
-	adjustedNoteIds,
-	onNotePointerDown
-}) => {
+}) {
 	const noteIndexByNumber = React.useMemo(
 		() => new Map(noteRows.map((noteNumber, index) => [noteNumber, index])),
 		[noteRows]
@@ -376,7 +388,7 @@ const PianoRollGrid: React.FC<{
 			})}
 		</div>
 	);
-};
+});
 
 export const TimelineRoll: React.FC<{
 	timelineWidth: number;

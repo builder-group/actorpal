@@ -1,3 +1,4 @@
+import { createEmptyMidiLookup } from './lib/midi-lookup';
 import {
 	clearMidiNoteSelection,
 	clearMidiSongState,
@@ -19,6 +20,7 @@ export function createMidiPlugin(): TMidiPlugin {
 		deps: ['Default'],
 		resources: {
 			midiSong: null,
+			midiLookup: createEmptyMidiLookup(),
 			selectedTrackId: null,
 			selectedNoteId: null,
 			selectedNoteIds: new Set<number>(),

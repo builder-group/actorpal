@@ -1,3 +1,4 @@
+import { PREVIEW_CONFIG_DEFAULTS } from './config';
 import { enterPreview, exitPreview } from './lib/preview-camera';
 import { Viewport } from './lib/Viewport';
 import {
@@ -23,15 +24,7 @@ export function createRenderPlugin(): TRenderPlugin {
 		resources: {
 			viewport,
 			sceneObjects: new Map(),
-			previewConfig: {
-				enabled: false,
-				mode: 'followMarble',
-				fov: 64,
-				distance: 16,
-				height: 2,
-				lookAhead: 0,
-				smoothing: 0.12
-			},
+			previewConfig: { ...PREVIEW_CONFIG_DEFAULTS },
 			previewState: {
 				savedCameraSnapshot: null,
 				lastFollowDirection: null,

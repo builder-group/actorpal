@@ -3,6 +3,7 @@ import {
 	findNoteById,
 	findTrackById,
 	tickToStep,
+	type TMidiLookup,
 	type TMidiSong
 } from '@/modules/engine/plugins/midi';
 import {
@@ -10,7 +11,9 @@ import {
 	buildNoteInspectorTarget,
 	buildNotePlatformInspectorTarget,
 	buildStraightTrackInspectorTarget,
-	type TInspectorTarget
+	type TEmptyInspectorTarget,
+	type TInspectorTarget,
+	type TNoteInspectorTarget
 } from './inspector-target';
 
 type TStraightTrackEntry = readonly [
@@ -34,132 +37,129 @@ type TNotePlatformEntry = readonly [
 		thickness: number;
 		bounce: number;
 		color: string;
-	},
-	TVec3
+	}
 ];
 
-type TRigidBodyLike = {
-	linvel(): { x: number; y: number; z: number };
-};
+interface TTrajectoryProjectionLike {
+	noteAnchorsById: Map<
+		number,
+		{
+			tick: number;
+			step: number;
+			position: TVec3;
+		}
+	>;
+}
 
-export interface TSelectionInspectorTargetInput {
+export interface TSelectedNoteInspectorTargetInput {
 	midiSong: TMidiSong | null;
+	midiLookup: TMidiLookup;
 	selectedTrackId: number | null;
 	selectedNoteId: number | null;
-	sceneSelectionEntityId: number | null;
-	liveStep: number;
-	bufferedStep: number;
 	fixedTimeStepSeconds: number;
-	trajectoryProjection: {
-		noteAnchorsById: Map<
-			number,
-			{
-				tick: number;
-				step: number;
-				position: TVec3;
-				phase: 'past' | 'future';
-			}
-		>;
-	};
+	trajectoryProjection: TTrajectoryProjectionLike;
+	notePlatformByNoteId: Map<number, number>;
+}
+
+export interface TSceneSelectionInspectorTargetInput {
+	midiSong: TMidiSong | null;
+	midiLookup: TMidiLookup;
+	sceneSelectionEntityId: number | null;
+	fixedTimeStepSeconds: number;
+	trajectoryProjection: TTrajectoryProjectionLike;
 	tracks: TStraightTrackEntry[];
 	marbles: TMarbleEntry[];
 	notePlatforms: TNotePlatformEntry[];
-	rigidBodies: Map<number, TRigidBodyLike>;
 }
 
-export function deriveSelectionInspectorTarget(
-	input: TSelectionInspectorTargetInput
+export function deriveSelectedNoteInspectorTarget(
+	input: TSelectedNoteInspectorTargetInput
+): TNoteInspectorTarget | TEmptyInspectorTarget {
+	const { midiSong, midiLookup, selectedTrackId, selectedNoteId, fixedTimeStepSeconds } = input;
+	const selectedTrack = findTrackById(midiSong, selectedTrackId, midiLookup);
+	const selectedNoteMatch = findNoteById(midiSong, selectedNoteId, midiLookup);
+
+	if (
+		midiSong == null ||
+		selectedTrack == null ||
+		selectedNoteMatch == null ||
+		selectedNoteMatch.track.id !== selectedTrack.id
+	) {
+		return buildEmptyInspectorTarget();
+	}
+
+	const anchor = input.trajectoryProjection.noteAnchorsById.get(selectedNoteMatch.note.id) ?? null;
+	return buildNoteInspectorTarget(
+		midiSong,
+		selectedTrack.name,
+		selectedNoteMatch.note,
+		fixedTimeStepSeconds,
+		anchor?.position ?? null,
+		input.notePlatformByNoteId.get(selectedNoteMatch.note.id) ?? null
+	);
+}
+
+export function deriveSceneSelectionInspectorTarget(
+	input: TSceneSelectionInspectorTargetInput
 ): TInspectorTarget {
 	const {
 		midiSong,
-		selectedTrackId,
-		selectedNoteId,
+		midiLookup,
 		sceneSelectionEntityId,
-		liveStep,
-		bufferedStep,
 		fixedTimeStepSeconds,
 		trajectoryProjection,
 		tracks,
 		marbles,
-		notePlatforms,
-		rigidBodies
+		notePlatforms
 	} = input;
 
-	const selectedTrack = findTrackById(midiSong, selectedTrackId);
-	const selectedNote = selectedTrack?.notes.find((note) => note.id === selectedNoteId) ?? null;
-	const notePlatformByNoteId = new Map(
-		notePlatforms.map(([eid, binding]) => [binding.noteId, eid])
-	);
-
-	if (midiSong != null && selectedTrack != null && selectedNote != null) {
-		const anchor = trajectoryProjection.noteAnchorsById.get(selectedNote.id) ?? null;
-		return buildNoteInspectorTarget(
-			midiSong,
-			selectedTrack.name,
-			selectedNote,
-			liveStep,
-			bufferedStep,
-			fixedTimeStepSeconds,
-			anchor?.position ?? null,
-			notePlatformByNoteId.get(selectedNote.id) ?? null
-		);
+	if (sceneSelectionEntityId == null) {
+		return buildEmptyInspectorTarget();
 	}
 
-	if (sceneSelectionEntityId != null) {
-		const selectedNotePlatform = notePlatforms.find(([eid]) => eid === sceneSelectionEntityId);
-		if (selectedNotePlatform != null) {
-			const [eid, binding, platform] = selectedNotePlatform;
-			const noteMatch = findNoteById(midiSong, binding.noteId);
-			if (noteMatch != null && midiSong != null) {
-				const anchor = trajectoryProjection.noteAnchorsById.get(binding.noteId);
-				const step =
-					anchor?.step ?? tickToStep(noteMatch.note.tick, midiSong, fixedTimeStepSeconds);
-				return buildNotePlatformInspectorTarget(
-					noteMatch.track.name,
-					noteMatch.note,
-					eid,
-					step,
-					anchor?.phase ?? 'unresolved',
-					anchor?.position ?? null,
-					platform
-				);
-			}
+	const selectedNotePlatform = notePlatforms.find(([eid]) => eid === sceneSelectionEntityId);
+	if (selectedNotePlatform != null) {
+		const [eid, binding, platform] = selectedNotePlatform;
+		const noteMatch = findNoteById(midiSong, binding.noteId, midiLookup);
+		if (noteMatch != null && midiSong != null) {
+			const anchor = trajectoryProjection.noteAnchorsById.get(binding.noteId);
+			const step =
+				anchor?.step ?? tickToStep(noteMatch.note.tick, midiSong, fixedTimeStepSeconds);
+			return buildNotePlatformInspectorTarget(
+				noteMatch.track.name,
+				noteMatch.note,
+				eid,
+				step,
+				anchor?.position ?? null,
+				platform
+			);
 		}
+	}
 
-		const selectedTrackEntity = tracks.find(([eid]) => eid === sceneSelectionEntityId);
-		if (selectedTrackEntity != null) {
-			const [eid, transform, linear, track] = selectedTrackEntity;
-			return buildStraightTrackInspectorTarget(eid, {
-				position: transform.position,
-				rotation: transform.rotation,
-				length: linear.length,
-				width: track.width,
-				channelWidth: track.channelWidth,
-				channelDepth: track.channelDepth,
-				color: track.color
-			});
-		}
+	const selectedTrackEntity = tracks.find(([eid]) => eid === sceneSelectionEntityId);
+	if (selectedTrackEntity != null) {
+		const [eid, transform, linear, track] = selectedTrackEntity;
+		return buildStraightTrackInspectorTarget(eid, {
+			position: transform.position,
+			rotation: transform.rotation,
+			length: linear.length,
+			width: track.width,
+			channelWidth: track.channelWidth,
+			channelDepth: track.channelDepth,
+			color: track.color
+		});
+	}
 
-		const selectedMarble = marbles.find(([eid]) => eid === sceneSelectionEntityId);
-		if (selectedMarble != null) {
-			const [eid, position, marblePhysics] = selectedMarble;
-			const velocity = rigidBodies.get(eid)?.linvel();
-			return {
-				kind: 'marble',
-				title: 'Marble',
-				entityId: eid,
-				position,
-				bounce: marblePhysics.bounce,
-				velocity:
-					velocity == null
-						? null
-						: {
-								x: velocity.x,
-								y: velocity.y,
-								z: velocity.z
-							}
-			};
-		}
+	const selectedMarble = marbles.find(([eid]) => eid === sceneSelectionEntityId);
+	if (selectedMarble != null) {
+		const [eid, position, marblePhysics] = selectedMarble;
+		return {
+			kind: 'marble',
+			title: 'Marble',
+			entityId: eid,
+			position,
+			bounce: marblePhysics.bounce
+		};
 	}
 
 	return buildEmptyInspectorTarget();

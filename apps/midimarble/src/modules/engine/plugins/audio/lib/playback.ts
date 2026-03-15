@@ -2,7 +2,10 @@ import {
 	clampMidiTick,
 	findTrackById,
 	getTicksPerSecond,
+	getTrackNotesAtRoundedTick,
+	getTrackNotesInTickRange,
 	tickToSeconds,
+	type TMidiLookup,
 	type TMidiNote,
 	type TMidiSong
 } from '../../midi';
@@ -12,6 +15,7 @@ export const PREVIEW_MAX_NOTE_SECONDS = 0.9;
 
 export function getSelectedTrackNotesInRange(
 	song: TMidiSong | null,
+	midiLookup: TMidiLookup,
 	selectedTrackId: number | null,
 	startTick: number,
 	endTick: number
@@ -20,16 +24,13 @@ export function getSelectedTrackNotesInRange(
 		return [];
 	}
 
-	const track = findTrackById(song, selectedTrackId);
-	if (track == null || endTick <= startTick) {
-		return [];
-	}
-
-	return track.notes.filter((note) => note.tick > startTick && note.tick <= endTick);
+	const track = findTrackById(song, selectedTrackId, midiLookup);
+	return getTrackNotesInTickRange(midiLookup, selectedTrackId, startTick, endTick, track);
 }
 
 export function getSelectedTrackNotesAtTick(
 	song: TMidiSong | null,
+	midiLookup: TMidiLookup,
 	selectedTrackId: number | null,
 	tick: number
 ): TMidiNote[] {
@@ -37,13 +38,9 @@ export function getSelectedTrackNotesAtTick(
 		return [];
 	}
 
-	const track = findTrackById(song, selectedTrackId);
-	if (track == null) {
-		return [];
-	}
-
+	const track = findTrackById(song, selectedTrackId, midiLookup);
 	const roundedTick = Math.round(clampMidiTick(tick, song.totalTicks));
-	return track.notes.filter((note) => note.tick === roundedTick);
+	return getTrackNotesAtRoundedTick(midiLookup, selectedTrackId, roundedTick, track);
 }
 
 export function midiNoteToFrequency(noteNumber: number): number {

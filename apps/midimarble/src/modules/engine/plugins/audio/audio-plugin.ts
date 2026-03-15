@@ -76,12 +76,12 @@ export function createAudioPlugin(): TAudioPlugin {
 				if (requestId !== previewRequestId) {
 					return;
 				}
-				const { audioState, midiSong, selectedTrackId, transport } = this.r;
+				const { audioState, midiSong, midiLookup, selectedTrackId, transport } = this.r;
 				if (!audioState.isEnabled || midiSong == null || selectedTrackId == null) {
 					return;
 				}
 
-				const notes = getSelectedTrackNotesAtTick(midiSong, selectedTrackId, tick);
+				const notes = getSelectedTrackNotesAtTick(midiSong, midiLookup, selectedTrackId, tick);
 				const instrumentId = getTrackInstrumentId(
 					this.r.audioConfig.trackInstrumentIds,
 					selectedTrackId
@@ -106,12 +106,12 @@ export function createAudioPlugin(): TAudioPlugin {
 					return;
 				}
 
-				const { audioState, midiSong, selectedTrackId, transport } = this.r;
+				const { audioState, midiSong, midiLookup, selectedTrackId, transport } = this.r;
 				if (!audioState.isEnabled || midiSong == null || selectedTrackId == null) {
 					return;
 				}
 
-				const noteMatch = findNoteById(midiSong, noteId);
+				const noteMatch = findNoteById(midiSong, noteId, midiLookup);
 				if (noteMatch == null || noteMatch.track.id !== selectedTrackId) {
 					return;
 				}
@@ -140,12 +140,12 @@ export function createAudioPlugin(): TAudioPlugin {
 					return;
 				}
 
-				const { audioState, midiSong, selectedTrackId, transport } = this.r;
+				const { audioState, midiSong, midiLookup, selectedTrackId, transport } = this.r;
 				if (!audioState.isEnabled || midiSong == null || selectedTrackId == null) {
 					return;
 				}
 
-				const track = findTrackById(midiSong, selectedTrackId);
+				const track = findTrackById(midiSong, selectedTrackId, midiLookup);
 				if (track == null) {
 					return;
 				}
@@ -185,12 +185,12 @@ export function createAudioPlugin(): TAudioPlugin {
 					return;
 				}
 
-				const { audioState, midiSong } = this.r;
+				const { audioState, midiSong, midiLookup } = this.r;
 				if (!audioState.isEnabled || midiSong == null) {
 					return;
 				}
 
-				const track = findTrackById(midiSong, trackId);
+				const track = findTrackById(midiSong, trackId, midiLookup);
 				const previewNote = track?.notes[0];
 				if (track == null || previewNote == null) {
 					return;

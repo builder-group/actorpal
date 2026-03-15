@@ -1,4 +1,5 @@
 import type { TMidiNote, TMidiSong, TMidiTrack } from '../types';
+import type { TMidiLookup, TMidiNoteMatch } from './midi-lookup';
 
 export function getSongMaxTick(song: TMidiSong | null): number {
 	return song?.totalTicks ?? 0;
@@ -57,20 +58,34 @@ export function findFirstTrackWithNotes(song: TMidiSong | null): TMidiTrack | nu
 	return song.tracks.find((track) => track.notes.length > 0) ?? null;
 }
 
-export function findTrackById(song: TMidiSong | null, trackId: number | null): TMidiTrack | null {
+export function findTrackById(
+	song: TMidiSong | null,
+	trackId: number | null,
+	midiLookup?: TMidiLookup | null
+): TMidiTrack | null {
 	if (song == null || trackId == null) {
 		return null;
 	}
 
-	return song.tracks.find((track) => track.id === trackId) ?? null;
+	return (
+		midiLookup?.tracksById.get(trackId)?.track ??
+		song.tracks.find((track) => track.id === trackId) ??
+		null
+	);
 }
 
 export function findNoteById(
 	song: TMidiSong | null,
-	noteId: number | null
-): { note: TMidiNote; track: TMidiTrack } | null {
+	noteId: number | null,
+	midiLookup?: TMidiLookup | null
+): TMidiNoteMatch | null {
 	if (song == null || noteId == null) {
 		return null;
+	}
+
+	const indexed = midiLookup?.noteById.get(noteId);
+	if (indexed != null) {
+		return indexed;
 	}
 
 	for (const track of song.tracks) {

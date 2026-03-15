@@ -2,87 +2,32 @@ import { Entity, With } from 'ecsify';
 import { Trash2 } from 'lucide-react';
 import React from 'react';
 import { useQueryComponents, useResource } from '@/modules/engine';
+import type { TMidiLookup, TMidiSong } from '@/modules/engine/plugins/midi';
 import { MARBLE_PHYSICS_LIMITS } from '@/modules/engine/plugins/scene/lib/marble';
 import { NOTE_PLATFORM_LIMITS } from '@/modules/engine/plugins/scene/lib/note-platform';
 import { useEditorCx } from '../EditorCx';
-import { type TInspectorTarget } from '../lib/inspector-target';
-import { canDeleteStraightTrack, getInspectorDeleteEntityId } from '../lib/scene-ui';
-import { deriveSelectionInspectorTarget } from '../lib/selection-inspector-target';
+import { deriveInspectorPathState, type TInspectorTarget } from '../lib/inspector-target';
+import { canDeleteStraightTrack } from '../lib/scene-ui';
+import {
+	deriveSceneSelectionInspectorTarget,
+	deriveSelectedNoteInspectorTarget
+} from '../lib/selection-inspector-target';
 
 export const SelectionInspector: React.FC = () => {
 	const runtime = useEditorCx().runtime;
 	const app = runtime.app;
 	const midiSong = useResource(app, 'midiSong');
+	const midiLookup = useResource(app, 'midiLookup');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
 	const selectedNoteIds = useResource(app, 'selectedNoteIds');
 	const sceneSelection = useResource(app, 'sceneSelection');
 	const simulationSync = useResource(app, 'simulationSync');
-	const liveStep = useResource(app, 'liveStep');
-	const bufferedStep = useResource(app, 'bufferedStep');
-	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
-	const trajectoryProjection = useResource(app, 'trajectoryProjection');
-
-	const tracks = useQueryComponents(app, {
-		components: [
-			Entity,
-			app.c.AuthoredTransformMixin,
-			app.c.LinearElementMixin,
-			app.c.StraightTrackMixin
-		] as const,
-		queryOrFilter: With(app.c.StraightTrackMixin),
-		watchComponents: [
-			app.c.AuthoredTransformMixin,
-			app.c.LinearElementMixin,
-			app.c.StraightTrackMixin
-		]
-	});
-	const marbles = useQueryComponents(app, {
-		components: [Entity, app.c.PositionMixin, app.c.MarblePhysicsMixin] as const,
-		queryOrFilter: With(app.c.MarbleTag),
-		watchComponents: [app.c.MarbleTag, app.c.PositionMixin, app.c.MarblePhysicsMixin]
-	});
-	const notePlatforms = useQueryComponents(app, {
-		components: [
-			Entity,
-			app.c.NoteBindingMixin,
-			app.c.NotePlatformMixin,
-			app.c.PositionMixin
-		] as const,
-		queryOrFilter: With(app.c.NotePlatformMixin),
-		watchComponents: [app.c.NoteBindingMixin, app.c.NotePlatformMixin, app.c.PositionMixin]
-	});
-
-	const target = React.useMemo<TInspectorTarget>(() => {
-		return deriveSelectionInspectorTarget({
-			midiSong,
-			selectedTrackId,
-			selectedNoteId,
-			sceneSelectionEntityId: sceneSelection.entityId,
-			liveStep,
-			bufferedStep,
-			fixedTimeStepSeconds,
-			trajectoryProjection,
-			tracks,
-			marbles,
-			notePlatforms,
-			rigidBodies: app.r.rigidBodies
-		});
-	}, [
-		bufferedStep,
-		fixedTimeStepSeconds,
-		liveStep,
-		marbles,
-		midiSong,
-		notePlatforms,
-		sceneSelection.entityId,
-		selectedNoteId,
-		selectedTrackId,
-		tracks,
-		trajectoryProjection,
-		app.r.rigidBodies
-	]);
-	const deleteEntityId = React.useMemo(() => getInspectorDeleteEntityId(target), [target]);
+	const deleteEntityId =
+		sceneSelection.entityId != null &&
+		app.hasComponent(sceneSelection.entityId, app.c.StraightTrackMixin)
+			? sceneSelection.entityId
+			: null;
 	const canDelete = React.useMemo(
 		() => deleteEntityId != null && canDeleteStraightTrack(simulationSync.mode),
 		[deleteEntityId, simulationSync.mode]
@@ -112,77 +57,197 @@ export const SelectionInspector: React.FC = () => {
 			</div>
 
 			<div>
-				{target.kind === 'empty' ? <EmptyState message={target.message} /> : null}
-				{target.kind === 'note' ? (
-					<NoteInspector
-						target={target}
+				{selectedNoteId != null ? (
+					<SelectedNoteInspectorPanel
+						midiSong={midiSong}
+						midiLookup={midiLookup}
+						selectedTrackId={selectedTrackId}
+						selectedNoteId={selectedNoteId}
 						selectedNoteCount={selectedNoteIds.size}
 						onCreateOrSelectNotePlatform={(noteId) =>
 							void runtime.createOrSelectNotePlatform(noteId)
 						}
 					/>
-				) : null}
-				{target.kind === 'note-platform' ? (
-					<NotePlatformInspector
-						target={target}
-						onLiftChange={(value) =>
-							runtime.updateNotePlatform(target.entityId, {
-								offsetY: clamp(
-									value,
-									NOTE_PLATFORM_LIMITS.offsetY.min,
-									NOTE_PLATFORM_LIMITS.offsetY.max
-								)
-							})
-						}
-						onPushChange={(value) =>
-							runtime.updateNotePlatform(target.entityId, {
-								offsetZ: clamp(
-									value,
-									NOTE_PLATFORM_LIMITS.offsetZ.min,
-									NOTE_PLATFORM_LIMITS.offsetZ.max
-								)
-							})
-						}
-						onRotationChange={(value) =>
-							runtime.updateNotePlatform(target.entityId, {
-								rotationX: clamp(
-									value,
-									NOTE_PLATFORM_LIMITS.rotationX.min,
-									NOTE_PLATFORM_LIMITS.rotationX.max
-								)
-							})
-						}
-						onBounceChange={(value) =>
-							runtime.updateNotePlatform(target.entityId, {
-								bounce: clamp(
-									value,
-									NOTE_PLATFORM_LIMITS.bounce.min,
-									NOTE_PLATFORM_LIMITS.bounce.max
-								)
-							})
-						}
-						onCommit={() => runtime.commitSceneEdit()}
+				) : sceneSelection.entityId != null ? (
+					<SceneSelectionInspectorPanel
+						midiSong={midiSong}
+						midiLookup={midiLookup}
+						sceneSelectionEntityId={sceneSelection.entityId}
 					/>
-				) : null}
-				{target.kind === 'straight-track' ? <StraightTrackInspector target={target} /> : null}
-				{target.kind === 'marble' ? (
-					<MarbleInspector
-						target={target}
-						onBounceChange={(value) =>
-							runtime.updateMarblePhysics(target.entityId, {
-								bounce: clamp(
-									value,
-									MARBLE_PHYSICS_LIMITS.bounce.min,
-									MARBLE_PHYSICS_LIMITS.bounce.max
-								)
-							})
-						}
-						onCommit={() => runtime.commitSceneEdit()}
-					/>
-				) : null}
+				) : (
+					<EmptyState message="Select a note, straight track, or marble to inspect it." />
+				)}
 			</div>
 		</section>
 	);
+};
+
+const SelectedNoteInspectorPanel: React.FC<{
+	midiSong: TMidiSong | null;
+	midiLookup: TMidiLookup;
+	selectedTrackId: number | null;
+	selectedNoteId: number;
+	selectedNoteCount: number;
+	onCreateOrSelectNotePlatform: (noteId: number) => void;
+}> = ({
+	midiSong,
+	midiLookup,
+	selectedTrackId,
+	selectedNoteId,
+	selectedNoteCount,
+	onCreateOrSelectNotePlatform
+}) => {
+	const app = useEditorCx().runtime.app;
+	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
+	const trajectoryProjection = useResource(app, 'trajectoryProjection');
+	const notePlatforms = useQueryComponents(app, {
+		components: [Entity, app.c.NoteBindingMixin] as const,
+		queryOrFilter: With(app.c.NotePlatformMixin),
+		watchComponents: [app.c.NoteBindingMixin, app.c.NotePlatformMixin]
+	});
+
+	const target = React.useMemo(() => {
+		return deriveSelectedNoteInspectorTarget({
+			midiSong,
+			midiLookup,
+			selectedTrackId,
+			selectedNoteId,
+			fixedTimeStepSeconds,
+			trajectoryProjection,
+			notePlatformByNoteId: new Map(notePlatforms.map(([eid, binding]) => [binding.noteId, eid]))
+		});
+	}, [
+		fixedTimeStepSeconds,
+		midiLookup,
+		midiSong,
+		notePlatforms,
+		selectedNoteId,
+		selectedTrackId,
+		trajectoryProjection
+	]);
+
+	if (target.kind === 'empty') {
+		return <EmptyState message={target.message} />;
+	}
+
+	return (
+		<NoteInspector
+			target={target}
+			selectedNoteCount={selectedNoteCount}
+			onCreateOrSelectNotePlatform={onCreateOrSelectNotePlatform}
+		/>
+	);
+};
+
+const SceneSelectionInspectorPanel: React.FC<{
+	midiSong: TMidiSong | null;
+	midiLookup: TMidiLookup;
+	sceneSelectionEntityId: number;
+}> = ({ midiSong, midiLookup, sceneSelectionEntityId }) => {
+	const runtime = useEditorCx().runtime;
+	const app = runtime.app;
+	const fixedTimeStepSeconds = useResource(app, 'fixedTimeStepSeconds');
+	const trajectoryProjection = useResource(app, 'trajectoryProjection');
+	const tracks = useQueryComponents(app, {
+		components: [
+			Entity,
+			app.c.AuthoredTransformMixin,
+			app.c.LinearElementMixin,
+			app.c.StraightTrackMixin
+		] as const,
+		queryOrFilter: With(app.c.StraightTrackMixin),
+		watchComponents: [
+			app.c.AuthoredTransformMixin,
+			app.c.LinearElementMixin,
+			app.c.StraightTrackMixin
+		]
+	});
+	const marbles = useQueryComponents(app, {
+		components: [Entity, app.c.PositionMixin, app.c.MarblePhysicsMixin] as const,
+		queryOrFilter: With(app.c.MarbleTag),
+		watchComponents: [app.c.MarbleTag, app.c.PositionMixin, app.c.MarblePhysicsMixin]
+	});
+	const notePlatforms = useQueryComponents(app, {
+		components: [Entity, app.c.NoteBindingMixin, app.c.NotePlatformMixin] as const,
+		queryOrFilter: With(app.c.NotePlatformMixin),
+		watchComponents: [app.c.NoteBindingMixin, app.c.NotePlatformMixin]
+	});
+
+	const target = React.useMemo<TInspectorTarget>(() => {
+		return deriveSceneSelectionInspectorTarget({
+			midiSong,
+			midiLookup,
+			sceneSelectionEntityId,
+			fixedTimeStepSeconds,
+			trajectoryProjection,
+			tracks,
+			marbles,
+			notePlatforms
+		});
+	}, [
+		fixedTimeStepSeconds,
+		marbles,
+		midiLookup,
+		midiSong,
+		notePlatforms,
+		sceneSelectionEntityId,
+		tracks,
+		trajectoryProjection
+	]);
+
+	if (target.kind === 'empty') {
+		return <EmptyState message={target.message} />;
+	}
+	if (target.kind === 'note-platform') {
+		return (
+			<NotePlatformInspector
+				target={target}
+				onLiftChange={(value) =>
+					runtime.updateNotePlatform(target.entityId, {
+						offsetY: clamp(value, NOTE_PLATFORM_LIMITS.offsetY.min, NOTE_PLATFORM_LIMITS.offsetY.max)
+					})
+				}
+				onPushChange={(value) =>
+					runtime.updateNotePlatform(target.entityId, {
+						offsetZ: clamp(value, NOTE_PLATFORM_LIMITS.offsetZ.min, NOTE_PLATFORM_LIMITS.offsetZ.max)
+					})
+				}
+				onRotationChange={(value) =>
+					runtime.updateNotePlatform(target.entityId, {
+						rotationX: clamp(
+							value,
+							NOTE_PLATFORM_LIMITS.rotationX.min,
+							NOTE_PLATFORM_LIMITS.rotationX.max
+						)
+					})
+				}
+				onBounceChange={(value) =>
+					runtime.updateNotePlatform(target.entityId, {
+						bounce: clamp(value, NOTE_PLATFORM_LIMITS.bounce.min, NOTE_PLATFORM_LIMITS.bounce.max)
+					})
+				}
+				onCommit={() => runtime.commitSceneEdit()}
+			/>
+		);
+	}
+	if (target.kind === 'straight-track') {
+		return <StraightTrackInspector target={target} />;
+	}
+	if (target.kind === 'marble') {
+		return (
+			<MarbleInspector
+				target={target}
+				onBounceChange={(value) =>
+					runtime.updateMarblePhysics(target.entityId, {
+						bounce: clamp(value, MARBLE_PHYSICS_LIMITS.bounce.min, MARBLE_PHYSICS_LIMITS.bounce.max)
+					})
+				}
+				onCommit={() => runtime.commitSceneEdit()}
+			/>
+		);
+	}
+
+	return <EmptyState message="Select a note, straight track, or marble to inspect it." />;
 };
 
 const EmptyState: React.FC<{ message: string }> = ({ message }) => (
@@ -206,7 +271,7 @@ const NoteInspector: React.FC<{
 		<InspectorField label="Duration" value={`${target.durationTicks} ticks`} mono />
 		<InspectorField label="Velocity" value={target.velocity} mono />
 		<InspectorField label="Channel" value={target.channel} mono />
-		<InspectorField label="Path" value={capitalize(target.pathState)} />
+		<PathStateField step={target.step} position={target.position} />
 		{target.position != null ? <Vec3Field label="Position" value={target.position} /> : null}
 		{selectedNoteCount === 1 ? (
 			<div className="mt-4">
@@ -242,7 +307,7 @@ const NotePlatformInspector: React.FC<{
 		<InspectorField label="Note" value={target.noteName} />
 		<InspectorField label="Tick" value={Math.round(target.tick)} mono />
 		<InspectorField label="Step" value={target.step} mono />
-		<InspectorField label="Path" value={capitalize(target.pathState)} />
+		<PathStateField step={target.step} position={target.position} />
 		{target.position != null ? <Vec3Field label="Position" value={target.position} /> : null}
 		<SliderField
 			label="Lift"
@@ -310,7 +375,7 @@ const MarbleInspector: React.FC<{
 	<div className="border-base-200 bg-base-0 rounded-lg border px-3 py-3">
 		<InspectorTitle title={target.title} subtitle={`Entity ${target.entityId}`} />
 		<Vec3Field label="Position" value={target.position} />
-		{target.velocity != null ? <Vec3Field label="Velocity" value={target.velocity} /> : null}
+		<MarbleVelocityField entityId={target.entityId} />
 		<SliderField
 			label="Bounce"
 			value={target.bounce}
@@ -374,6 +439,35 @@ const Vec3Field: React.FC<{
 		mono
 	/>
 );
+
+const MarbleVelocityField: React.FC<{
+	entityId: number;
+}> = ({ entityId }) => {
+	const app = useEditorCx().runtime.app;
+	useResource(app, 'liveStep');
+
+	const velocity = app.r.rigidBodies.get(entityId)?.linvel();
+	if (velocity == null) {
+		return null;
+	}
+
+	return <Vec3Field label="Velocity" value={{ x: velocity.x, y: velocity.y, z: velocity.z }} />;
+};
+
+const PathStateField: React.FC<{
+	step: number;
+	position: { x: number; y: number; z: number } | null;
+}> = ({ step, position }) => {
+	const app = useEditorCx().runtime.app;
+	const liveStep = useResource(app, 'liveStep');
+	const bufferedStep = useResource(app, 'bufferedStep');
+	const pathState = React.useMemo(
+		() => deriveInspectorPathState(step, position, liveStep, bufferedStep),
+		[bufferedStep, liveStep, position, step]
+	);
+
+	return <InspectorField label="Path" value={capitalize(pathState)} />;
+};
 
 function capitalize(value: string): string {
 	return value.charAt(0).toUpperCase() + value.slice(1);

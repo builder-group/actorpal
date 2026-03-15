@@ -5,6 +5,7 @@ import {
 	createPegboardBundle,
 	createStraightTrackBundle
 } from './bundles';
+import { MIDIMARBLE_SCENE_DEFAULTS, SCENE_MANIPULATION_DEFAULTS } from './config';
 import { createSceneManipulationHandles } from './lib/manipulation-handles';
 import { resetSceneManipulationState } from './lib/manipulation-state';
 import { findNotePlatformEntityId } from './lib/note-platform';
@@ -25,17 +26,8 @@ import {
 } from './systems';
 import type { TSceneApp, TScenePlugin } from './types';
 
-const STRAIGHT_TRACK_WALL_LANE_X = -7.25;
-const NEW_STRAIGHT_TRACK_Y_OFFSET = -3;
-const NEW_STRAIGHT_TRACK_Z_OFFSET = 8;
-const MARBLE_SPAWN_POSITION = { x: STRAIGHT_TRACK_WALL_LANE_X, y: 18.4, z: -25.2 };
-
 export function createScenePlugin(): TScenePlugin {
-	const sceneManipulationConfig = {
-		handleRadius: 0.48,
-		handleColor: '#facc15',
-		dragStartPixels: 3
-	};
+	const sceneManipulationConfig = SCENE_MANIPULATION_DEFAULTS;
 	let disposeScene: (() => void) | null = null;
 
 	return {
@@ -146,29 +138,11 @@ export function createScenePlugin(): TScenePlugin {
 		},
 		setup(app: TSceneApp) {
 			app.spawnBundle(createPegboardBundle(app));
-			app.spawnBundle(
-				createStraightTrackBundle(app, {
-					position: { x: STRAIGHT_TRACK_WALL_LANE_X, y: 16, z: -18 },
-					rotation: { x: 0.28, y: 0, z: 0 },
-					length: 16
-				})
-			);
-			app.spawnBundle(
-				createStraightTrackBundle(app, {
-					position: { x: STRAIGHT_TRACK_WALL_LANE_X, y: 10.9, z: -1.4 },
-					rotation: { x: -0.1, y: 0, z: 0 },
-					length: 14
-				})
-			);
-			app.spawnBundle(
-				createStraightTrackBundle(app, {
-					position: { x: STRAIGHT_TRACK_WALL_LANE_X, y: 4.2, z: 12.8 },
-					rotation: { x: 0.22, y: 0, z: 0 },
-					length: 12
-				})
-			);
+			for (const track of MIDIMARBLE_SCENE_DEFAULTS.seedStraightTracks) {
+				app.spawnBundle(createStraightTrackBundle(app, track));
+			}
 			const marbleEntityId = app.spawnBundle(
-				createMarbleBundle(app, { position: MARBLE_SPAWN_POSITION })
+				createMarbleBundle(app, { position: MIDIMARBLE_SCENE_DEFAULTS.marbleSpawnPosition })
 			);
 			app.setPreviewTargetEntity(marbleEntityId);
 
@@ -212,9 +186,9 @@ function resolveStraightTrackSpawnPosition(
 					};
 
 		return {
-			x: STRAIGHT_TRACK_WALL_LANE_X,
-			y: basePosition.y + NEW_STRAIGHT_TRACK_Y_OFFSET,
-			z: basePosition.z + NEW_STRAIGHT_TRACK_Z_OFFSET
+			x: MIDIMARBLE_SCENE_DEFAULTS.straightTrackWallLaneX,
+			y: basePosition.y + MIDIMARBLE_SCENE_DEFAULTS.newStraightTrackYOffset,
+			z: basePosition.z + MIDIMARBLE_SCENE_DEFAULTS.newStraightTrackZOffset
 		};
 	}
 

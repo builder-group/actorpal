@@ -139,7 +139,9 @@ export class Viewport {
 			return;
 		}
 
-		this._controls.update();
+		if (this._controls.enabled) {
+			this._controls.update();
+		}
 		this._renderer.render(this._scene, this._camera);
 	}
 

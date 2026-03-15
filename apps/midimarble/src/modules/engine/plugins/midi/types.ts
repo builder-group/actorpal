@@ -1,11 +1,13 @@
 import type { TApp, TAppContext, TDefaultPlugin, TPlugin } from 'ecsify';
 import type { TEngineSystemSet } from '../../types';
+import type { TMidiLookup } from './lib/midi-lookup';
 
 export type TMidiPlugin = TPlugin<
 	{
 		name: 'Midi';
 		resources: {
 			midiSong: TMidiSong | null;
+			midiLookup: TMidiLookup;
 			selectedTrackId: number | null;
 			selectedNoteId: number | null;
 			selectedNoteIds: Set<number>;

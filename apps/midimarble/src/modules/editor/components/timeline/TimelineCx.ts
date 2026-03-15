@@ -47,6 +47,7 @@ export type TTimelineInteractionState =
 export class TimelineCx {
 	public readonly scrollContainerRef = React.createRef<HTMLDivElement>();
 	public readonly $containerWidth = createState(0);
+	public readonly $scrollLeft = createState(0);
 	public readonly $pixelsPerBeat = createState(DEFAULT_PIXELS_PER_BEAT);
 	public readonly $keyboardMode = createState<TTimelineKeyboardMode>('adaptive');
 	public readonly $interactionState = createState<TTimelineInteractionState>({ mode: 'idle' });
@@ -59,6 +60,13 @@ export class TimelineCx {
 		const nextWidth = Math.max(0, width);
 		if (this.$containerWidth.get() !== nextWidth) {
 			this.$containerWidth.set(nextWidth);
+		}
+	}
+
+	public setScrollLeft(scrollLeft: number): void {
+		const nextScrollLeft = Math.max(0, scrollLeft);
+		if (this.$scrollLeft.get() !== nextScrollLeft) {
+			this.$scrollLeft.set(nextScrollLeft);
 		}
 	}
 
@@ -162,6 +170,7 @@ export class TimelineCx {
 		const nextScrollLeft = this.clampScrollLeft(song, scrollLeft, nextPixelsPerBeat);
 
 		this.$pixelsPerBeat.set(nextPixelsPerBeat);
+		this.setScrollLeft(nextScrollLeft);
 
 		const scrollContainer = this.scrollContainerRef.current;
 		if (scrollContainer != null) {

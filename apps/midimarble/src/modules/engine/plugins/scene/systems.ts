@@ -227,7 +227,7 @@ export function syncOrphanedNotePlatformsSystem(app: TSceneApp) {
 		[Entity, app.c.NoteBindingMixin] as const,
 		With(app.c.NotePlatformMixin)
 	)) {
-		if (findNoteById(app.r.midiSong, binding.noteId) != null) {
+		if (findNoteById(app.r.midiSong, binding.noteId, app.r.midiLookup) != null) {
 			continue;
 		}
 
@@ -265,6 +265,10 @@ export function syncPreviewInteractionSystem(app: TSceneApp) {
 }
 
 export function syncNotePlatformMarkerStateSystem(app: TSceneApp) {
+	if (app.r.previewConfig.enabled) {
+		return;
+	}
+
 	const didNotePlatformStateChange =
 		app.queryEntities(
 			Or(
@@ -275,12 +279,21 @@ export function syncNotePlatformMarkerStateSystem(app: TSceneApp) {
 				Removed(app.c.NoteBindingMixin)
 			)
 		).length > 0;
+	const didSelectionChange =
+		app.wasResourceChanged('selectedNoteId') || app.wasResourceChanged('selectedNoteIds');
+	const didPreviewModeChange = app.wasResourceChanged('previewConfig');
+	const didLiveStepChange = app.wasResourceChanged('liveStep');
 	if (
 		!didNotePlatformStateChange &&
-		!app.wasResourceChanged('trajectoryProjection') &&
-		!app.wasResourceChanged('selectedNoteId') &&
-		!app.wasResourceChanged('selectedNoteIds')
+		!didSelectionChange &&
+		!didPreviewModeChange &&
+		!didLiveStepChange
 	) {
+		return;
+	}
+
+	if (!didNotePlatformStateChange && !didSelectionChange && !didPreviewModeChange) {
+		app.syncNoteMarkerPhase();
 		return;
 	}
 

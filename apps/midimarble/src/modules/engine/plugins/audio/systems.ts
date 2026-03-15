@@ -4,8 +4,15 @@ import { playTrackNotes, stopAllVoices, syncMasterVolume } from './lib/synth';
 import type { TAudioApp } from './types';
 
 export function syncAudioPlaybackSystem(app: TAudioApp) {
-	const { audioConfig, audioState, audioPlaybackFeedback, midiSong, selectedTrackId, transport } =
-		app.r;
+	const {
+		audioConfig,
+		audioState,
+		audioPlaybackFeedback,
+		midiSong,
+		midiLookup,
+		selectedTrackId,
+		transport
+	} = app.r;
 
 	if (
 		audioPlaybackFeedback.expiresAtMs > 0 &&
@@ -66,6 +73,7 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 	if (audioState.lastMode !== 'running') {
 		const notesAtCurrentTick = getSelectedTrackNotesInRange(
 			midiSong,
+			midiLookup,
 			selectedTrackId,
 			transport.playheadTick - 0.0001,
 			transport.playheadTick
@@ -91,6 +99,7 @@ export function syncAudioPlaybackSystem(app: TAudioApp) {
 
 	const notes = getSelectedTrackNotesInRange(
 		midiSong,
+		midiLookup,
 		selectedTrackId,
 		audioState.lastProcessedTick,
 		transport.playheadTick

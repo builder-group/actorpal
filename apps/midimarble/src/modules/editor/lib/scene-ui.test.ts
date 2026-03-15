@@ -40,7 +40,6 @@ describe('scene UI helpers', () => {
 				title: 'Marble',
 				entityId: 3,
 				position: { x: 0, y: 0, z: 0 },
-				velocity: null,
 				bounce: 0.4
 			})
 		).toBeNull();

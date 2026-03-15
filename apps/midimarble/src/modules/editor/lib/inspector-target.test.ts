@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
 	buildEmptyInspectorTarget,
 	buildNoteInspectorTarget,
-	buildStraightTrackInspectorTarget
+	buildStraightTrackInspectorTarget,
+	deriveInspectorPathState
 } from './inspector-target';
 
 const SONG = {
@@ -11,7 +12,7 @@ const SONG = {
 } as const;
 
 describe('inspector target helpers', () => {
-	it('builds a note inspector target with derived step and path state', () => {
+	it('builds a note inspector target with derived step', () => {
 		expect(
 			buildNoteInspectorTarget(
 				SONG,
@@ -24,8 +25,6 @@ describe('inspector target helpers', () => {
 					velocity: 100,
 					channel: 0
 				},
-				1,
-				3,
 				1 / 240,
 				{ x: 1, y: 2, z: 3 },
 				null
@@ -34,10 +33,16 @@ describe('inspector target helpers', () => {
 			kind: 'note',
 			noteName: 'C4',
 			step: 2,
-			pathState: 'future',
 			trackName: 'Lead',
 			position: { x: 1, y: 2, z: 3 }
 		});
+	});
+
+	it('derives inspector path state from playback progress', () => {
+		expect(deriveInspectorPathState(2, { x: 1, y: 2, z: 3 }, 1, 3)).toBe('future');
+		expect(deriveInspectorPathState(1, { x: 1, y: 2, z: 3 }, 1, 3)).toBe('past');
+		expect(deriveInspectorPathState(5, { x: 1, y: 2, z: 3 }, 1, 3)).toBe('unresolved');
+		expect(deriveInspectorPathState(2, null, 1, 3)).toBe('unresolved');
 	});
 
 	it('builds an empty inspector target', () => {

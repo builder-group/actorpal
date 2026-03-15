@@ -6,6 +6,7 @@ import { AUDIO_INSTRUMENT_OPTIONS, getTrackInstrumentId } from '@/modules/engine
 import {
 	clampMidiTick,
 	findTrackById,
+	getTrackNotesOverlappingTickWindow,
 	stepToTick,
 	type TMidiNote
 } from '@/modules/engine/plugins/midi';
@@ -47,6 +48,7 @@ const TimelineEmptyState: React.FC<{ message: string }> = ({ message }) => (
 
 const POINTER_DRAG_THRESHOLD_PX = 4;
 const TIMELINE_SNAP_THRESHOLD_PX = 8;
+const TIMELINE_VIEWPORT_OVERSCAN_SCREENS = 0.5;
 
 export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const cx = useEditorCx();
@@ -58,6 +60,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 
 	const isReady = useResource(app, 'isReady');
 	const midiSong = useResource(app, 'midiSong');
+	const midiLookup = useResource(app, 'midiLookup');
 	const selectedTrackId = useResource(app, 'selectedTrackId');
 	const midiImportError = useResource(app, 'midiImportError');
 	const selectedNoteId = useResource(app, 'selectedNoteId');
@@ -78,13 +81,14 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	});
 
 	const containerWidth = useTimelineState(timelineCx.$containerWidth);
+	const scrollLeft = useTimelineState(timelineCx.$scrollLeft);
 	const pixelsPerBeat = useTimelineState(timelineCx.$pixelsPerBeat);
 	const keyboardMode = useTimelineState(timelineCx.$keyboardMode);
 	const interactionState = useTimelineState(timelineCx.$interactionState);
 
 	const selectedTrack = React.useMemo(
-		() => findTrackById(midiSong, selectedTrackId),
-		[midiSong, selectedTrackId]
+		() => findTrackById(midiSong, selectedTrackId, midiLookup),
+		[midiLookup, midiSong, selectedTrackId]
 	);
 	const canControlPlayback =
 		isReady && midiSong != null && selectedTrack != null && midiSong.totalTicks > 0;
@@ -155,6 +159,29 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 	const contentHeight = Math.max(noteRows.length * NOTE_ROW_HEIGHT, MIN_ROLL_HEIGHT);
 	const timelineWidth =
 		midiSong == null ? Math.max(containerWidth, 1) : timelineCx.getTimelineWidth(midiSong);
+	const overscanTicks =
+		pixelsPerTick <= 0 ? 0 : (containerWidth * TIMELINE_VIEWPORT_OVERSCAN_SCREENS) / pixelsPerTick;
+	const visibleTickStart = Math.max(
+		0,
+		scrollLeft / Math.max(pixelsPerTick, 0.0001) - overscanTicks
+	);
+	const visibleTickEnd = Math.max(
+		0,
+		(scrollLeft + containerWidth) / Math.max(pixelsPerTick, 0.0001) + overscanTicks
+	);
+	const visibleNotes = React.useMemo(
+		() =>
+			selectedTrack == null
+				? []
+				: getTrackNotesOverlappingTickWindow(
+						midiLookup,
+						selectedTrack.id,
+						visibleTickStart,
+						visibleTickEnd,
+						selectedTrack
+					),
+		[midiLookup, selectedTrack, visibleTickEnd, visibleTickStart]
+	);
 
 	const [isRulerDragging, setIsRulerDragging] = React.useState(false);
 	const [isImporting, setIsImporting] = React.useState(false);
@@ -168,6 +195,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 
 		const syncContainerWidth = () => {
 			timelineCx.setContainerWidth(scrollContainer.clientWidth);
+			timelineCx.setScrollLeft(scrollContainer.scrollLeft);
 			if (midiSong == null) {
 				scrollContainer.scrollLeft = 0;
 				return;
@@ -613,6 +641,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 				<div
 					ref={timelineCx.scrollContainerRef}
 					className="min-h-0 flex-1 overflow-auto"
+					onScroll={(event) => timelineCx.setScrollLeft(event.currentTarget.scrollLeft)}
 					onWheel={handleWheel}
 				>
 					<TimelineRoll
@@ -624,7 +653,7 @@ export const Timeline: React.FC<{ className?: string }> = ({ className }) => {
 						playheadPx={playheadPx}
 						contentHeight={contentHeight}
 						noteRows={noteRows}
-						notes={selectedTrack?.notes ?? []}
+						notes={visibleNotes}
 						draftNotes={draftNotes}
 						selectedNoteId={selectedNoteId}
 						selectedNoteIds={selectedNoteIds}

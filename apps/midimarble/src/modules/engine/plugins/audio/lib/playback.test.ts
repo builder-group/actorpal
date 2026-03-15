@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { buildMidiLookup } from '../../midi';
 import {
 	getSelectedTrackNotesAtTick,
 	getSelectedTrackNotesInRange,
@@ -30,16 +31,22 @@ const SONG = {
 
 describe('audio playback helpers', () => {
 	it('reads only the selected track in a tick range', () => {
-		expect(getSelectedTrackNotesInRange(SONG as never, 0, 0, 10).map((note) => note.id)).toEqual([
-			2
-		]);
-		expect(getSelectedTrackNotesInRange(SONG as never, 1, 0, 10).map((note) => note.id)).toEqual([
-			4
-		]);
+		const midiLookup = buildMidiLookup(SONG as never);
+
+		expect(
+			getSelectedTrackNotesInRange(SONG as never, midiLookup, 0, 0, 10).map((note) => note.id)
+		).toEqual([2]);
+		expect(
+			getSelectedTrackNotesInRange(SONG as never, midiLookup, 1, 0, 10).map((note) => note.id)
+		).toEqual([4]);
 	});
 
 	it('reads notes exactly at the landed tick', () => {
-		expect(getSelectedTrackNotesAtTick(SONG as never, 0, 8).map((note) => note.id)).toEqual([2]);
+		const midiLookup = buildMidiLookup(SONG as never);
+
+		expect(
+			getSelectedTrackNotesAtTick(SONG as never, midiLookup, 0, 8).map((note) => note.id)
+		).toEqual([2]);
 	});
 
 	it('converts MIDI note numbers to frequencies', () => {

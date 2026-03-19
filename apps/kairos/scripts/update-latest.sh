@@ -7,9 +7,9 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${PROJECT_ROOT}"
 
-# Note: Not using `pnpm update --latest` here.
-# Expo SDK upgrades need the Expo package bumped first, then Expo CLI must realign the rest
-# of the Expo/RN dependency set for that SDK via `expo install --fix`.
+# Note: Not using `pnpm update --latest`; Expo SDKs expect a compatible version set.
+# Bump `expo` first, then let `expo install --fix` align the rest.
+# https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/
 pnpm add expo@latest
 npx expo install --fix
 npx expo-doctor

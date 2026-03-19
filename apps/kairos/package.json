@@ -26,7 +26,7 @@
 		"start:dev:ios:prebuild": "expo run:ios --device",
 		"test": "echo \"🧪 No tests defined yet.\"",
 		"typecheck": "tsc --noEmit",
-		"update:latest": "echo \"⚠️ Avoid updating to latest in React Native projects. Expo, React, React Native and other related packages depend strongly on each other and must be upgraded in sync.\""
+		"update:latest": "bash ./scripts/update-latest.sh"
 	},
 	"dependencies": {
 		"@expo/ui": "55.0.5",

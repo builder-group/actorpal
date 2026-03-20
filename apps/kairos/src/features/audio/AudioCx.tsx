@@ -1,7 +1,7 @@
 import { createState, type TState } from 'feature-state';
 import React from 'react';
 import { useMemoCleanup } from '@/hooks';
-import { getSystemSounds, play, stop } from '../../../modules/audio';
+import { getSystemSounds, play, stop } from '@/modules/audio';
 
 export class AudioCx {
 	public readonly $sounds: TState<string[], []>;

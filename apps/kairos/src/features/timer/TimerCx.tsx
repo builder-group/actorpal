@@ -1,10 +1,10 @@
-import * as Haptics from 'expo-haptics';
 import { createState, type TPersistFeature, type TState } from 'feature-state';
 import React from 'react';
 import { useMemoCleanup } from '@/hooks';
-import { withAsyncStorage } from '@/lib';
+import { withAsyncStorage, withVersionedAsyncStorage, type TVersionedMigrationConfig } from '@/lib';
 import { AudioCx, useAudioCx } from '../audio';
 import { durationToSeconds } from './format';
+import { TimerAlarm } from './TimerAlarm';
 import { TDuration } from './types';
 
 export class TimerCx {
@@ -12,6 +12,8 @@ export class TimerCx {
 
 	private readonly _audioCx: AudioCx;
 	private _interval: ReturnType<typeof setInterval> | null = null;
+	private readonly _alarm: TimerAlarm;
+	private readonly _cleanups: Array<() => void> = [];
 
 	public readonly $config: TState<TTimerConfig, [TPersistFeature]>;
 	public readonly $status: TState<TTimerStatus, [TPersistFeature]>;
@@ -26,18 +28,22 @@ export class TimerCx {
 
 	constructor(audioCx: AudioCx) {
 		this._audioCx = audioCx;
-		this.$config = withAsyncStorage(
+		this.$config = withVersionedAsyncStorage(
 			createState<TTimerConfig>({
+				version: '0.0.2',
 				min: { h: 0, m: 1, s: 0 },
 				max: { h: 0, m: 5, s: 0 },
 				label: '',
 				hideTimeDisplay: false,
-				sound: 'Radar',
+				sessionEndSound: 'Radar',
+				sessionSound: null,
 				endMode: 'overtime',
 				endAfterSeconds: 5
 			}),
-			'kairos:timer:config'
+			'kairos:timer:config',
+			timerConfigMigrationConfig
 		);
+		this._alarm = new TimerAlarm(audioCx, this.$config);
 
 		this.$status = withAsyncStorage(createState<TTimerStatus>('idle'), 'kairos:timer:status');
 		this.$totalSeconds = withAsyncStorage(
@@ -65,11 +71,16 @@ export class TimerCx {
 			this.$remainingAtStart.persist(),
 			this.$recents.persist()
 		]);
-		this.$config.set((config) => ({
-			...config,
-			hideTimeDisplay:
-				config.hideTimeDisplay ?? (config as { hideTimer?: boolean }).hideTimer ?? false
-		}));
+
+		this._cleanups.push(this._alarm.setup());
+		this._cleanups.push(
+			this.$config.listen(() => {
+				if (this.$status.get() !== 'running') return;
+				const remaining = this._getRemainingSeconds();
+				this._alarm.cancel();
+				void this._alarm.arm(remaining);
+			})
+		);
 
 		const status = this.$status.get();
 		const startedAt = this.$startedAt.get();
@@ -80,8 +91,10 @@ export class TimerCx {
 			if (startedAt != null) {
 				const elapsed = (now - startedAt) / 1000;
 				if (elapsed < remainingAtStart) {
-					this.$remainingSeconds.set(remainingAtStart - elapsed);
+					const remaining = remainingAtStart - elapsed;
+					this.$remainingSeconds.set(remaining);
 					this._startLoop();
+					void this._alarm.arm(remaining);
 				} else {
 					this._recoverOvertime(startedAt, remainingAtStart, now);
 				}
@@ -101,6 +114,9 @@ export class TimerCx {
 
 	public unmount(): void {
 		this._stopLoop();
+		this._alarm.cancel();
+		this._cleanups.forEach((fn) => fn());
+		this._cleanups.length = 0;
 	}
 
 	// MARK: - Actions
@@ -131,6 +147,7 @@ export class TimerCx {
 		this.$status.set('running');
 		this.$remainingSeconds.set(totalSeconds);
 		this._startLoop();
+		void this._alarm.arm(totalSeconds);
 	}
 
 	public pause(): void {
@@ -147,6 +164,7 @@ export class TimerCx {
 		const remaining = Math.max(0, remainingAtStart - (Date.now() - startedAt) / 1000);
 
 		this._stopLoop();
+		this._alarm.cancel();
 		this.$startedAt.set(null);
 		this.$remainingAtStart.set(remaining);
 		this.$status.set('paused');
@@ -158,16 +176,19 @@ export class TimerCx {
 			return;
 		}
 
+		const remaining = this.$remainingAtStart.get();
 		const now = Date.now();
 		this.$startedAt.set(now);
 		this.$status.set('running');
-		this.$remainingSeconds.set(this.$remainingAtStart.get());
+		this.$remainingSeconds.set(remaining);
 		this._startLoop();
+		void this._alarm.arm(remaining);
 	}
 
 	public cancel(): void {
 		this._audioCx.stop();
 		this._stopLoop();
+		this._alarm.cancel();
 		this.$status.set('idle');
 		this.$totalSeconds.set(null);
 		this.$startedAt.set(null);
@@ -187,11 +208,13 @@ export class TimerCx {
 	public reset(): void {
 		this.cancel();
 		this.$config.set({
+			version: '0.0.2',
 			min: { h: 0, m: 1, s: 0 },
 			max: { h: 0, m: 5, s: 0 },
 			label: '',
 			hideTimeDisplay: false,
-			sound: 'Radar',
+			sessionEndSound: 'Radar',
+			sessionSound: null,
 			endMode: 'overtime',
 			endAfterSeconds: 5
 		});
@@ -237,8 +260,7 @@ export class TimerCx {
 		if (remaining === 0) {
 			this.$overtimeSeconds.set(0);
 			this.$status.set('overtime');
-			this._audioCx.play(this.$config.get().sound);
-			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+			this._alarm.onEnd();
 		}
 	}
 
@@ -276,7 +298,8 @@ export class TimerCx {
 			max: config.max,
 			label: config.label.trim(),
 			hideTimeDisplay: config.hideTimeDisplay,
-			sound: config.sound,
+			sessionEndSound: config.sessionEndSound,
+			sessionSound: config.sessionSound,
 			endMode: config.endMode,
 			endAfterSeconds: config.endAfterSeconds
 		});
@@ -287,6 +310,13 @@ export class TimerCx {
 			hash = (hash * 33) ^ key.charCodeAt(i);
 		}
 		return `timer_${(hash >>> 0).toString(36)}`;
+	}
+
+	private _getRemainingSeconds(): number {
+		const startedAt = this.$startedAt.get();
+		const remainingAtStart = this.$remainingAtStart.get();
+		if (startedAt == null) return remainingAtStart;
+		return Math.max(0, remainingAtStart - (Date.now() - startedAt) / 1000);
 	}
 
 	private _recoverOvertime(startedAt: number, remainingAtStart: number, now: number): void {
@@ -307,16 +337,39 @@ export class TimerCx {
 	}
 }
 
+const timerConfigMigrationConfig: TVersionedMigrationConfig<TTimerConfig> = {
+	latestVersion: '0.0.2',
+	fallbackVersion: '0.0.1',
+	migrations: {
+		'0.0.1': {
+			to: '0.0.2',
+			migrate: (value) => {
+				const v = value as TTimerConfig & { sound?: string; hideTimer?: boolean };
+				return {
+					...v,
+					sessionEndSound: v.sound ?? 'Radar',
+					sessionSound: null,
+					hideTimeDisplay: v.hideTimeDisplay ?? v.hideTimer ?? false
+				};
+			}
+		}
+	}
+};
+
 export type TTimerStatus = 'idle' | 'running' | 'paused' | 'overtime';
 export type TTimerSound = string;
 export type TTimerEndMode = 'overtime' | 'stop' | 'loop';
 
 export interface TTimerConfig {
+	version: '0.0.2';
 	min: TDuration;
 	max: TDuration;
 	label: string;
 	hideTimeDisplay: boolean;
-	sound: TTimerSound;
+	/** Alarm sound that fires when the session ends. */
+	sessionEndSound: TTimerSound;
+	/** Optional sound played during the session (e.g. a tick). null = off. */
+	sessionSound: string | null;
 	endMode: TTimerEndMode;
 	endAfterSeconds: number;
 }

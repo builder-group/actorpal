@@ -3,10 +3,7 @@ import React from 'react';
 import { Text, View } from 'react-native';
 import { SegmentControl, TSegmentControlItem } from '@/components';
 import { cn } from '@/lib';
-import {
-	DurationPickerView,
-	TDurationPickerChangeEvent
-} from '../../../../modules/duration-picker';
+import { DurationPickerView, TDurationPickerChangeEvent } from '@/modules/duration-picker';
 import {
 	durationToSeconds,
 	formatDurationCompact,

@@ -11,7 +11,8 @@
 			"icon": "./assets/ios-app-icon.icon",
 			"bundleIdentifier": "com.buildergroup.kairos",
 			"infoPlist": {
-				"ITSAppUsesNonExemptEncryption": false
+				"ITSAppUsesNonExemptEncryption": false,
+				"UIBackgroundModes": ["audio"]
 			}
 		},
 		"plugins": [
@@ -37,6 +38,9 @@
 			"eas": {
 				"projectId": "2b00705a-3054-4eb0-8ada-c793d01adbc7"
 			}
+		},
+		"android": {
+			"package": "com.buildergroup.kairos"
 		}
 	}
 }

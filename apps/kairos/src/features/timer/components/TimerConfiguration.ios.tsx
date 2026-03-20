@@ -30,6 +30,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { useTheme } from '@/components';
 import { useAudioCx } from '@/features/audio';
+import { previewEndSound, previewSessionSound } from '@/modules/alarm';
 import { TimerCx, type TTimerEndMode } from '../TimerCx';
 
 export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) => {
@@ -43,7 +44,8 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const [isEndAfterFocused, setIsEndAfterFocused] = React.useState(false);
 
 	const label = useCompute(cx.$config, ({ value }) => value.label);
-	const sound = useCompute(cx.$config, ({ value }) => value.sound);
+	const sessionEndSound = useCompute(cx.$config, ({ value }) => value.sessionEndSound);
+	const sessionSound = useCompute(cx.$config, ({ value }) => value.sessionSound);
 	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
@@ -188,13 +190,13 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 					<Divider modifiers={[dividerInsets]} />
 
-					<LabeledContent label="Alarm Sound" modifiers={[pickerRowPadding, rowHeight]}>
+					<LabeledContent label="Session End Sound" modifiers={[pickerRowPadding, rowHeight]}>
 						<Picker
-							selection={sound}
+							selection={sessionEndSound}
 							onSelectionChange={(v) => {
 								const name = v as string;
-								cx.$config.set((c) => ({ ...c, sound: name }));
-								audioCx.play(name);
+								cx.$config.set((c) => ({ ...c, sessionEndSound: name }));
+								previewEndSound(name).catch(() => {});
 							}}
 							modifiers={[
 								pickerStyle('menu'),
@@ -208,6 +210,28 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 									{name}
 								</Text>
 							))}
+						</Picker>
+					</LabeledContent>
+
+					<Divider modifiers={[dividerInsets]} />
+
+					<LabeledContent label="Session Sound" modifiers={[pickerRowPadding, rowHeight]}>
+						<Picker
+							selection={sessionSound ?? 'none'}
+							onSelectionChange={(v) => {
+								const value = v === 'none' ? null : (v as string);
+								cx.$config.set((c) => ({ ...c, sessionSound: value }));
+								if (value != null) previewSessionSound(value).catch(() => {});
+							}}
+							modifiers={[
+								pickerStyle('menu'),
+								multilineTextAlignment('trailing'),
+								foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+								tint(tokens.base500)
+							]}
+						>
+							<Text modifiers={[tag('none')]}>None</Text>
+							<Text modifiers={[tag('tick.mp3')]}>Tick</Text>
 						</Picker>
 					</LabeledContent>
 

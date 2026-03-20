@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { TDurationPickerChangeEvent } from '../../../../../modules/duration-picker';
+import type { TDurationPickerChangeEvent } from '@/modules/duration-picker';
 
 export interface TDurationSelectRowProps {
 	title?: string;

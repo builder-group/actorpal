@@ -69,8 +69,7 @@ kairos/
 │   ├── environment/          -- config, constants
 │   ├── lib/                  -- shared utilities
 │   └── features/
-│       ├── timer/            -- random draw, countdown, loop state machine
-│       ├── notification/     -- schedule/cancel local notifications (expo-notifications)
+│       ├── timer/            -- random draw, countdown, loop state machine, and native alarm delivery policy
 │       ├── audio/            -- alarm playback (expo-av)
 │       ├── live-activity/    -- start/stop/update Live Activity
 │       └── preset/           -- built-in + user presets, persisted via feature-state

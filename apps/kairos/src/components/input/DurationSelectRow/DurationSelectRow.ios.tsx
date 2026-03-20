@@ -1,7 +1,7 @@
 import React from 'react';
 import { Animated, Text, View } from 'react-native';
 import { cn } from '@/lib';
-import { DurationPickerView } from '../../../../modules/duration-picker';
+import { DurationPickerView } from '@/modules/duration-picker';
 import { SettingsRow } from '../../layout/SettingsRow';
 import type { TDurationSelectRowProps } from './types';
 

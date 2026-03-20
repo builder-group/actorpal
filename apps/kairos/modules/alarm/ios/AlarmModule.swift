@@ -80,7 +80,7 @@ public class AlarmModule: Module {
             )
         }
 
-        AsyncFunction("previewSessionSound") { (soundFile: String) throws in
+        AsyncFunction("previewSessionSound") { (soundFile: String) async throws in
             guard
                 let url = self.backgroundAudioRuntime.resolveSessionSoundURL(
                     named: soundFile
@@ -91,7 +91,7 @@ public class AlarmModule: Module {
             try await MainActor.run { try self.playPreview(url: url) }
         }
 
-        AsyncFunction("previewEndSound") { (soundName: String) throws in
+        AsyncFunction("previewEndSound") { (soundName: String) async throws in
             guard let url = SoundLibrary.resolveURL(for: soundName) else {
                 throw AlarmError.soundNotFound(soundName)
             }

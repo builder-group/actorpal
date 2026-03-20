@@ -4,6 +4,7 @@ import {
 	addAlarmNotificationTappedListener,
 	cancelAlarm,
 	consumePendingNotificationTap,
+	getNotificationPermissionStatus,
 	prepareNotificationSound,
 	requestAlarmPermission,
 	scheduleAlarm,
@@ -29,8 +30,6 @@ export class TimerAlarm {
 
 	/** Register the notification tap listener. Returns cleanup. Call on mount. */
 	setup(): () => void {
-		requestAlarmPermission().catch(() => {});
-
 		const onTap = (event: { identifier: string } | null) => {
 			if (event?.identifier !== TimerAlarm.NOTIFICATION_ID) return;
 			// Stop native session if still running, then hand audio off to JS.
@@ -55,6 +54,9 @@ export class TimerAlarm {
 		const config = this._timerConfig.get();
 
 		try {
+			await this._ensureNotificationPermissionIfNeeded();
+			if (gen !== this._generation) return;
+
 			if (config.sessionSound !== null) {
 				// Active mode: native audio plays the session sound and owns the transition to
 				// the alarm sound. The notification fallback is silent; its only job is to
@@ -111,5 +113,16 @@ export class TimerAlarm {
 		this._generation++;
 		stopBackgroundSession();
 		cancelAlarm(TimerAlarm.NOTIFICATION_ID).catch(() => {});
+	}
+
+	private async _ensureNotificationPermissionIfNeeded(): Promise<void> {
+		try {
+			const status = await getNotificationPermissionStatus();
+			if (status === 'notDetermined') {
+				await requestAlarmPermission();
+			}
+		} catch {
+			// Ignore permission lookup failures and let the native alarm flow decide what it can do
+		}
 	}
 }

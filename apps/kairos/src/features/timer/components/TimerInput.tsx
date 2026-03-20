@@ -61,7 +61,7 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 	}, []);
 
 	const handleStart = React.useCallback(() => {
-		cx.start();
+		void cx.start();
 	}, [cx]);
 
 	// MARK: - UI

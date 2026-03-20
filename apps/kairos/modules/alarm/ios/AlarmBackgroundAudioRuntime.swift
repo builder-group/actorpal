@@ -37,11 +37,16 @@ final class AlarmBackgroundAudioRuntime {
         let endTimeMs = Date().timeIntervalSince1970 * 1000 + durationMs
 
         notificationRuntime.cancel(identifier: notificationId)
-        try await notificationRuntime.schedule(
-            identifier: notificationId,
-            endTimeMs: endTimeMs,
-            soundFile: nil
-        )
+        do {
+            try await notificationRuntime.schedule(
+                identifier: notificationId,
+                endTimeMs: endTimeMs,
+                soundFile: nil
+            )
+        } catch {
+            // Keep the background-audio path alive even when notification fallback
+            // is unavailable (e.g. permission denied)
+        }
 
         try await MainActor.run {
             teardownPlayback()

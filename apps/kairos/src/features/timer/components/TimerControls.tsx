@@ -20,11 +20,11 @@ export const TimerControls: React.FC<TTimerControlsProps> = ({ cx }) => {
 
 	const handlePrimaryAction = React.useCallback(() => {
 		if (status === 'overtime') {
-			cx.start();
+			void cx.start();
 			return;
 		}
 		if (status === 'paused') {
-			cx.resume();
+			void cx.resume();
 			return;
 		}
 		cx.pause();

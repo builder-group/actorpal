@@ -40,7 +40,7 @@ export const TimerRecentItem = React.memo<TTimerRecentItemProps>((props) => {
 	}, [cx, recent.config]);
 
 	const handleStart = React.useCallback(() => {
-		cx.start({ config: recent.config });
+		void cx.start({ config: recent.config });
 	}, [cx, recent.config]);
 
 	const handleDelete = React.useCallback(() => {

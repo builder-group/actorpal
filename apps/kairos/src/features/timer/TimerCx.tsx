@@ -1,7 +1,9 @@
 import { createState, type TPersistFeature, type TState } from 'feature-state';
 import React from 'react';
+import { Alert, AppState, Linking } from 'react-native';
 import { useMemoCleanup } from '@/hooks';
 import { withAsyncStorage, withVersionedAsyncStorage, type TVersionedMigrationConfig } from '@/lib';
+import { getNotificationPermissionStatus, requestAlarmPermission } from '@/modules/alarm';
 import { AudioCx, useAudioCx } from '../audio';
 import { durationToSeconds } from './format';
 import { TimerAlarm } from './TimerAlarm';
@@ -121,14 +123,19 @@ export class TimerCx {
 
 	// MARK: - Actions
 
-	public start(options: TTimerStartOptions = {}): void {
+	public async start(options: TTimerStartOptions = {}): Promise<void> {
 		this._audioCx.stop();
 
-		const { config: configOverride, recordRecent = true } = options;
+		const { config: configOverride, recordRecent = true, allowPermissionPrompt = true } = options;
+		const config = configOverride ?? this.$config.get();
+
+		if (!(await this._ensureCanStartTimer(config, allowPermissionPrompt))) {
+			return;
+		}
+
 		if (configOverride != null) {
 			this.$config.set(configOverride);
 		}
-		const config = configOverride ?? this.$config.get();
 
 		const { min, max } = config;
 		const lo = Math.min(durationToSeconds(min), durationToSeconds(max));
@@ -171,8 +178,13 @@ export class TimerCx {
 		this.$remainingSeconds.set(remaining);
 	}
 
-	public resume(): void {
+	public async resume(): Promise<void> {
 		if (this.$status.get() !== 'paused') {
+			return;
+		}
+
+		const config = this.$config.get();
+		if (!(await this._ensureCanStartTimer(config, true))) {
 			return;
 		}
 
@@ -267,7 +279,7 @@ export class TimerCx {
 	private _onAutoEnd(): void {
 		const { endMode } = this.$config.get();
 		if (endMode === 'loop') {
-			this.start({ recordRecent: false });
+			this.start({ recordRecent: false, allowPermissionPrompt: false });
 			return;
 		}
 		this.cancel();
@@ -330,10 +342,61 @@ export class TimerCx {
 			this.$status.set('overtime');
 			this._startLoop();
 		} else if (endMode === 'loop') {
-			this.start({ recordRecent: false });
+			this.start({ recordRecent: false, allowPermissionPrompt: false });
 		} else {
 			this.cancel();
 		}
+	}
+
+	private async _ensureCanStartTimer(
+		config: TTimerConfig,
+		allowPermissionPrompt: boolean
+	): Promise<boolean> {
+		if (config.sessionSound != null) {
+			return true;
+		}
+
+		try {
+			let status = await getNotificationPermissionStatus();
+			if (
+				status === 'notDetermined' &&
+				allowPermissionPrompt &&
+				AppState.currentState === 'active'
+			) {
+				await requestAlarmPermission();
+				status = await getNotificationPermissionStatus();
+				if (status === 'denied') {
+					await this._showQuietTimerNotificationsNotice();
+				}
+			}
+		} catch {
+			// do nothing
+		}
+
+		return true;
+	}
+
+	private _showQuietTimerNotificationsNotice(): Promise<void> {
+		return new Promise((resolve) => {
+			Alert.alert(
+				'Notifications Off',
+				'Notifications are required if you want Kairos to alert you when the timer finishes while your phone is locked or the app is in the background.',
+				[
+					{
+						text: 'OK',
+						style: 'cancel',
+						onPress: () => resolve()
+					},
+					{
+						text: 'Open Settings',
+						onPress: () => {
+							void Linking.openSettings().catch(() => {});
+							resolve();
+						}
+					}
+				]
+			);
+		});
 	}
 }
 
@@ -377,6 +440,7 @@ export interface TTimerConfig {
 interface TTimerStartOptions {
 	config?: TTimerConfig;
 	recordRecent?: boolean;
+	allowPermissionPrompt?: boolean;
 }
 
 export interface TTimerRecent {

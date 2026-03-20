@@ -11,6 +11,7 @@ interface TAlarmModule {
 	): Promise<void>;
 	stopBackgroundSession(): void;
 	requestAlarmPermission(): Promise<boolean>;
+	getNotificationPermissionStatus(): Promise<TNotificationPermissionStatus>;
 	scheduleAlarm(id: string, endTimeMs: number, soundFile: string): Promise<void>;
 	prepareNotificationSound(soundName: string): Promise<string>;
 	previewSessionSound(soundFile: string): Promise<void>;
@@ -53,6 +54,17 @@ export function stopBackgroundSession(): void {
 export async function requestAlarmPermission(): Promise<boolean> {
 	return AlarmModule.requestAlarmPermission();
 }
+
+export async function getNotificationPermissionStatus(): Promise<TNotificationPermissionStatus> {
+	return AlarmModule.getNotificationPermissionStatus();
+}
+
+export type TNotificationPermissionStatus =
+	| 'notDetermined'
+	| 'denied'
+	| 'authorized'
+	| 'provisional'
+	| 'ephemeral';
 
 /**
  * Schedules a local notification at endTimeMs (Unix ms) with a stable identifier.

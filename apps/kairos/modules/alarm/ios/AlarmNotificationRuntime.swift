@@ -42,6 +42,26 @@ final class AlarmNotificationRuntime: NSObject, UNUserNotificationCenterDelegate
         )
     }
 
+    func getPermissionStatus() async -> String {
+        let settings = await UNUserNotificationCenter.current()
+            .notificationSettings()
+
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            return "notDetermined"
+        case .denied:
+            return "denied"
+        case .authorized:
+            return "authorized"
+        case .provisional:
+            return "provisional"
+        case .ephemeral:
+            return "ephemeral"
+        @unknown default:
+            return "denied"
+        }
+    }
+
     func schedule(identifier: String, endTimeMs: Double, soundFile: String?)
         async throws
     {

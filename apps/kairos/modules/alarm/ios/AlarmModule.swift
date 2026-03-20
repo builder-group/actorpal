@@ -59,6 +59,10 @@ public class AlarmModule: Module {
             return granted
         }
 
+        AsyncFunction("getNotificationPermissionStatus") { () async -> String in
+            await self.notificationRuntime.getPermissionStatus()
+        }
+
         AsyncFunction("scheduleAlarm") {
             (id: String, endTimeMs: Double, soundFile: String) async throws in
             self.notificationRuntime.cancel(identifier: id)
@@ -80,7 +84,8 @@ public class AlarmModule: Module {
             )
         }
 
-        AsyncFunction("previewSessionSound") { (soundFile: String) async throws in
+        AsyncFunction("previewSessionSound") {
+            (soundFile: String) async throws in
             guard
                 let url = self.backgroundAudioRuntime.resolveSessionSoundURL(
                     named: soundFile

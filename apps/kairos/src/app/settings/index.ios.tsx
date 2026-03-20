@@ -24,9 +24,13 @@ import {
 import { useRouter } from 'expo-router';
 import { useCompute } from 'feature-react/state';
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import { useTheme } from '@/components';
-import { useSettingsCx, type TThemePreference } from '@/features/settings';
+import {
+	useNotificationPermission,
+	useSettingsCx,
+	type TThemePreference
+} from '@/features/settings';
 import { useTimerCx } from '@/features/timer';
 
 const Screen: React.FC = () => {
@@ -34,6 +38,7 @@ const Screen: React.FC = () => {
 	const router = useRouter();
 	const settingsCx = useSettingsCx();
 	const timerCx = useTimerCx();
+	const { isAllowed: notificationsAllowed } = useNotificationPermission();
 	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
 
 	// MARK: - Actions
@@ -69,28 +74,6 @@ const Screen: React.FC = () => {
 		<Host style={{ flex: 1 }}>
 			<Form>
 				<Section title="APP">
-					<Button onPress={() => router.push('/settings/about')} modifiers={[buttonStyle('plain')]}>
-						<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
-							<Image
-								systemName="info.circle"
-								color="white"
-								size={18}
-								modifiers={[
-									frame({ width: 28, height: 28 }),
-									background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
-									clipShape('roundedRectangle', 8)
-								]}
-							/>
-							<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
-								About
-							</Text>
-							<Spacer />
-							<Image systemName="chevron.right" size={14} color={tokens.base500} />
-						</HStack>
-					</Button>
-				</Section>
-
-				<Section title="APPEARANCE">
 					<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
 						<Image
 							systemName="circle.lefthalf.filled"
@@ -118,6 +101,65 @@ const Screen: React.FC = () => {
 							<Text modifiers={[tag('dark')]}>Dark</Text>
 						</Picker>
 					</HStack>
+					<Button onPress={() => router.push('/settings/about')} modifiers={[buttonStyle('plain')]}>
+						<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+							<Image
+								systemName="info.circle"
+								color="white"
+								size={18}
+								modifiers={[
+									frame({ width: 28, height: 28 }),
+									background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
+									clipShape('roundedRectangle', 8)
+								]}
+							/>
+							<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+								About
+							</Text>
+							<Spacer />
+							<Image systemName="chevron.right" size={14} color={tokens.base500} />
+						</HStack>
+					</Button>
+				</Section>
+
+				<Section
+					title="PERMISSION"
+					footer={
+						<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base500 })]}>
+							Used to alert you when a timer ends while Kairos is in the background or your phone is
+							locked.
+						</Text>
+					}
+				>
+					<Button
+						onPress={() => Linking.openSettings().catch(() => {})}
+						modifiers={[buttonStyle('plain')]}
+					>
+						<HStack spacing={8} alignment="center" modifiers={[contentShape(shapes.rectangle())]}>
+							<Image
+								systemName="bell.fill"
+								color="white"
+								size={18}
+								modifiers={[
+									frame({ width: 28, height: 28 }),
+									background(tokens.base600, shapes.roundedRectangle({ cornerRadius: 8 })),
+									clipShape('roundedRectangle', 8)
+								]}
+							/>
+							<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base900 })]}>
+								Notifications
+							</Text>
+							<Spacer />
+							<Image
+								systemName={
+									notificationsAllowed ? 'checkmark.circle.fill' : 'exclamationmark.circle.fill'
+								}
+								size={18}
+								color={notificationsAllowed ? tokens.success : tokens.warning}
+							/>
+							<Image systemName="chevron.right" size={14} color={tokens.base500} />
+						</HStack>
+					</Button>
 				</Section>
 
 				<Section title="DATA">

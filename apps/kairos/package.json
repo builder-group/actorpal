@@ -1,6 +1,6 @@
 {
 	"name": "@repo/kairos",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"private": true,
 	"description": "",
 	"keywords": [],
@@ -18,15 +18,18 @@
 		"clean": "shx rm -rf build && shx rm -rf .expo && shx rm -rf .turbo && shx rm -rf node_modules",
 		"format": "prettier --write \"**/*.{ts,tsx,md,json,js,jsx}\"",
 		"install:clean": "pnpm run clean && pnpm install",
-		"ios:build": "eas build --platform ios --profile production",
-		"ios:submit": "eas submit --platform ios --latest",
+		"ios:build:cloud": "eas build --platform ios --profile production",
+		"ios:build:local": "bash ./scripts/ios-eas.sh build",
+		"ios:submit:cloud": "eas submit --platform ios --profile production --latest",
+		"ios:submit:local": "bash ./scripts/ios-eas.sh submit",
 		"lint": "expo lint",
 		"start:dev": "expo start --dev-client --lan",
 		"start:dev:ios": "expo start --dev-client --ios --lan",
 		"start:dev:ios:prebuild": "expo run:ios --device",
 		"test": "echo \"🧪 No tests defined yet.\"",
 		"typecheck": "tsc --noEmit",
-		"update:latest": "bash ./scripts/update-latest.sh"
+		"update:latest": "bash ./scripts/update-latest.sh",
+		"version:bump": "bash ./scripts/version.sh"
 	},
 	"dependencies": {
 		"@expo/ui": "55.0.5",

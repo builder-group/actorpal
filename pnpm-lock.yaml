@@ -97,6 +97,9 @@ importers:
       expo-image:
         specifier: ~55.0.5
         version: 55.0.6(expo@55.0.8)(react-native-web@0.21.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))(react@19.2.4)
+      expo-keep-awake:
+        specifier: ~55.0.4
+        version: 55.0.4(expo@55.0.8)(react@19.2.4)
       expo-linear-gradient:
         specifier: ~55.0.9
         version: 55.0.9(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))(react@19.2.4)

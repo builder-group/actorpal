@@ -1,17 +1,22 @@
 import { createState } from 'feature-state';
 import React from 'react';
-import { withAsyncStorage } from '@/lib';
+import { withVersionedAsyncStorage, type TVersionedMigrationConfig } from '@/lib';
 
 // MARK: - Class
 
 export class SettingsCx {
-	public readonly $settings = withAsyncStorage(
+	public readonly $settings = withVersionedAsyncStorage(
 		createState<TSettings>({
+			version: '0.0.2',
 			appearance: {
 				theme: 'system'
+			},
+			timer: {
+				keepScreenAwake: false
 			}
 		}),
-		'kairos:settings'
+		'kairos:settings',
+		settingsMigrationConfig
 	);
 
 	public async mount(): Promise<void> {
@@ -26,28 +31,54 @@ export class SettingsCx {
 		this.$settings.set((current) => ({
 			...current,
 			...updates,
-			appearance: { ...current.appearance, ...updates.appearance }
+			appearance: { ...current.appearance, ...updates.appearance },
+			timer: { ...current.timer, ...updates.timer }
 		}));
 	}
 
 	public reset(): void {
-		this.$settings.set({ appearance: { theme: 'system' } });
+		this.$settings.set({
+			version: '0.0.2',
+			appearance: { theme: 'system' },
+			timer: { keepScreenAwake: false }
+		});
 	}
 }
 
+const settingsMigrationConfig: TVersionedMigrationConfig<TSettings> = {
+	latestVersion: '0.0.2',
+	fallbackVersion: '0.0.1',
+	migrations: {
+		'0.0.1': {
+			to: '0.0.2',
+			migrate: (value) => {
+				const v = value as { appearance?: { theme?: TThemePreference }; [key: string]: unknown };
+				return {
+					version: '0.0.2',
+					appearance: { theme: v.appearance?.theme ?? 'system' },
+					timer: { keepScreenAwake: false }
+				};
+			}
+		}
+	}
+};
+
 export interface TSettings {
+	version: '0.0.2';
 	appearance: {
 		theme: TThemePreference;
+	};
+	timer: {
+		keepScreenAwake: boolean;
 	};
 }
 
 interface TSettingsUpdates {
 	appearance?: Partial<TSettings['appearance']>;
+	timer?: Partial<TSettings['timer']>;
 }
 
 export type TThemePreference = 'light' | 'dark' | 'system';
-
-export type TSettingsCx = SettingsCx;
 
 // MARK: - React Context
 

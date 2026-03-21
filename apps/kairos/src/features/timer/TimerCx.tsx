@@ -1,18 +1,21 @@
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { createState, type TPersistFeature, type TState } from 'feature-state';
 import React from 'react';
 import { Alert, AppState, Linking } from 'react-native';
+import { AudioCx, useAudioCx } from '@/features/audio';
+import { SettingsCx, useSettingsCx } from '@/features/settings';
 import { useMemoCleanup } from '@/hooks';
 import { withAsyncStorage, withVersionedAsyncStorage, type TVersionedMigrationConfig } from '@/lib';
 import { getNotificationPermissionStatus, requestAlarmPermission } from '@/modules/alarm';
-import { AudioCx, useAudioCx } from '../audio';
+import { timerConfig } from './config';
 import { durationToSeconds } from './format';
 import { TimerAlarm } from './TimerAlarm';
 import { TDuration } from './types';
 
 export class TimerCx {
-	private static readonly RECENTS_MAX_SIZE = 20;
-
 	private readonly _audioCx: AudioCx;
+	private readonly _settingsCx: SettingsCx;
+
 	private _interval: ReturnType<typeof setInterval> | null = null;
 	private readonly _alarm: TimerAlarm;
 	private readonly _cleanups: Array<() => void> = [];
@@ -28,8 +31,9 @@ export class TimerCx {
 	public readonly $startedAt: TState<number | null, [TPersistFeature]>;
 	public readonly $recents: TState<TTimerRecent[], [TPersistFeature]>;
 
-	constructor(audioCx: AudioCx) {
+	constructor(audioCx: AudioCx, settingsCx: SettingsCx) {
 		this._audioCx = audioCx;
+		this._settingsCx = settingsCx;
 		this.$config = withVersionedAsyncStorage(
 			createState<TTimerConfig>({
 				version: '0.0.3',
@@ -75,6 +79,8 @@ export class TimerCx {
 		]);
 
 		this._cleanups.push(this._alarm.setup());
+		this._cleanups.push(this.$status.listen(() => this._syncKeepAwake()));
+		this._cleanups.push(this._settingsCx.$settings.listen(() => this._syncKeepAwake()));
 		this._cleanups.push(
 			this.$config.listen(() => {
 				if (this.$status.get() !== 'running') return;
@@ -112,11 +118,14 @@ export class TimerCx {
 		} else if (status === 'paused') {
 			this.$remainingSeconds.set(remainingAtStart);
 		}
+
+		this._syncKeepAwake();
 	}
 
 	public unmount(): void {
 		this._stopLoop();
 		this._alarm.cancel();
+		void deactivateKeepAwake(timerConfig.keepAwakeTag).catch(() => undefined);
 		this._cleanups.forEach((fn) => fn());
 		this._cleanups.length = 0;
 	}
@@ -296,7 +305,7 @@ export class TimerCx {
 				lastUsedAt: now
 			};
 			const filtered = current.filter((entry) => entry.hash !== hash);
-			return [next, ...filtered].slice(0, TimerCx.RECENTS_MAX_SIZE);
+			return [next, ...filtered].slice(0, timerConfig.recentsMaxSize);
 		});
 	}
 
@@ -393,6 +402,21 @@ export class TimerCx {
 			);
 		});
 	}
+
+	private _syncKeepAwake(): void {
+		if (this._shouldKeepAwake()) {
+			void activateKeepAwakeAsync(timerConfig.keepAwakeTag).catch(() => undefined);
+			return;
+		}
+
+		void deactivateKeepAwake(timerConfig.keepAwakeTag).catch(() => undefined);
+	}
+
+	private _shouldKeepAwake(): boolean {
+		const { keepScreenAwake } = this._settingsCx.$settings.get().timer;
+		const status = this.$status.get();
+		return keepScreenAwake && (status === 'running' || status === 'overtime');
+	}
 }
 
 const timerConfigMigrationConfig: TVersionedMigrationConfig<TTimerConfig> = {
@@ -481,11 +505,12 @@ export interface TTimerRecent {
 const TimerCxContext = React.createContext<TimerCx | null>(null);
 
 export const TimerCxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+	const settingsCx = useSettingsCx();
 	const audioCx = useAudioCx();
 	const cx = useMemoCleanup(() => {
-		const instance = new TimerCx(audioCx);
+		const instance = new TimerCx(audioCx, settingsCx);
 		return [instance, () => instance.unmount()];
-	}, [audioCx]);
+	}, [audioCx, settingsCx]);
 
 	React.useEffect(() => {
 		cx.mount();

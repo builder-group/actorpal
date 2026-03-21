@@ -7,7 +7,8 @@ import {
 	Picker,
 	Section,
 	Spacer,
-	Text
+	Text,
+	Toggle
 } from '@expo/ui/swift-ui';
 import {
 	background,
@@ -40,6 +41,7 @@ const Screen: React.FC = () => {
 	const timerCx = useTimerCx();
 	const { isAllowed: notificationsAllowed } = useNotificationPermission();
 	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
+	const keepScreenAwake = useCompute(settingsCx.$settings, ({ value }) => value.timer.keepScreenAwake);
 
 	// MARK: - Actions
 
@@ -160,6 +162,21 @@ const Screen: React.FC = () => {
 							<Image systemName="chevron.right" size={14} color={tokens.base500} />
 						</HStack>
 					</Button>
+				</Section>
+
+				<Section
+					title="TIMER"
+					footer={
+						<Text modifiers={[foregroundStyle({ type: 'color', color: tokens.base500 })]}>
+							Keeps the screen on while a timer is running.
+						</Text>
+					}
+				>
+					<Toggle
+						isOn={keepScreenAwake}
+						label="Keep Screen Awake"
+						onIsOnChange={(value) => settingsCx.update({ timer: { keepScreenAwake: value } })}
+					/>
 				</Section>
 
 				<Section title="DATA">

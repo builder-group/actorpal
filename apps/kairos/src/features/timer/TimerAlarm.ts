@@ -54,7 +54,7 @@ export class TimerAlarm {
 				totalSeconds * 1000,
 				config.countdownSound,
 				config.endSound,
-				config.endAlert === 'alarm',
+				config.backgroundAlert === 'alarm',
 				TimerAlarm.NOTIFICATION_ID
 			);
 		} catch (e) {
@@ -71,12 +71,12 @@ export class TimerAlarm {
 
 		if (AppState.currentState === 'active') {
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-			if (config.endAlert === 'notification') {
+			if (config.backgroundAlert === 'notification') {
 				// Foreground + notification mode: native won't play the alarm, JS takes over
 				this.cancel();
 				this._audioCx.play(config.endSound);
 			}
-			// endAlert = 'alarm': native owns the end sound, nothing else needed
+			// backgroundAlert = 'alarm': native owns the end sound, nothing else needed
 		}
 		// Backgrounded: native handles it based on nativeAlarm
 	}

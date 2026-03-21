@@ -43,7 +43,7 @@ export class TimerCx {
 				hideTimeDisplay: false,
 				endSound: 'Radar',
 				countdownSound: null,
-				endAlert: 'notification',
+				backgroundAlert: 'notification',
 				endMode: { type: 'overtime' }
 			}),
 			'kairos:timer:config',
@@ -232,7 +232,7 @@ export class TimerCx {
 			hideTimeDisplay: false,
 			endSound: 'Radar',
 			countdownSound: null,
-			endAlert: 'notification',
+			backgroundAlert: 'notification',
 			endMode: { type: 'overtime' }
 		});
 		this.$recents.set([]);
@@ -317,7 +317,7 @@ export class TimerCx {
 			hideTimeDisplay: config.hideTimeDisplay,
 			endSound: config.endSound,
 			countdownSound: config.countdownSound,
-			endAlert: config.endAlert,
+			backgroundAlert: config.backgroundAlert,
 			endMode: config.endMode
 		});
 
@@ -358,7 +358,7 @@ export class TimerCx {
 		config: TTimerConfig,
 		allowPermissionPrompt: boolean
 	): Promise<void> {
-		if (config.endAlert === 'alarm') {
+		if (config.backgroundAlert === 'alarm') {
 			return;
 		}
 
@@ -452,7 +452,7 @@ const timerConfigMigrationConfig: TVersionedMigrationConfig<TTimerConfig> = {
 				return {
 					...v,
 					version: '0.0.3',
-					endAlert: v.sessionSound != null ? 'alarm' : 'notification',
+					backgroundAlert: v.sessionSound != null ? 'alarm' : 'notification',
 					endSound: v.sessionEndSound,
 					countdownSound: v.sessionSound,
 					endMode
@@ -467,7 +467,7 @@ export type TTimerEndMode =
 	| { type: 'overtime' }
 	| { type: 'stop'; delaySeconds: number }
 	| { type: 'loop'; delaySeconds: number };
-export type TTimerEndAlert = 'notification' | 'alarm';
+export type TTimerBackgroundAlert = 'notification' | 'alarm';
 
 export interface TTimerConfig {
 	version: '0.0.3';
@@ -481,7 +481,7 @@ export interface TTimerConfig {
 	/** Sound played while the timer counts down. null = silent background audio. */
 	countdownSound: string | null;
 	/** How the timer ends when the app is in the background. */
-	endAlert: TTimerEndAlert;
+	backgroundAlert: TTimerBackgroundAlert;
 	/** What happens after the timer reaches zero. overtime = count up indefinitely; stop = auto-cancel after delaySeconds; loop = auto-restart after delaySeconds. */
 	endMode: TTimerEndMode;
 }

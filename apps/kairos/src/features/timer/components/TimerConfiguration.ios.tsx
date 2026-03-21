@@ -33,7 +33,7 @@ import { useAudioCx } from '@/features/audio';
 import { useNotificationPermission } from '@/features/settings';
 import { previewEndSound, previewSessionSound } from '@/modules/alarm';
 import { timerConfig } from '../config';
-import { TimerCx, type TTimerEndAlert } from '../TimerCx';
+import { TimerCx, type TTimerBackgroundAlert } from '../TimerCx';
 
 export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) => {
 	const { cx } = props;
@@ -48,7 +48,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const label = useCompute(cx.$config, ({ value }) => value.label);
 	const endSound = useCompute(cx.$config, ({ value }) => value.endSound);
 	const countdownSound = useCompute(cx.$config, ({ value }) => value.countdownSound);
-	const endAlert = useCompute(cx.$config, ({ value }) => value.endAlert);
+	const backgroundAlert = useCompute(cx.$config, ({ value }) => value.backgroundAlert);
 	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const endModeDelay = useCompute(cx.$config, ({ value }) =>
@@ -57,7 +57,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const availableSounds = useCompute(audioCx.$sounds, ({ value }) => value);
 	const canClearLabel = label.length > 0 && isLabelFocused;
 	const { isAllowed: notificationsAllowed } = useNotificationPermission();
-	const hasNotificationWarning = endAlert === 'notification' && !notificationsAllowed;
+	const hasNotificationWarning = backgroundAlert === 'notification' && !notificationsAllowed;
 
 	const rowHeight = frame({ minHeight: 52 });
 	const baseRowPadding = padding({ leading: 16, trailing: 20 });
@@ -132,10 +132,10 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 		void endAfterRef.current?.blur();
 	}, []);
 
-	const showWhileAwayInfo = React.useCallback(() => {
+	const showBackgroundAlertInfo = React.useCallback(() => {
 		Alert.alert(
-			'While Away',
-			'Only applies when Kairos is in the background. Notification sends an alert when done. Alarm plays your chosen sound even on silent, but keeps the app active and may use more battery.',
+			'Background Alert',
+			'Notification alerts you when done. Alarm plays your chosen sound even on silent, but keeps the app active and may use more battery.',
 			[{ text: 'Got it', style: 'default' }]
 		);
 	}, []);
@@ -376,12 +376,12 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 					<LabeledContent
 						label={
 							<HStack spacing={6} alignment="center">
-								<Text>While Away</Text>
+								<Text>Background Alert</Text>
 								<Image
 									systemName="info.circle"
 									size={16}
 									color={tokens.base400}
-									onPress={showWhileAwayInfo}
+									onPress={showBackgroundAlertInfo}
 								/>
 								{hasNotificationWarning && (
 									<Image
@@ -396,9 +396,9 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 						modifiers={[pickerRowPadding, rowHeight]}
 					>
 						<Picker
-							selection={endAlert}
+							selection={backgroundAlert}
 							onSelectionChange={(v) => {
-								cx.$config.set((c) => ({ ...c, endAlert: v as TTimerEndAlert }));
+								cx.$config.set((c) => ({ ...c, backgroundAlert: v as TTimerBackgroundAlert }));
 							}}
 							modifiers={[
 								pickerStyle('menu'),

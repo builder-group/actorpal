@@ -94,10 +94,7 @@ final class AlarmBackgroundAudioRuntime {
 
         DispatchQueue.main.async {
             self.teardownPlayback()
-            try? AVAudioSession.sharedInstance().setActive(
-                false,
-                options: .notifyOthersOnDeactivation
-            )
+            // Note: Leaving the AVAudioSession active so JS audio can use it immediately; iOS reclaims it once all players are idle
         }
 
         if let id = idToCancel {

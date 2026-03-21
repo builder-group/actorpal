@@ -135,7 +135,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const showWhileAwayInfo = React.useCallback(() => {
 		Alert.alert(
 			'While Away',
-			'Only applies when Kairos is in the background. Notification sends an alert when done. Alarm plays your chosen sound even on silent, but keeps the app active and uses more battery.',
+			'Only applies when Kairos is in the background. Notification sends an alert when done. Alarm plays your chosen sound even on silent, but keeps the app active and may use more battery.',
 			[{ text: 'Got it', style: 'default' }]
 		);
 	}, []);
@@ -351,7 +351,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 					{(endMode.type === 'loop' || endMode.type === 'stop') && (
 						<>
 							<Divider modifiers={[dividerInsets]} />
-							<LabeledContent label="Delay (s)" modifiers={[baseRowPadding, rowHeight]}>
+							<LabeledContent label={endMode.type === 'loop' ? 'Repeat Delay (s)' : 'Stop Delay (s)'} modifiers={[baseRowPadding, rowHeight]}>
 								<TextField
 									ref={endAfterRef}
 									defaultValue={String(endModeDelay)}

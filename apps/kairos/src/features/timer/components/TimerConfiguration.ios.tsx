@@ -27,11 +27,13 @@ import {
 } from '@expo/ui/swift-ui/modifiers';
 import { useCompute } from 'feature-react/state';
 import React from 'react';
-import { View } from 'react-native';
+import { Alert, Linking, View } from 'react-native';
 import { useTheme } from '@/components';
 import { useAudioCx } from '@/features/audio';
+import { useNotificationPermission } from '@/features/settings';
 import { previewEndSound, previewSessionSound } from '@/modules/alarm';
-import { TimerCx, type TTimerEndMode } from '../TimerCx';
+import { timerConfig } from '../config';
+import { TimerCx, type TTimerEndAlert } from '../TimerCx';
 
 export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) => {
 	const { cx } = props;
@@ -44,13 +46,18 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const [isEndAfterFocused, setIsEndAfterFocused] = React.useState(false);
 
 	const label = useCompute(cx.$config, ({ value }) => value.label);
-	const sessionEndSound = useCompute(cx.$config, ({ value }) => value.sessionEndSound);
-	const sessionSound = useCompute(cx.$config, ({ value }) => value.sessionSound);
+	const endSound = useCompute(cx.$config, ({ value }) => value.endSound);
+	const countdownSound = useCompute(cx.$config, ({ value }) => value.countdownSound);
+	const endAlert = useCompute(cx.$config, ({ value }) => value.endAlert);
 	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
-	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
+	const endModeDelay = useCompute(cx.$config, ({ value }) =>
+		value.endMode.type !== 'overtime' ? value.endMode.delaySeconds : 5
+	);
 	const availableSounds = useCompute(audioCx.$sounds, ({ value }) => value);
 	const canClearLabel = label.length > 0 && isLabelFocused;
+	const { isAllowed: notificationsAllowed } = useNotificationPermission();
+	const hasNotificationWarning = endAlert === 'notification' && !notificationsAllowed;
 
 	const rowHeight = frame({ minHeight: 52 });
 	const baseRowPadding = padding({ leading: 16, trailing: 20 });
@@ -86,7 +93,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 		[label.length]
 	);
 
-	const handleEndAfterChange = React.useCallback(
+	const handleDelaySecondsChange = React.useCallback(
 		(value: string) => {
 			const digitsOnly = value.replace(/\D+/g, '');
 			if (digitsOnly !== value) {
@@ -96,8 +103,11 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 				return;
 			}
 			const n = Number(digitsOnly);
-			if (!Number.isNaN(n) && n >= 0) {
-				cx.$config.set((c) => ({ ...c, endAfterSeconds: n }));
+			if (!Number.isNaN(n)) {
+				cx.$config.set((c) => {
+					if (c.endMode.type === 'overtime') return c;
+					return { ...c, endMode: { ...c.endMode, delaySeconds: Math.max(1, n) } };
+				});
 			}
 		},
 		[cx, setEndAfterInputText]
@@ -107,28 +117,66 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 		(focused: boolean) => {
 			setIsEndAfterFocused(focused);
 			if (focused) {
-				const cursorIndex = String(endAfterSeconds).length;
+				const cursorIndex = String(endModeDelay).length;
 				requestAnimationFrame(() => {
 					void endAfterRef.current?.setSelection(cursorIndex, cursorIndex).catch(() => undefined);
 				});
 				return;
 			}
-			setEndAfterInputText(String(endAfterSeconds));
+			setEndAfterInputText(String(endModeDelay));
 		},
-		[endAfterSeconds, setEndAfterInputText]
+		[endModeDelay, setEndAfterInputText]
 	);
 
 	const handleEndAfterSubmit = React.useCallback(() => {
 		void endAfterRef.current?.blur();
 	}, []);
 
+	const showWhileAwayInfo = React.useCallback(() => {
+		Alert.alert(
+			'While Away',
+			'Only applies when Kairos is in the background. Notification sends an alert when done. Alarm plays your chosen sound even on silent, but keeps the app active and uses more battery.',
+			[{ text: 'Got it', style: 'default' }]
+		);
+	}, []);
+
+	const showNotificationWarning = React.useCallback(() => {
+		Alert.alert(
+			'Notifications Off',
+			"Kairos won't be able to alert you when the timer ends. Enable notifications in Settings to fix this.",
+			[
+				{ text: 'Not Now', style: 'cancel' },
+				{
+					text: 'Open Settings',
+					onPress: () => {
+						void Linking.openSettings().catch(() => {});
+					}
+				}
+			]
+		);
+	}, []);
+
+	const showCountdownSoundInfo = React.useCallback(() => {
+		Alert.alert('Countdown Sound', 'What you hear while the timer counts down.', [
+			{ text: 'Got it', style: 'default' }
+		]);
+	}, []);
+
+	const showAfterTimerEndsInfo = React.useCallback(() => {
+		Alert.alert(
+			'After Timer Ends',
+			'Overtime counts up past zero. Auto Stop and Auto Repeat wait for the delay before stopping or restarting.',
+			[{ text: 'Got it', style: 'default' }]
+		);
+	}, []);
+
 	// MARK: - Effects
 
 	React.useEffect(() => {
 		if (!isEndAfterFocused) {
-			setEndAfterInputText(String(endAfterSeconds));
+			setEndAfterInputText(String(endModeDelay));
 		}
-	}, [endAfterSeconds, isEndAfterFocused, setEndAfterInputText]);
+	}, [endModeDelay, isEndAfterFocused, setEndAfterInputText]);
 
 	React.useEffect(() => {
 		if (!isLabelFocused) {
@@ -190,12 +238,12 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 					<Divider modifiers={[dividerInsets]} />
 
-					<LabeledContent label="Session End Sound" modifiers={[pickerRowPadding, rowHeight]}>
+					<LabeledContent label="Alarm Sound" modifiers={[pickerRowPadding, rowHeight]}>
 						<Picker
-							selection={sessionEndSound}
+							selection={endSound}
 							onSelectionChange={(v) => {
 								const name = v as string;
-								cx.$config.set((c) => ({ ...c, sessionEndSound: name }));
+								cx.$config.set((c) => ({ ...c, endSound: name }));
 								previewEndSound(name).catch(() => {});
 							}}
 							modifiers={[
@@ -215,13 +263,30 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 					<Divider modifiers={[dividerInsets]} />
 
-					<LabeledContent label="Session Sound" modifiers={[pickerRowPadding, rowHeight]}>
+					<LabeledContent
+						label={
+							<HStack spacing={6} alignment="center">
+								<Text>Countdown Sound</Text>
+								<Image
+									systemName="info.circle"
+									size={16}
+									color={tokens.base400}
+									onPress={showCountdownSoundInfo}
+								/>
+							</HStack>
+						}
+						modifiers={[pickerRowPadding, rowHeight]}
+					>
 						<Picker
-							selection={sessionSound ?? 'none'}
+							selection={countdownSound === null ? 'none' : countdownSound}
 							onSelectionChange={(v) => {
-								const value = v === 'none' ? null : (v as string);
-								cx.$config.set((c) => ({ ...c, sessionSound: value }));
-								if (value != null) previewSessionSound(value).catch(() => {});
+								if (v === 'none') {
+									cx.$config.set((c) => ({ ...c, countdownSound: null }));
+								} else {
+									const file = v as string;
+									cx.$config.set((c) => ({ ...c, countdownSound: file }));
+									previewSessionSound(file).catch(() => {});
+								}
 							}}
 							modifiers={[
 								pickerStyle('menu'),
@@ -231,17 +296,44 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 							]}
 						>
 							<Text modifiers={[tag('none')]}>None</Text>
-							<Text modifiers={[tag('tick.mp3')]}>Tick</Text>
+							{timerConfig.countdownSounds.map(({ name, file }) => (
+								<Text key={file} modifiers={[tag(file)]}>
+									{name}
+								</Text>
+							))}
 						</Picker>
 					</LabeledContent>
 
 					<Divider modifiers={[dividerInsets]} />
 
-					<LabeledContent label="After Timer Ends" modifiers={[pickerRowPadding, rowHeight]}>
+					<LabeledContent
+						label={
+							<HStack spacing={6} alignment="center">
+								<Text>After Timer Ends</Text>
+								<Image
+									systemName="info.circle"
+									size={16}
+									color={tokens.base400}
+									onPress={showAfterTimerEndsInfo}
+								/>
+							</HStack>
+						}
+						modifiers={[pickerRowPadding, rowHeight]}
+					>
 						<Picker
-							selection={endMode}
+							selection={endMode.type}
 							onSelectionChange={(v) => {
-								cx.$config.set((c) => ({ ...c, endMode: v as TTimerEndMode }));
+								const type = v as 'overtime' | 'stop' | 'loop';
+								cx.$config.set((c) => ({
+									...c,
+									endMode:
+										type === 'overtime'
+											? { type: 'overtime' }
+											: {
+													type,
+													delaySeconds: c.endMode.type !== 'overtime' ? c.endMode.delaySeconds : 5
+												}
+								}));
 							}}
 							modifiers={[
 								pickerStyle('menu'),
@@ -256,18 +348,15 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 						</Picker>
 					</LabeledContent>
 
-					{(endMode === 'loop' || endMode === 'stop') && (
+					{(endMode.type === 'loop' || endMode.type === 'stop') && (
 						<>
 							<Divider modifiers={[dividerInsets]} />
-							<LabeledContent
-								label={endMode === 'loop' ? 'Repeat after (s)' : 'Stop after (s)'}
-								modifiers={[baseRowPadding, rowHeight]}
-							>
+							<LabeledContent label="Delay (s)" modifiers={[baseRowPadding, rowHeight]}>
 								<TextField
 									ref={endAfterRef}
-									defaultValue={String(endAfterSeconds)}
+									defaultValue={String(endModeDelay)}
 									placeholder="5"
-									onChangeText={handleEndAfterChange}
+									onChangeText={handleDelaySecondsChange}
 									onChangeFocus={handleEndAfterFocusChange}
 									onSubmit={handleEndAfterSubmit}
 									keyboardType="numbers-and-punctuation"
@@ -284,9 +373,50 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 					<Divider modifiers={[dividerInsets]} />
 
+					<LabeledContent
+						label={
+							<HStack spacing={6} alignment="center">
+								<Text>While Away</Text>
+								<Image
+									systemName="info.circle"
+									size={16}
+									color={tokens.base400}
+									onPress={showWhileAwayInfo}
+								/>
+								{hasNotificationWarning && (
+									<Image
+										systemName="exclamationmark.triangle"
+										size={16}
+										color={tokens.warning}
+										onPress={showNotificationWarning}
+									/>
+								)}
+							</HStack>
+						}
+						modifiers={[pickerRowPadding, rowHeight]}
+					>
+						<Picker
+							selection={endAlert}
+							onSelectionChange={(v) => {
+								cx.$config.set((c) => ({ ...c, endAlert: v as TTimerEndAlert }));
+							}}
+							modifiers={[
+								pickerStyle('menu'),
+								multilineTextAlignment('trailing'),
+								foregroundStyle({ type: 'hierarchical', style: 'secondary' }),
+								tint(tokens.base500)
+							]}
+						>
+							<Text modifiers={[tag('notification')]}>Notification</Text>
+							<Text modifiers={[tag('alarm')]}>Alarm</Text>
+						</Picker>
+					</LabeledContent>
+
+					<Divider modifiers={[dividerInsets]} />
+
 					<Toggle
 						isOn={hideTimeDisplay}
-						label="Hide Time Display"
+						label="Hide Timer"
 						onIsOnChange={(v) => {
 							cx.$config.set((c) => ({ ...c, hideTimeDisplay: v }));
 						}}

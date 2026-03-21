@@ -32,15 +32,15 @@ export class TimerCx {
 		this._audioCx = audioCx;
 		this.$config = withVersionedAsyncStorage(
 			createState<TTimerConfig>({
-				version: '0.0.2',
+				version: '0.0.3',
 				min: { h: 0, m: 1, s: 0 },
 				max: { h: 0, m: 5, s: 0 },
 				label: '',
 				hideTimeDisplay: false,
-				sessionEndSound: 'Radar',
-				sessionSound: null,
-				endMode: 'overtime',
-				endAfterSeconds: 5
+				endSound: 'Radar',
+				countdownSound: null,
+				endAlert: 'notification',
+				endMode: { type: 'overtime' }
 			}),
 			'kairos:timer:config',
 			timerConfigMigrationConfig
@@ -129,9 +129,7 @@ export class TimerCx {
 		const { config: configOverride, recordRecent = true, allowPermissionPrompt = true } = options;
 		const config = configOverride ?? this.$config.get();
 
-		if (!(await this._ensureCanStartTimer(config, allowPermissionPrompt))) {
-			return;
-		}
+		await this._requestPermissionIfNeeded(config, allowPermissionPrompt);
 
 		if (configOverride != null) {
 			this.$config.set(configOverride);
@@ -184,9 +182,7 @@ export class TimerCx {
 		}
 
 		const config = this.$config.get();
-		if (!(await this._ensureCanStartTimer(config, true))) {
-			return;
-		}
+		await this._requestPermissionIfNeeded(config, true);
 
 		const remaining = this.$remainingAtStart.get();
 		const now = Date.now();
@@ -220,15 +216,15 @@ export class TimerCx {
 	public reset(): void {
 		this.cancel();
 		this.$config.set({
-			version: '0.0.2',
+			version: '0.0.3',
 			min: { h: 0, m: 1, s: 0 },
 			max: { h: 0, m: 5, s: 0 },
 			label: '',
 			hideTimeDisplay: false,
-			sessionEndSound: 'Radar',
-			sessionSound: null,
-			endMode: 'overtime',
-			endAfterSeconds: 5
+			endSound: 'Radar',
+			countdownSound: null,
+			endAlert: 'notification',
+			endMode: { type: 'overtime' }
 		});
 		this.$recents.set([]);
 	}
@@ -261,8 +257,8 @@ export class TimerCx {
 
 		if (status === 'overtime') {
 			this.$overtimeSeconds.set(overtime);
-			const { endMode, endAfterSeconds } = this.$config.get();
-			if (endMode !== 'overtime' && overtime >= endAfterSeconds) {
+			const { endMode } = this.$config.get();
+			if (endMode.type !== 'overtime' && overtime >= endMode.delaySeconds) {
 				this._onAutoEnd();
 			}
 			return;
@@ -278,7 +274,7 @@ export class TimerCx {
 
 	private _onAutoEnd(): void {
 		const { endMode } = this.$config.get();
-		if (endMode === 'loop') {
+		if (endMode.type === 'loop') {
 			this.start({ recordRecent: false, allowPermissionPrompt: false });
 			return;
 		}
@@ -310,10 +306,10 @@ export class TimerCx {
 			max: config.max,
 			label: config.label.trim(),
 			hideTimeDisplay: config.hideTimeDisplay,
-			sessionEndSound: config.sessionEndSound,
-			sessionSound: config.sessionSound,
-			endMode: config.endMode,
-			endAfterSeconds: config.endAfterSeconds
+			endSound: config.endSound,
+			countdownSound: config.countdownSound,
+			endAlert: config.endAlert,
+			endMode: config.endMode
 		});
 
 		// Simple stable hash for recent dedupe/list keys.
@@ -334,26 +330,27 @@ export class TimerCx {
 	private _recoverOvertime(startedAt: number, remainingAtStart: number, now: number): void {
 		const elapsed = (now - startedAt) / 1000;
 		const overtimeSeconds = Math.max(0, elapsed - remainingAtStart);
-		const { endMode, endAfterSeconds } = this.$config.get();
+		const { endMode } = this.$config.get();
+		const delaySeconds = endMode.type !== 'overtime' ? endMode.delaySeconds : Infinity;
 
-		if (endMode === 'overtime' || overtimeSeconds < endAfterSeconds) {
+		if (endMode.type === 'overtime' || overtimeSeconds < delaySeconds) {
 			this.$remainingSeconds.set(0);
 			this.$overtimeSeconds.set(overtimeSeconds);
 			this.$status.set('overtime');
 			this._startLoop();
-		} else if (endMode === 'loop') {
+		} else if (endMode.type === 'loop') {
 			this.start({ recordRecent: false, allowPermissionPrompt: false });
 		} else {
 			this.cancel();
 		}
 	}
 
-	private async _ensureCanStartTimer(
+	private async _requestPermissionIfNeeded(
 		config: TTimerConfig,
 		allowPermissionPrompt: boolean
-	): Promise<boolean> {
-		if (config.sessionSound != null) {
-			return true;
+	): Promise<void> {
+		if (config.endAlert === 'alarm') {
+			return;
 		}
 
 		try {
@@ -372,8 +369,6 @@ export class TimerCx {
 		} catch {
 			// do nothing
 		}
-
-		return true;
 	}
 
 	private _showQuietTimerNotificationsNotice(): Promise<void> {
@@ -401,18 +396,42 @@ export class TimerCx {
 }
 
 const timerConfigMigrationConfig: TVersionedMigrationConfig<TTimerConfig> = {
-	latestVersion: '0.0.2',
+	latestVersion: '0.0.3',
 	fallbackVersion: '0.0.1',
 	migrations: {
 		'0.0.1': {
 			to: '0.0.2',
 			migrate: (value) => {
-				const v = value as TTimerConfig & { sound?: string; hideTimer?: boolean };
+				const v = value as Record<string, unknown>;
 				return {
 					...v,
-					sessionEndSound: v.sound ?? 'Radar',
+					sessionEndSound: v['sound'] ?? 'Radar',
 					sessionSound: null,
-					hideTimeDisplay: v.hideTimeDisplay ?? v.hideTimer ?? false
+					hideTimeDisplay: v['hideTimeDisplay'] ?? v['hideTimer'] ?? false
+				};
+			}
+		},
+		'0.0.2': {
+			to: '0.0.3',
+			migrate: (value) => {
+				const v = value as {
+					sessionEndSound: string;
+					sessionSound: string | null;
+					endMode: 'overtime' | 'stop' | 'loop';
+					endAfterSeconds: number;
+					[key: string]: unknown;
+				};
+				const endMode: TTimerEndMode =
+					v.endMode === 'overtime'
+						? { type: 'overtime' }
+						: { type: v.endMode, delaySeconds: v.endAfterSeconds ?? 5 };
+				return {
+					...v,
+					version: '0.0.3',
+					endAlert: v.sessionSound != null ? 'alarm' : 'notification',
+					endSound: v.sessionEndSound,
+					countdownSound: v.sessionSound,
+					endMode
 				};
 			}
 		}
@@ -420,21 +439,27 @@ const timerConfigMigrationConfig: TVersionedMigrationConfig<TTimerConfig> = {
 };
 
 export type TTimerStatus = 'idle' | 'running' | 'paused' | 'overtime';
-export type TTimerSound = string;
-export type TTimerEndMode = 'overtime' | 'stop' | 'loop';
+export type TTimerEndMode =
+	| { type: 'overtime' }
+	| { type: 'stop'; delaySeconds: number }
+	| { type: 'loop'; delaySeconds: number };
+export type TTimerEndAlert = 'notification' | 'alarm';
 
 export interface TTimerConfig {
-	version: '0.0.2';
+	version: '0.0.3';
 	min: TDuration;
 	max: TDuration;
 	label: string;
+	/** When true, the countdown display is hidden while the timer is running. */
 	hideTimeDisplay: boolean;
-	/** Alarm sound that fires when the session ends. */
-	sessionEndSound: TTimerSound;
-	/** Optional sound played during the session (e.g. a tick). null = off. */
-	sessionSound: string | null;
+	/** Alarm sound played when the timer ends. */
+	endSound: string;
+	/** Sound played while the timer counts down. null = silent background audio. */
+	countdownSound: string | null;
+	/** How the timer ends when the app is in the background. */
+	endAlert: TTimerEndAlert;
+	/** What happens after the timer reaches zero. overtime = count up indefinitely; stop = auto-cancel after delaySeconds; loop = auto-restart after delaySeconds. */
 	endMode: TTimerEndMode;
-	endAfterSeconds: number;
 }
 
 interface TTimerStartOptions {

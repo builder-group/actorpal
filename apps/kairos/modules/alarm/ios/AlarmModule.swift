@@ -33,14 +33,16 @@ public class AlarmModule: Module {
         AsyncFunction("startBackgroundSession") {
             (
                 durationMs: Double,
-                sessionSoundFile: String,
-                sessionEndSoundName: String,
+                countdownSoundFile: String?,
+                endSoundName: String,
+                nativeAlarm: Bool,
                 notificationId: String
             ) async throws in
             try await self.backgroundAudioRuntime.startSession(
                 durationMs: durationMs,
-                sessionSoundFile: sessionSoundFile,
-                sessionEndSoundName: sessionEndSoundName,
+                countdownSoundFile: countdownSoundFile,
+                endSoundName: endSoundName,
+                nativeAlarm: nativeAlarm,
                 notificationId: notificationId
             )
         }
@@ -87,7 +89,7 @@ public class AlarmModule: Module {
         AsyncFunction("previewSessionSound") {
             (soundFile: String) async throws in
             guard
-                let url = self.backgroundAudioRuntime.resolveSessionSoundURL(
+                let url = self.backgroundAudioRuntime.resolveCountdownSoundURL(
                     named: soundFile
                 )
             else {
@@ -129,14 +131,14 @@ public class AlarmModule: Module {
 
 enum AlarmError: LocalizedError {
     case soundNotFound(String)
-    case sessionSoundLoopFailed
+    case countdownLoopFailed
 
     var errorDescription: String? {
         switch self {
         case .soundNotFound(let name):
             return "Sound '\(name)' not found."
-        case .sessionSoundLoopFailed:
-            return "Unable to create the session sound loop."
+        case .countdownLoopFailed:
+            return "Unable to create the countdown sound loop."
         }
     }
 }

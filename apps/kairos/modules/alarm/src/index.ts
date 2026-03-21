@@ -5,8 +5,9 @@ const AlarmModule = requireNativeModule<TAlarmModule>('Alarm');
 interface TAlarmModule {
 	startBackgroundSession(
 		durationMs: number,
-		sessionSoundFile: string,
-		sessionEndSoundName: string,
+		countdownSoundFile: string | null,
+		endSoundName: string,
+		nativeAlarm: boolean,
 		notificationId: string
 	): Promise<void>;
 	stopBackgroundSession(): void;
@@ -34,14 +35,16 @@ interface TAlarmNotificationTap {
  */
 export async function startBackgroundSession(
 	durationMs: number,
-	sessionSoundFile: string,
-	sessionEndSoundName: string,
+	countdownSoundFile: string | null,
+	endSoundName: string,
+	nativeAlarm: boolean,
 	notificationId: string
 ): Promise<void> {
 	return AlarmModule.startBackgroundSession(
 		durationMs,
-		sessionSoundFile,
-		sessionEndSoundName,
+		countdownSoundFile,
+		endSoundName,
+		nativeAlarm,
 		notificationId
 	);
 }

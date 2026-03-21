@@ -4,8 +4,6 @@ import {
 	addAlarmNotificationTappedListener,
 	cancelAlarm,
 	consumePendingNotificationTap,
-	prepareNotificationSound,
-	scheduleAlarm,
 	startBackgroundSession,
 	stopBackgroundSession
 } from '@/modules/alarm';
@@ -32,7 +30,7 @@ export class TimerAlarm {
 			if (event?.identifier !== TimerAlarm.NOTIFICATION_ID) return;
 			// Stop native session if still running, then hand audio off to JS.
 			this.cancel();
-			this._audioCx.play(this._timerConfig.get().sessionEndSound);
+			this._audioCx.play(this._timerConfig.get().endSound);
 		};
 
 		const sub = addAlarmNotificationTappedListener(onTap);
@@ -52,28 +50,13 @@ export class TimerAlarm {
 		const config = this._timerConfig.get();
 
 		try {
-			if (config.sessionSound !== null) {
-				// Active mode: native audio plays the session sound and owns the transition to
-				// the alarm sound. The notification fallback is silent; its only job is to
-				// wake the screen if the user locked their phone.
-				await startBackgroundSession(
-					totalSeconds * 1000,
-					config.sessionSound,
-					config.sessionEndSound,
-					TimerAlarm.NOTIFICATION_ID
-				);
-			} else {
-				// Quiet mode: pre-render the alarm sound into a CAF file the notification
-				// system can reference, then schedule the notification as the primary alarm.
-				const soundFile = await prepareNotificationSound(config.sessionEndSound);
-				if (gen !== this._generation) return;
-				stopBackgroundSession();
-				await scheduleAlarm(
-					TimerAlarm.NOTIFICATION_ID,
-					Date.now() + totalSeconds * 1000,
-					soundFile
-				);
-			}
+			await startBackgroundSession(
+				totalSeconds * 1000,
+				config.countdownSound,
+				config.endSound,
+				config.endAlert === 'alarm',
+				TimerAlarm.NOTIFICATION_ID
+			);
 		} catch (e) {
 			if (__DEV__) console.error('[TimerAlarm] arm failed:', e);
 		}
@@ -86,21 +69,16 @@ export class TimerAlarm {
 	onEnd(): void {
 		const config = this._timerConfig.get();
 
-		if (config.sessionSound !== null) {
-			// Native owns the audio transition; add haptic feedback if the screen is visible.
-			if (AppState.currentState === 'active') {
-				Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-			}
-			return;
-		}
-
 		if (AppState.currentState === 'active') {
-			// Foregrounded: play directly and drop the now-redundant notification.
-			this.cancel();
-			this._audioCx.play(config.sessionEndSound);
 			Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+			if (config.endAlert === 'notification') {
+				// Foreground + notification mode: native won't play the alarm, JS takes over
+				this.cancel();
+				this._audioCx.play(config.endSound);
+			}
+			// endAlert = 'alarm': native owns the end sound, nothing else needed
 		}
-		// Backgrounded: the scheduled notification fires with sound; nothing to do here.
+		// Backgrounded: native handles it based on nativeAlarm
 	}
 
 	/** Invalidate any in-flight arm and clear all native alarm state. */

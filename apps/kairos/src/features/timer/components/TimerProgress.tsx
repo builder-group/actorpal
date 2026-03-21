@@ -36,7 +36,7 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 	const activeRingColor =
 		status !== 'overtime'
 			? tokens.primary
-			: endMode === 'overtime'
+			: endMode.type === 'overtime'
 				? tokens.warning
 				: tokens.secondary;
 
@@ -83,7 +83,6 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
 	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
 	const maxSeconds = useCompute(cx.$config, ({ value }) => durationToSeconds(value.max));
-	const endAfterSeconds = useCompute(cx.$config, ({ value }) => value.endAfterSeconds);
 	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
 	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
 	const overtimeSeconds = useFeatureState(cx.$overtimeSeconds);
@@ -94,11 +93,11 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 	);
 
 	const autoEndCountdown = React.useMemo(() => {
-		if (status === 'overtime' && endMode !== 'overtime') {
-			return Math.max(0, endAfterSeconds - overtimeSeconds);
+		if (status === 'overtime' && endMode.type !== 'overtime') {
+			return Math.max(0, endMode.delaySeconds - overtimeSeconds);
 		}
 		return null;
-	}, [status, endMode, endAfterSeconds, overtimeSeconds]);
+	}, [status, endMode, overtimeSeconds]);
 	const timerDisplaySeconds = React.useMemo(
 		() =>
 			status === 'overtime'
@@ -143,12 +142,12 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 
 			{status === 'overtime' && (
 				<View className="absolute top-full flex-row items-center gap-1 pt-1.5">
-					<ClockIcon size={18} color={endMode === 'overtime' ? tokens.warning : tokens.secondary} />
+					<ClockIcon size={18} color={endMode.type === 'overtime' ? tokens.warning : tokens.secondary} />
 					<Text
-						className={cn('text-xl', endMode === 'overtime' ? 'text-warning' : 'text-secondary')}
+						className={cn('text-xl', endMode.type === 'overtime' ? 'text-warning' : 'text-secondary')}
 					>
 						{autoEndCountdown != null
-							? `${endMode === 'loop' ? 'Repeat' : 'Stop'} in ${formatTimerClock(autoEndCountdown)}`
+							? `${endMode.type === 'loop' ? 'Repeat' : 'Stop'} in ${formatTimerClock(autoEndCountdown)}`
 							: `+${formatTimerClock(Math.max(0, overtimeSeconds))}`}
 					</Text>
 				</View>

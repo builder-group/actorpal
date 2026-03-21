@@ -3,10 +3,11 @@ import Foundation
 
 final class AlarmBackgroundAudioRuntime {
     private let notificationRuntime: AlarmNotificationRuntime
-    private var sessionTimer: DispatchSourceTimer?
-    private var sessionPlayer: AVAudioPlayer?
-    private var sessionEndPlayer: AVAudioPlayer?
-    private var activeNotificationId: String?
+    private var countdownTimer: DispatchSourceTimer?
+    private var countdownPlayer: AVAudioPlayer?
+    private var alarmPlayer: AVAudioPlayer?
+    private var notificationId: String?
+    private var nativeAlarm = true
 
     init(notificationRuntime: AlarmNotificationRuntime) {
         self.notificationRuntime = notificationRuntime
@@ -14,34 +15,50 @@ final class AlarmBackgroundAudioRuntime {
 
     func startSession(
         durationMs: Double,
-        sessionSoundFile: String,
-        sessionEndSoundName: String,
+        countdownSoundFile: String?,
+        endSoundName: String,
+        nativeAlarm: Bool,
         notificationId: String
     ) async throws {
+        self.nativeAlarm = nativeAlarm
         try configureAudioSession()
-        // Session sound is a bundled asset; sessionEndSound is user-selected from the system library.
-        guard let sessionSoundURL = resolveSessionSound(named: sessionSoundFile)
-        else {
-            throw AlarmError.soundNotFound(sessionSoundFile)
+        // if countdown sound file is nil run a silent loop so the audio session stays alive without a file asset
+        let countdownLoopURL: URL
+        if let soundFile = countdownSoundFile {
+            guard let sessionSoundURL = resolveCountdownSound(named: soundFile)
+            else {
+                throw AlarmError.soundNotFound(soundFile)
+            }
+            countdownLoopURL = try makeCountdownSoundLoop(
+                from: sessionSoundURL
+            )
+        } else {
+            countdownLoopURL = try makeSilentLoop()
         }
         guard
-            let sessionEndURL = SoundLibrary.resolveURL(
-                for: sessionEndSoundName
+            let endSoundURL = SoundLibrary.resolveURL(
+                for: endSoundName
             )
         else {
-            throw AlarmError.soundNotFound(sessionEndSoundName)
+            throw AlarmError.soundNotFound(endSoundName)
         }
-        let sessionSoundLoopURL = try makeSessionSoundLoop(
-            from: sessionSoundURL
-        )
         let endTimeMs = Date().timeIntervalSince1970 * 1000 + durationMs
 
         notificationRuntime.cancel(identifier: notificationId)
         do {
+            // nativeAlarm=true  → schedule silent notification (alarm plays natively at end)
+            // nativeAlarm=false → notification is the primary alert, schedule it with sound
+            let notificationSoundFile: String? =
+                nativeAlarm
+                ? nil
+                : (try? notificationRuntime.prepareNotificationSound(
+                    from: endSoundURL,
+                    named: endSoundName
+                ))
             try await notificationRuntime.schedule(
                 identifier: notificationId,
                 endTimeMs: endTimeMs,
-                soundFile: nil
+                soundFile: notificationSoundFile
             )
         } catch {
             // Keep the background-audio path alive even when notification fallback
@@ -51,29 +68,29 @@ final class AlarmBackgroundAudioRuntime {
         try await MainActor.run {
             teardownPlayback()
 
-            let player = try AVAudioPlayer(contentsOf: sessionSoundLoopURL)
+            let player = try AVAudioPlayer(contentsOf: countdownLoopURL)
             player.numberOfLoops = -1
             player.prepareToPlay()
             player.play()
-            sessionPlayer = player
+            countdownPlayer = player
 
             let timer = DispatchSource.makeTimerSource(queue: .main)
             timer.schedule(deadline: .now() + .milliseconds(Int(durationMs)))
             timer.setEventHandler { [weak self] in
                 self?.handleSessionEnd(
-                    sessionEndURL: sessionEndURL,
+                    endSoundURL: endSoundURL,
                     notificationId: notificationId
                 )
             }
             timer.resume()
-            sessionTimer = timer
-            activeNotificationId = notificationId
+            countdownTimer = timer
+            self.notificationId = notificationId
         }
     }
 
     func stopSession(cancelNotification: Bool) {
-        let idToCancel = cancelNotification ? activeNotificationId : nil
-        activeNotificationId = nil
+        let idToCancel = cancelNotification ? notificationId : nil
+        notificationId = nil
 
         DispatchQueue.main.async {
             self.teardownPlayback()
@@ -88,8 +105,8 @@ final class AlarmBackgroundAudioRuntime {
         }
     }
 
-    func resolveSessionSoundURL(named soundFile: String) -> URL? {
-        resolveSessionSound(named: soundFile)
+    func resolveCountdownSoundURL(named soundFile: String) -> URL? {
+        resolveCountdownSound(named: soundFile)
     }
 
     private func configureAudioSession() throws {
@@ -101,33 +118,37 @@ final class AlarmBackgroundAudioRuntime {
     }
 
     private func teardownPlayback() {
-        sessionTimer?.cancel()
-        sessionTimer = nil
-        sessionPlayer?.stop()
-        sessionPlayer = nil
-        sessionEndPlayer?.stop()
-        sessionEndPlayer = nil
+        countdownTimer?.cancel()
+        countdownTimer = nil
+        countdownPlayer?.stop()
+        countdownPlayer = nil
+        alarmPlayer?.stop()
+        alarmPlayer = nil
     }
 
-    private func handleSessionEnd(sessionEndURL: URL, notificationId: String) {
-        sessionTimer?.cancel()
-        sessionTimer = nil
-        sessionPlayer?.stop()
-        sessionPlayer = nil
+    private func handleSessionEnd(endSoundURL: URL, notificationId: String) {
+        countdownTimer?.cancel()
+        countdownTimer = nil
+        countdownPlayer?.stop()
+        countdownPlayer = nil
 
-        do {
-            let player = try AVAudioPlayer(contentsOf: sessionEndURL)
-            player.numberOfLoops = -1
-            player.prepareToPlay()
-            player.play()
-            sessionEndPlayer = player
-            notificationRuntime.cancel(identifier: notificationId)
-        } catch {
-            // Leave the notification fallback in place if native playback fails.
+        // Play alarm natively; notification fires too as a tap-back to the app
+        // if nativeAlarm=false: countdown sound stopped, notification fires with its sound
+        if nativeAlarm {
+            do {
+                let player = try AVAudioPlayer(contentsOf: endSoundURL)
+                player.numberOfLoops = -1
+                player.prepareToPlay()
+                player.play()
+                alarmPlayer = player
+            } catch {
+                // do nothing
+            }
         }
+
     }
 
-    private func resolveSessionSound(named soundFile: String) -> URL? {
+    private func resolveCountdownSound(named soundFile: String) -> URL? {
         if let url = Bundle.main.url(forResource: soundFile, withExtension: nil)
         {
             return url
@@ -144,7 +165,39 @@ final class AlarmBackgroundAudioRuntime {
         return nil
     }
 
-    private func makeSessionSoundLoop(from sourceURL: URL) throws -> URL {
+    private func makeSilentLoop() throws -> URL {
+        let destURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("kairos_silent-loop.caf")
+        if FileManager.default.fileExists(atPath: destURL.path) {
+            return destURL
+        }
+        guard
+            let format = AVAudioFormat(
+                standardFormatWithSampleRate: 44100,
+                channels: 1
+            )
+        else {
+            throw AlarmError.countdownLoopFailed
+        }
+        let frameCount = AVAudioFrameCount(44100)  // 1 second of silence
+        guard
+            let buffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: frameCount
+            )
+        else {
+            throw AlarmError.countdownLoopFailed
+        }
+        buffer.frameLength = frameCount  // zero-initialised = silence
+        let outputFile = try AVAudioFile(
+            forWriting: destURL,
+            settings: format.settings
+        )
+        try outputFile.write(from: buffer)
+        return destURL
+    }
+
+    private func makeCountdownSoundLoop(from sourceURL: URL) throws -> URL {
         // Pad the sound to exactly 1 second with trailing silence so that
         // numberOfLoops = -1 produces one tick per second regardless of the
         // clip's actual duration.
@@ -178,7 +231,7 @@ final class AlarmBackgroundAudioRuntime {
                 frameCapacity: sourceFrames
             )
         else {
-            throw AlarmError.sessionSoundLoopFailed
+            throw AlarmError.countdownLoopFailed
         }
 
         try sourceFile.read(into: sourceBuffer)
@@ -192,7 +245,7 @@ final class AlarmBackgroundAudioRuntime {
                     frameCapacity: remainingFrames
                 )
             else {
-                throw AlarmError.sessionSoundLoopFailed
+                throw AlarmError.countdownLoopFailed
             }
             silenceBuffer.frameLength = remainingFrames
             try outputFile.write(from: silenceBuffer)

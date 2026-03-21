@@ -41,7 +41,10 @@ const Screen: React.FC = () => {
 	const timerCx = useTimerCx();
 	const { isAllowed: notificationsAllowed } = useNotificationPermission();
 	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
-	const keepScreenAwake = useCompute(settingsCx.$settings, ({ value }) => value.timer.keepScreenAwake);
+	const keepScreenAwake = useCompute(
+		settingsCx.$settings,
+		({ value }) => value.timer.keepScreenAwake
+	);
 
 	// MARK: - Actions
 

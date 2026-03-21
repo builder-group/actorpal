@@ -351,7 +351,10 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 					{(endMode.type === 'loop' || endMode.type === 'stop') && (
 						<>
 							<Divider modifiers={[dividerInsets]} />
-							<LabeledContent label={endMode.type === 'loop' ? 'Repeat Delay (s)' : 'Stop Delay (s)'} modifiers={[baseRowPadding, rowHeight]}>
+							<LabeledContent
+								label={endMode.type === 'loop' ? 'Repeat Delay (s)' : 'Stop Delay (s)'}
+								modifiers={[baseRowPadding, rowHeight]}
+							>
 								<TextField
 									ref={endAfterRef}
 									defaultValue={String(endModeDelay)}

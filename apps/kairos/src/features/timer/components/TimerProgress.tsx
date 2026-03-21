@@ -142,9 +142,15 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 
 			{status === 'overtime' && (
 				<View className="absolute top-full flex-row items-center gap-1 pt-1.5">
-					<ClockIcon size={18} color={endMode.type === 'overtime' ? tokens.warning : tokens.secondary} />
+					<ClockIcon
+						size={18}
+						color={endMode.type === 'overtime' ? tokens.warning : tokens.secondary}
+					/>
 					<Text
-						className={cn('text-xl', endMode.type === 'overtime' ? 'text-warning' : 'text-secondary')}
+						className={cn(
+							'text-xl',
+							endMode.type === 'overtime' ? 'text-warning' : 'text-secondary'
+						)}
 					>
 						{autoEndCountdown != null
 							? `${endMode.type === 'loop' ? 'Repeat' : 'Stop'} in ${formatTimerClock(autoEndCountdown)}`

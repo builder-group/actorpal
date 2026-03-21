@@ -12,9 +12,7 @@
 			"bundleIdentifier": "com.buildergroup.kairos",
 			"infoPlist": {
 				"ITSAppUsesNonExemptEncryption": false,
-				"UIBackgroundModes": [
-					"audio"
-				]
+				"UIBackgroundModes": ["audio"]
 			}
 		},
 		"plugins": [

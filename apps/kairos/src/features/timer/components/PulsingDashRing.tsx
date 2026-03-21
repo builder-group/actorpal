@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { useTheme } from '@/components';
 import { cn } from '@/lib';
@@ -31,11 +31,39 @@ export const PulsingDashRing: React.FC<TPulsingDashRingProps> = (props) => {
 			return;
 		}
 
-		const timer = setInterval(() => {
-			setHeadIndex((current) => (current + 1) % dashCount);
-		}, stepMs);
+		let timer: ReturnType<typeof setInterval> | null = null;
+		const startTime = Date.now();
 
-		return () => clearInterval(timer);
+		const start = () => {
+			if (timer != null) return;
+			timer = setInterval(() => {
+				const elapsed = Date.now() - startTime;
+				setHeadIndex(Math.floor(elapsed / stepMs) % dashCount);
+			}, stepMs);
+		};
+
+		const stop = () => {
+			if (timer == null) return;
+			clearInterval(timer);
+			timer = null;
+		};
+
+		start();
+
+		// Pause while backgrounded: iOS throttles JS timers, causing a burst of
+		// queued callbacks on resume that would freeze the UI
+		const sub = AppState.addEventListener('change', (state) => {
+			if (state === 'active') {
+				start();
+			} else {
+				stop();
+			}
+		});
+
+		return () => {
+			stop();
+			sub.remove();
+		};
 	}, [animated, dashCount, stepMs]);
 
 	const dashes = React.useMemo(() => {

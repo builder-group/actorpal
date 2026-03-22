@@ -135,7 +135,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const showBackgroundAlertInfo = React.useCallback(() => {
 		Alert.alert(
 			'Background Alert',
-			'Notification alerts you when done. Alarm plays your chosen sound even on silent, but keeps the app active and may use more battery.',
+			'Controls how Kairos alerts you when the timer ends and the app is in the background. Notification alerts you when done. Alarm plays your chosen sound even on silent, but keeps the app active and may use more battery.',
 			[{ text: 'Got it', style: 'default' }]
 		);
 	}, []);
@@ -165,7 +165,7 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 	const showAfterTimerEndsInfo = React.useCallback(() => {
 		Alert.alert(
 			'After Timer Ends',
-			'Overtime counts up past zero. Auto Stop and Auto Repeat wait for the delay before stopping or restarting.',
+			'Controls what happens once the timer reaches zero. Overtime counts up past zero. Auto Stop and Auto Repeat wait for the delay before stopping or restarting.',
 			[{ text: 'Got it', style: 'default' }]
 		);
 	}, []);

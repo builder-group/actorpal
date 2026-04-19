@@ -1,8 +1,8 @@
 {
 	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "Desktop Tauri",
-	"identifier": "com.buildergroup.desktop-tauri.dev",
-	"mainBinaryName": "Desktop Tauri - Development",
+	"productName": "NoDox",
+	"identifier": "com.buildergroup.nodox.dev",
+	"mainBinaryName": "NoDox - Development",
 	"build": {
 		"beforeDevCommand": "pnpm ui:start:dev",
 		"devUrl": "http://localhost:1420",

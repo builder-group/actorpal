@@ -1,1 +1,1 @@
-# `@template/desktop-tauri`
+# `@repo/nodox`

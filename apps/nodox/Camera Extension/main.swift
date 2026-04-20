@@ -1,8 +1,3 @@
-//
-//  main.swift
-//  Camera Extension
-//
-
 import CoreMediaIO
 import Foundation
 

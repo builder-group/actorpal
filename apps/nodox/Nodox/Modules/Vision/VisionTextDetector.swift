@@ -1,8 +1,3 @@
-//
-//  VisionTextDetector.swift
-//  Nodox
-//
-
 import CoreVideo
 import Foundation
 import OSLog

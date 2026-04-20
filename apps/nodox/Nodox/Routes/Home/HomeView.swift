@@ -1,10 +1,3 @@
-//
-//  HomeView.swift
-//  Nodox
-//
-//  Created by Benno on 19.04.26.
-//
-
 import SwiftUI
 
 struct HomeView: View {
@@ -13,20 +6,29 @@ struct HomeView: View {
     @EnvironmentObject private var screenCaptureManager: ScreenCaptureManager
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            headerSection
-            virtualCameraSection
-            screenCaptureSection
-            actionSection
-            if screenCaptureManager.isCapturing
-                && screenCaptureManager.isDebugMode
-            {
-                visionSettingsSection
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                headerSection
+                virtualCameraSection
+                if !screenCaptureManager.isCapturing {
+                    captureSourceSection
+                }
+                screenCaptureSection
+                if screenCaptureManager.isCapturing {
+                    previewSection
+                }
+                actionSection
+                if screenCaptureManager.isCapturing
+                    && screenCaptureManager.isDebugMode
+                {
+                    visionSettingsSection
+                }
+                detailsSection
             }
-            detailsSection
+            .frame(maxWidth: 720, alignment: .leading)
+            .padding(32)
         }
-        .frame(maxWidth: 720, alignment: .leading)
-        .padding(32)
+        .task { screenCaptureManager.loadCaptureTargets() }
     }
 
     private var headerSection: some View {
@@ -163,7 +165,7 @@ struct HomeView: View {
                             get: {
                                 screenCaptureManager.visionUseFastRecognition
                             },
-                            set: { _ in
+                            set: { (_: Bool) in
                                 screenCaptureManager
                                     .toggleVisionRecognitionSpeed()
                             }
@@ -222,6 +224,103 @@ struct HomeView: View {
                 .quaternary.opacity(0.35),
                 in: RoundedRectangle(cornerRadius: 20)
             )
+        }
+    }
+
+    private var captureSourceSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Capture Source")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 12) {
+                if screenCaptureManager.captureTargets.isEmpty {
+                    Text(
+                        "No capture sources found. Tap Refresh to load available displays and windows."
+                    )
+                    .foregroundStyle(.secondary)
+                } else {
+                    Picker(
+                        "Source",
+                        selection: Binding(
+                            get: { screenCaptureManager.selectedTarget },
+                            set: { target in
+                                if let target {
+                                    screenCaptureManager.selectTarget(target)
+                                }
+                            }
+                        )
+                    ) {
+                        ForEach(screenCaptureManager.captureTargets) { target in
+                            Text(target.displayName).tag(Optional(target))
+                        }
+                    }
+                    .labelsHidden()
+                }
+
+                Button("Refresh Sources") {
+                    screenCaptureManager.loadCaptureTargets()
+                }
+                .buttonStyle(.link)
+
+                Divider()
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Crop Mode")
+                        .font(.subheadline.weight(.medium))
+                    Picker(
+                        "Crop Mode",
+                        selection: Binding(
+                            get: { screenCaptureManager.cropMode },
+                            set: { screenCaptureManager.setCropMode($0) }
+                        )
+                    ) {
+                        Text("Full Source").tag(CropMode.none)
+                        Text("16:9 Center Crop").tag(
+                            CropMode.centerAspect(width: 16, height: 9)
+                        )
+                        Text("4:3 Center Crop").tag(
+                            CropMode.centerAspect(width: 4, height: 3)
+                        )
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    Text(cropModeDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
+            .background(
+                .quaternary.opacity(0.35),
+                in: RoundedRectangle(cornerRadius: 20)
+            )
+        }
+    }
+
+    private var cropModeDescription: String {
+        switch screenCaptureManager.cropMode {
+        case .none:
+            return
+                "Captures the full source. Ultrawide displays may still be letterboxed in the fixed 16:9 camera feed."
+        case .centerAspect(let w, let h):
+            if w * AppConfig.videoHeight == h * AppConfig.videoWidth {
+                return
+                    "Crops the center \(w):\(h) region before Vision, then fills the 16:9 camera feed edge-to-edge."
+            }
+            return
+                "Crops the center \(w):\(h) region before Vision. Because the virtual camera stays 16:9, non-16:9 crops are centered with side bars."
+        }
+    }
+
+    private var previewSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Preview")
+                .font(.headline)
+
+            SampleBufferPreviewView(layer: screenCaptureManager.previewLayer)
+                .aspectRatio(16 / 9, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
 

@@ -1,8 +1,3 @@
-//
-//  CameraExtensionSourceStream.swift
-//  Camera Extension
-//
-
 import AppKit
 import CoreMediaIO
 import CoreVideo

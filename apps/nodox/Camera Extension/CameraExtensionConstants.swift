@@ -1,10 +1,3 @@
-//
-//  CameraExtensionConstants.swift
-//  Camera Extension
-//
-//  Created by Codex on 20.04.26.
-//
-
 import Foundation
 
 enum CameraExtensionConstants {

@@ -1,8 +1,3 @@
-//
-//  CameraExtensionDeviceSource.swift
-//  Camera Extension
-//
-
 import CoreMediaIO
 import Foundation
 import IOKit.audio

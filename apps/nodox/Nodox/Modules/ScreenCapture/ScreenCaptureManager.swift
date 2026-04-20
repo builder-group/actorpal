@@ -1,10 +1,3 @@
-//
-//  ScreenCaptureManager.swift
-//  Nodox
-//
-//  Created by Codex on 20.04.26.
-//
-
 import AVFoundation
 import AppKit
 import Combine
@@ -22,9 +15,16 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
     @Published private(set) var requiresCameraPermission = false
     @Published private(set) var visionUseFastRecognition = false
     @Published private(set) var visionMinimumTextHeight: Float = 0.008
+    @Published private(set) var captureTargets: [CaptureTarget] = []
+    @Published private(set) var selectedTarget: CaptureTarget?
+    @Published private(set) var cropMode: CropMode = .none
     @Published private(set) var statusTitle = "Screen Capture Ready"
     @Published private(set) var statusMessage =
-        "Start screen capture to mirror the main display into the NoDox virtual camera."
+        "Choose a capture source, then start screen capture."
+
+    // Owned here; SampleBufferPreviewView hosts it in a layer hierarchy.
+    // AVSampleBufferDisplayLayer.enqueue is thread-safe — called from sampleHandlerQueue.
+    let previewLayer = AVSampleBufferDisplayLayer()
 
     var actionTitle: String {
         isCapturing ? "Stop Screen Capture" : "Start Screen Capture"
@@ -57,6 +57,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
     override init() {
         super.init()
         streamOutput.manager = self
+        setupPreviewLayer()
     }
 
     // MARK: - Public API
@@ -81,6 +82,43 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         frameRenderer?.detector?.minimumTextHeight = value
     }
 
+    func selectTarget(_ target: CaptureTarget) {
+        selectedTarget = target
+    }
+
+    func setCropMode(_ mode: CropMode) {
+        cropMode = mode
+    }
+
+    func loadCaptureTargets() {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let content = try await SCShareableContent.current
+                let displays = content.displays.map {
+                    CaptureTarget.display($0)
+                }
+                // Only include on-screen windows large enough to be meaningful app windows
+                let windows = content.windows
+                    .filter {
+                        $0.isOnScreen && $0.frame.width >= 100
+                            && $0.frame.height >= 100
+                    }
+                    .map { CaptureTarget.window($0) }
+                await MainActor.run {
+                    self.captureTargets = displays + windows
+                    if self.selectedTarget == nil {
+                        self.selectedTarget = displays.first
+                    }
+                }
+            } catch {
+                self.logger.error(
+                    "Failed to load capture targets: \(error.localizedDescription, privacy: .public)"
+                )
+            }
+        }
+    }
+
     func startCapture() {
         guard !isCapturing else { return }
 
@@ -97,8 +135,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         updateStatus(
             isCapturing: false,
             title: "Connecting Virtual Camera",
-            message:
-                "Preparing the NoDox camera input and the main display capture stream."
+            message: "Preparing the NoDox camera input and capture stream."
         )
 
         Task { [weak self] in
@@ -110,8 +147,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         Task { [weak self] in
             await self?.finishCapture(
                 title: "Screen Capture Ready",
-                message:
-                    "Start screen capture to mirror the main display into the NoDox virtual camera."
+                message: "Choose a capture source, then start screen capture."
             )
         }
     }
@@ -143,6 +179,8 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         else {
             return
         }
+
+        previewLayer.enqueue(renderedBuffer)
 
         do {
             let result = try sinkClient.enqueue(renderedBuffer)
@@ -208,20 +246,57 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             renderer.detector = detector
             renderer.debugMode = isDebugMode
 
-            let shareableContent = try await SCShareableContent.current
-            guard
-                let display = preferredDisplay(from: shareableContent.displays)
-            else {
-                throw CaptureError.mainDisplayUnavailable
-            }
+            let filter: SCContentFilter
+            let baseStreamSize: CGSize
 
-            let stream = SCStream(
-                filter: SCContentFilter(
+            switch selectedTarget {
+            case .window(let window):
+                filter = SCContentFilter(desktopIndependentWindow: window)
+                // Keep the stream bounded to the window's logical size; the renderer
+                // later fits that capture into the fixed 1920×1080 virtual camera output.
+                baseStreamSize = CGSize(
+                    width: CGFloat(max(1, Int(window.frame.width))),
+                    height: CGFloat(max(1, Int(window.frame.height)))
+                )
+            case .display(let display):
+                filter = SCContentFilter(
                     display: display,
                     excludingApplications: [],
                     exceptingWindows: []
+                )
+                baseStreamSize = CGSize(
+                    width: CGFloat(AppConfig.videoWidth),
+                    height: CGFloat(AppConfig.videoHeight)
+                )
+            case nil:
+                // No target selected — fall back to the main display
+                let content = try await SCShareableContent.current
+                guard let display = preferredDisplay(from: content.displays)
+                else {
+                    throw CaptureError.mainDisplayUnavailable
+                }
+                filter = SCContentFilter(
+                    display: display,
+                    excludingApplications: [],
+                    exceptingWindows: []
+                )
+                baseStreamSize = CGSize(
+                    width: CGFloat(AppConfig.videoWidth),
+                    height: CGFloat(AppConfig.videoHeight)
+                )
+            }
+
+            let geometry = ActiveCaptureGeometry(
+                baseStreamSize: baseStreamSize,
+                contentRect: filter.contentRect
+            )
+
+            let stream = SCStream(
+                filter: filter,
+                configuration: makeStreamConfiguration(
+                    geometry: geometry,
+                    cropMode: cropMode
                 ),
-                configuration: makeStreamConfiguration(),
                 delegate: streamOutput
             )
             try stream.addStreamOutput(
@@ -236,19 +311,20 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             captureStream = stream
             droppedFrameCount = 0
 
+            let targetName = selectedTarget?.displayName ?? "main display"
             updateStatus(
                 isCapturing: true,
                 requiresCameraPermission: false,
-                title: "Screen Capture Running",
+                title: "Capturing \(targetName)",
                 message:
-                    "NoDox is capturing the main display and sending frames into the virtual camera sink stream."
+                    "NoDox is sending frames into the virtual camera sink stream."
             )
         } catch {
             sinkClient.resetConnection()
             updateStatus(
                 isCapturing: false,
                 requiresCameraPermission: false,
-                title: "Virtual Camera Input Unavailable",
+                title: "Capture Failed",
                 message: error.localizedDescription
             )
         }
@@ -266,6 +342,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         sinkClient.resetConnection()
         isStoppingAfterFailure = false
         droppedFrameCount = 0
+        previewLayer.flush()
 
         DispatchQueue.main.async {
             self.isDebugMode = false
@@ -292,24 +369,119 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
 
     // MARK: - Helpers
 
+    private func setupPreviewLayer() {
+        previewLayer.videoGravity = .resizeAspect
+        previewLayer.backgroundColor = CGColor(gray: 0, alpha: 1)
+
+        // A running timebase anchored to the host clock lets the layer display
+        // frames immediately when their presentation timestamp matches.
+        var timebase: CMTimebase?
+        let status = CMTimebaseCreateWithSourceClock(
+            allocator: kCFAllocatorDefault,
+            sourceClock: CMClockGetHostTimeClock(),
+            timebaseOut: &timebase
+        )
+        guard status == noErr, let timebase else {
+            logger.fault(
+                "Failed to create preview timebase (OSStatus \(status))"
+            )
+            return
+        }
+        CMTimebaseSetRate(timebase, rate: 1.0)
+        CMTimebaseSetTime(
+            timebase,
+            time: CMClockGetTime(CMClockGetHostTimeClock())
+        )
+        previewLayer.controlTimebase = timebase
+    }
+
     private func preferredDisplay(from displays: [SCDisplay]) -> SCDisplay? {
         let mainID = CGMainDisplayID()
         return displays.first(where: { $0.displayID == mainID })
             ?? displays.first
     }
 
-    private func makeStreamConfiguration() -> SCStreamConfiguration {
+    private func makeStreamConfiguration(
+        geometry: ActiveCaptureGeometry,
+        cropMode: CropMode
+    ) -> SCStreamConfiguration {
         let config = SCStreamConfiguration()
-        config.width = AppConfig.videoWidth
-        config.height = AppConfig.videoHeight
+        let sourceRect = sourceRect(
+            in: geometry.contentRect,
+            cropMode: cropMode
+        )
+        let streamSize = streamSize(
+            boundingSize: geometry.baseStreamSize,
+            cropMode: cropMode,
+            sourceRect: sourceRect
+        )
+        config.width = Int(streamSize.width)
+        config.height = Int(streamSize.height)
         config.minimumFrameInterval = CMTime(
             value: 1,
             timescale: Int32(AppConfig.videoFrameRate)
         )
         config.pixelFormat = kCVPixelFormatType_32BGRA
+        config.preservesAspectRatio = true
+        config.scalesToFit = true
         config.queueDepth = 3  // small enough to keep latency low, large enough to absorb render jitter
         config.showsCursor = true
+        config.sourceRect = sourceRect
         return config
+    }
+
+    private func sourceRect(in contentRect: CGRect, cropMode: CropMode)
+        -> CGRect
+    {
+        guard case .centerAspect(let width, let height) = cropMode,
+            width > 0,
+            height > 0
+        else {
+            return contentRect
+        }
+
+        let targetAspect = CGFloat(width) / CGFloat(height)
+        let sourceAspect = contentRect.width / contentRect.height
+        let cropWidth: CGFloat
+        let cropHeight: CGFloat
+
+        if sourceAspect > targetAspect {
+            cropHeight = contentRect.height
+            cropWidth = cropHeight * targetAspect
+        } else {
+            cropWidth = contentRect.width
+            cropHeight = cropWidth / targetAspect
+        }
+
+        return CGRect(
+            x: contentRect.minX + (contentRect.width - cropWidth) / 2,
+            y: contentRect.minY + (contentRect.height - cropHeight) / 2,
+            width: cropWidth,
+            height: cropHeight
+        )
+    }
+
+    private func streamSize(
+        boundingSize: CGSize,
+        cropMode: CropMode,
+        sourceRect: CGRect
+    ) -> CGSize {
+        guard cropMode != .none else { return boundingSize }
+
+        let sourceAspect = sourceRect.width / sourceRect.height
+        let boundingAspect = boundingSize.width / boundingSize.height
+
+        if sourceAspect > boundingAspect {
+            return CGSize(
+                width: max(1, floor(boundingSize.width)),
+                height: max(1, floor(boundingSize.width / sourceAspect))
+            )
+        }
+
+        return CGSize(
+            width: max(1, floor(boundingSize.height * sourceAspect)),
+            height: max(1, floor(boundingSize.height))
+        )
     }
 
     private func screenRecordingAccessGranted() -> Bool {
@@ -358,6 +530,11 @@ private enum CaptureError: LocalizedError {
     var errorDescription: String? {
         "NoDox could not find a display to capture."
     }
+}
+
+private struct ActiveCaptureGeometry {
+    let baseStreamSize: CGSize
+    let contentRect: CGRect
 }
 
 // MARK: - SCStream delegate / output (thin adapter, no logic)

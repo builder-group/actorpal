@@ -1,10 +1,3 @@
-//
-//  AppConfig.swift
-//  Nodox
-//
-//  Created by Benno on 19.04.26.
-//
-
 import Foundation
 
 enum AppConfig {

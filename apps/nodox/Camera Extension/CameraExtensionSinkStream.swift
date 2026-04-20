@@ -1,10 +1,3 @@
-//
-//  CameraExtensionSinkStream.swift
-//  Camera Extension
-//
-//  Created by Codex on 20.04.26.
-//
-
 import CoreMediaIO
 import Foundation
 import OSLog

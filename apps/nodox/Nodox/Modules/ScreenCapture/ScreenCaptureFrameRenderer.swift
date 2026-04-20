@@ -1,16 +1,16 @@
-//
-//  ScreenCaptureFrameRenderer.swift
-//  Nodox
-//
-//  Created by Codex on 20.04.26.
-//
-
 import AppKit
 import CoreImage
 import CoreMedia
 import CoreVideo
 import Foundation
 import OSLog
+
+/// How the source capture should be cropped before it reaches Vision and rendering.
+enum CropMode: Hashable {
+    case none
+    /// Crops the largest centered region that matches the given aspect ratio.
+    case centerAspect(width: Int, height: Int)
+}
 
 /// Converts a raw ScreenCaptureKit frame into a 1920×1080 BGRA sample buffer.
 ///
@@ -84,13 +84,24 @@ final class ScreenCaptureFrameRenderer {
             return nil
         }
 
-        // Schedule Vision detection on the raw source frame (non-blocking; returns cached result).
-        // Boxes are in source pixel coords which map 1:1 to the output since both are 1920×1080.
-        let textBoxes: [VisionTextDetector.DetectedText] = debugMode
-            ? (detector?.detect(in: sourcePixelBuffer) ?? [])
+        let sourceImage = CIImage(cvPixelBuffer: sourcePixelBuffer)
+
+        // Schedule Vision detection on the incoming frame (non-blocking; returns
+        // cached result). ScreenCaptureManager now applies source cropping at the
+        // SCStream layer, so Vision only sees the already-cropped capture buffer.
+        let sourceWidth = CGFloat(CVPixelBufferGetWidth(sourcePixelBuffer))
+        let sourceHeight = CGFloat(CVPixelBufferGetHeight(sourcePixelBuffer))
+        let textBoxes: [CGRect] =
+            debugMode
+            ? (detector?.detect(in: sourcePixelBuffer) ?? []).map { detected in
+                return mapToOutput(
+                    detected.boundingBox,
+                    sourceWidth: sourceWidth,
+                    sourceHeight: sourceHeight
+                )
+            }
             : []
 
-        let sourceImage = CIImage(cvPixelBuffer: sourcePixelBuffer)
         let framed =
             sourceImage
             .scaledToFit(in: outputRect)
@@ -156,8 +167,29 @@ final class ScreenCaptureFrameRenderer {
         return pixelBuffer
     }
 
+    // Maps a box from source pixel coordinates to output pixel coordinates,
+    // matching the scale+offset applied by scaledToFit(in:).
+    private func mapToOutput(
+        _ box: CGRect,
+        sourceWidth: CGFloat,
+        sourceHeight: CGFloat
+    ) -> CGRect {
+        let scale = min(
+            outputRect.width / sourceWidth,
+            outputRect.height / sourceHeight
+        )
+        let xOffset = (outputRect.width - sourceWidth * scale) / 2
+        let yOffset = (outputRect.height - sourceHeight * scale) / 2
+        return CGRect(
+            x: box.origin.x * scale + xOffset,
+            y: box.origin.y * scale + yOffset,
+            width: box.width * scale,
+            height: box.height * scale
+        )
+    }
+
     private func drawDebugBoxes(
-        _ boxes: [VisionTextDetector.DetectedText],
+        _ boxes: [CGRect],
         on pixelBuffer: CVPixelBuffer
     ) {
         guard !boxes.isEmpty else { return }
@@ -180,12 +212,14 @@ final class ScreenCaptureFrameRenderer {
         else { return }
 
         context.setStrokeColor(NSColor.systemGreen.cgColor)
-        context.setFillColor(NSColor.systemGreen.withAlphaComponent(0.15).cgColor)
+        context.setFillColor(
+            NSColor.systemGreen.withAlphaComponent(0.15).cgColor
+        )
         context.setLineWidth(2)
 
         for box in boxes {
-            context.fill(box.boundingBox)
-            context.stroke(box.boundingBox)
+            context.fill(box)
+            context.stroke(box)
         }
     }
 

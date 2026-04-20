@@ -1,10 +1,3 @@
-//
-//  VirtualCameraSinkClient.swift
-//  Nodox
-//
-//  Created by Codex on 20.04.26.
-//
-
 import AVFoundation
 import CoreMedia
 import CoreMediaIO

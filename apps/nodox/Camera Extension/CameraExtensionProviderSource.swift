@@ -1,8 +1,3 @@
-//
-//  CameraExtensionProviderSource.swift
-//  Camera Extension
-//
-
 import CoreMediaIO
 import Foundation
 import OSLog

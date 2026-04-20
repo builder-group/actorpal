@@ -1,10 +1,3 @@
-//
-//  CameraExtensionActivationManager.swift
-//  Nodox
-//
-//  Created by Benno on 19.04.26.
-//
-
 import AppKit
 import Combine
 import Foundation

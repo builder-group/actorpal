@@ -18,6 +18,11 @@ struct HomeView: View {
             virtualCameraSection
             screenCaptureSection
             actionSection
+            if screenCaptureManager.isCapturing
+                && screenCaptureManager.isDebugMode
+            {
+                visionSettingsSection
+            }
             detailsSection
         }
         .frame(maxWidth: 720, alignment: .leading)
@@ -41,7 +46,7 @@ struct HomeView: View {
             }
 
             Text(
-                "The current POC path is simple: install the camera extension, mirror the main display into the sink stream, and keep the red overlay visible so we know the end-to-end pipeline is live."
+                "Install the camera extension, start screen capture, then enable Vision debug mode to see Apple Vision text detection boxes overlaid on the live feed."
             )
             .foregroundStyle(.secondary)
         }
@@ -126,12 +131,103 @@ struct HomeView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+
+            if screenCaptureManager.isCapturing {
+                Button(action: screenCaptureManager.toggleDebugMode) {
+                    Text(
+                        screenCaptureManager.isDebugMode
+                            ? "Hide Vision Debug Boxes"
+                            : "Show Vision Debug Boxes"
+                    )
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .tint(screenCaptureManager.isDebugMode ? .green : nil)
+            }
+        }
+    }
+
+    private var visionSettingsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Vision Settings")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Recognition Quality")
+                        .font(.subheadline.weight(.medium))
+                    Picker(
+                        "",
+                        selection: Binding(
+                            get: {
+                                screenCaptureManager.visionUseFastRecognition
+                            },
+                            set: { _ in
+                                screenCaptureManager
+                                    .toggleVisionRecognitionSpeed()
+                            }
+                        )
+                    ) {
+                        Text("Accurate").tag(false)
+                        Text("Fast").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    Text(
+                        screenCaptureManager.visionUseFastRecognition
+                            ? "Faster, misses more text — good for latency testing."
+                            : "Slower, catches significantly more text — default."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("Minimum Text Height")
+                            .font(.subheadline.weight(.medium))
+                        Spacer()
+                        Text(
+                            String(
+                                format: "%.3f",
+                                screenCaptureManager.visionMinimumTextHeight
+                            )
+                        )
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                    }
+                    Slider(
+                        value: Binding(
+                            get: {
+                                screenCaptureManager.visionMinimumTextHeight
+                            },
+                            set: {
+                                screenCaptureManager.setVisionMinimumTextHeight(
+                                    $0
+                                )
+                            }
+                        ),
+                        in: 0.004...0.05,
+                        step: 0.002
+                    )
+                    Text(
+                        "Lower catches smaller text but slows detection. Default 0.03125 misses most UI text; 0.008 is a good starting point."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+            }
+            .padding(20)
+            .background(
+                .quaternary.opacity(0.35),
+                in: RoundedRectangle(cornerRadius: 20)
+            )
         }
     }
 
     private var detailsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Next Check")
+            Text("Validation Steps")
                 .font(.headline)
 
             Text("1. Run NoDox from /Applications.")
@@ -140,7 +236,10 @@ struct HomeView: View {
             )
             Text("3. Start screen capture and allow Screen Recording access.")
             Text(
-                "4. Open OBS, QuickTime, or Photo Booth and verify the NoDox camera mirrors the screen with the red test overlay."
+                "4. Open OBS, QuickTime, or Photo Booth and confirm the NoDox camera shows the live display."
+            )
+            Text(
+                "5. Enable Vision debug boxes and look for green outlines appearing over text regions in the feed."
             )
         }
         .foregroundStyle(.secondary)

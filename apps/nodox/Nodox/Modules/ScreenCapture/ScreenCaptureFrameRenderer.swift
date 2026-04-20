@@ -12,8 +12,10 @@ import CoreVideo
 import Foundation
 import OSLog
 
-/// Converts a raw ScreenCaptureKit frame into a 1920×1080 BGRA sample buffer
-/// with a red overlay drawn on top.
+/// Converts a raw ScreenCaptureKit frame into a 1920×1080 BGRA sample buffer.
+///
+/// When `debugMode` is true, detected text bounding boxes from `detector` are
+/// drawn as green outlines over the rendered frame.
 ///
 /// One instance should live for the duration of a single capture session.
 /// It is safe to call `makeSampleBuffer(from:)` from any thread.
@@ -39,6 +41,13 @@ final class ScreenCaptureFrameRenderer {
         subsystem: Bundle.main.bundleIdentifier ?? "com.buildergroup.nodox",
         category: "FrameRenderer"
     )
+
+    // Set by ScreenCaptureManager from the main thread; read from sampleHandlerQueue.
+    // Bool loads/stores are single-instruction on arm64 — a stale read trails a toggle
+    // by at most one frame, which is acceptable for a debug overlay.
+    var debugMode = false
+    // Injected before stream starts; cleared after stream stops.
+    var detector: VisionTextDetector?
 
     private let outputRect = CGRect(
         x: 0,
@@ -75,6 +84,12 @@ final class ScreenCaptureFrameRenderer {
             return nil
         }
 
+        // Schedule Vision detection on the raw source frame (non-blocking; returns cached result).
+        // Boxes are in source pixel coords which map 1:1 to the output since both are 1920×1080.
+        let textBoxes: [VisionTextDetector.DetectedText] = debugMode
+            ? (detector?.detect(in: sourcePixelBuffer) ?? [])
+            : []
+
         let sourceImage = CIImage(cvPixelBuffer: sourcePixelBuffer)
         let framed =
             sourceImage
@@ -87,7 +102,7 @@ final class ScreenCaptureFrameRenderer {
             bounds: outputRect,
             colorSpace: colorSpace
         )
-        drawOverlay(on: pixelBuffer)
+        drawDebugBoxes(textBoxes, on: pixelBuffer)
 
         var timing = CMSampleTimingInfo(
             duration: CMTime(
@@ -141,7 +156,12 @@ final class ScreenCaptureFrameRenderer {
         return pixelBuffer
     }
 
-    private func drawOverlay(on pixelBuffer: CVPixelBuffer) {
+    private func drawDebugBoxes(
+        _ boxes: [VisionTextDetector.DetectedText],
+        on pixelBuffer: CVPixelBuffer
+    ) {
+        guard !boxes.isEmpty else { return }
+
         CVPixelBufferLockBaseAddress(pixelBuffer, [])
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
 
@@ -157,40 +177,16 @@ final class ScreenCaptureFrameRenderer {
                 bitmapInfo: CGBitmapInfo.byteOrder32Little.rawValue
                     | CGImageAlphaInfo.premultipliedFirst.rawValue
             )
-        else {
-            return
+        else { return }
+
+        context.setStrokeColor(NSColor.systemGreen.cgColor)
+        context.setFillColor(NSColor.systemGreen.withAlphaComponent(0.15).cgColor)
+        context.setLineWidth(2)
+
+        for box in boxes {
+            context.fill(box.boundingBox)
+            context.stroke(box.boundingBox)
         }
-
-        let rect = AppConfig.overlayRect
-
-        context.setFillColor(NSColor.systemRed.withAlphaComponent(0.22).cgColor)
-        context.fill(rect)
-        context.setStrokeColor(NSColor.systemRed.cgColor)
-        context.setLineWidth(4)
-        context.stroke(rect)
-
-        let graphicsContext = NSGraphicsContext(
-            cgContext: context,
-            flipped: false
-        )
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = graphicsContext
-
-        let label = NSAttributedString(
-            string: AppConfig.overlayLabel,
-            attributes: [
-                .font: NSFont.monospacedSystemFont(
-                    ofSize: 20,
-                    weight: .semibold
-                ),
-                .foregroundColor: NSColor.white,
-            ]
-        )
-        label.draw(
-            at: CGPoint(x: rect.minX + 18, y: rect.minY + rect.height - 42)
-        )
-
-        NSGraphicsContext.restoreGraphicsState()
     }
 
     private static func makeFormatDescription(width: Int, height: Int) throws

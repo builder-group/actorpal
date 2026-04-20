@@ -14,13 +14,17 @@ import CoreVideo
 import Foundation
 import OSLog
 import ScreenCaptureKit
+import Vision
 
 final class ScreenCaptureManager: NSObject, ObservableObject {
     @Published private(set) var isCapturing = false
+    @Published private(set) var isDebugMode = false
     @Published private(set) var requiresCameraPermission = false
+    @Published private(set) var visionUseFastRecognition = false
+    @Published private(set) var visionMinimumTextHeight: Float = 0.008
     @Published private(set) var statusTitle = "Screen Capture Ready"
     @Published private(set) var statusMessage =
-        "Start screen capture to mirror the main display into the NoDox camera with a red test overlay."
+        "Start screen capture to mirror the main display into the NoDox virtual camera."
 
     var actionTitle: String {
         isCapturing ? "Stop Screen Capture" : "Start Screen Capture"
@@ -61,6 +65,22 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         if isCapturing { stopCapture() } else { startCapture() }
     }
 
+    func toggleDebugMode() {
+        isDebugMode.toggle()
+        frameRenderer?.debugMode = isDebugMode
+    }
+
+    func toggleVisionRecognitionSpeed() {
+        visionUseFastRecognition.toggle()
+        frameRenderer?.detector?.recognitionLevel =
+            visionUseFastRecognition ? .fast : .accurate
+    }
+
+    func setVisionMinimumTextHeight(_ value: Float) {
+        visionMinimumTextHeight = value
+        frameRenderer?.detector?.minimumTextHeight = value
+    }
+
     func startCapture() {
         guard !isCapturing else { return }
 
@@ -91,7 +111,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             await self?.finishCapture(
                 title: "Screen Capture Ready",
                 message:
-                    "Start screen capture to mirror the main display into the NoDox camera with a red test overlay."
+                    "Start screen capture to mirror the main display into the NoDox virtual camera."
             )
         }
     }
@@ -181,6 +201,12 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             try await sinkClient.connectIfNeeded()
 
             let renderer = try ScreenCaptureFrameRenderer()
+            let detector = VisionTextDetector()
+            detector.recognitionLevel =
+                visionUseFastRecognition ? .fast : .accurate
+            detector.minimumTextHeight = visionMinimumTextHeight
+            renderer.detector = detector
+            renderer.debugMode = isDebugMode
 
             let shareableContent = try await SCShareableContent.current
             guard
@@ -240,6 +266,12 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         sinkClient.resetConnection()
         isStoppingAfterFailure = false
         droppedFrameCount = 0
+
+        DispatchQueue.main.async {
+            self.isDebugMode = false
+            self.visionUseFastRecognition = false
+            self.visionMinimumTextHeight = 0.008
+        }
 
         updateStatus(
             isCapturing: false,

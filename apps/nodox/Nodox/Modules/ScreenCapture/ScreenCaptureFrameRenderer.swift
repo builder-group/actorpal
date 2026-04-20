@@ -22,7 +22,21 @@ enum CropAlignment: String, CaseIterable, Hashable {
     }
 }
 
-/// Converts a raw ScreenCaptureKit frame into a 1920×1080 BGRA sample buffer.
+enum RedactionMode: CaseIterable, Hashable {
+    case live
+    case delayed
+
+    var title: String {
+        switch self {
+        case .live:
+            return "Live"
+        case .delayed:
+            return "Delayed"
+        }
+    }
+}
+
+/// Converts a raw ScreenCaptureKit frame into a 1920x1080 BGRA sample buffer.
 ///
 /// When `debugMode` is true, detected text bounding boxes from `detector` are
 /// drawn as green outlines over the rendered frame. When `redactionEnabled` is
@@ -30,7 +44,7 @@ enum CropAlignment: String, CaseIterable, Hashable {
 /// solid black bars before the frame reaches the preview or virtual camera.
 ///
 /// One instance should live for the duration of a single capture session.
-/// It is safe to call `makeSampleBuffer(from:)` from any thread.
+/// It is safe to call `makeSampleBuffers(from:)` from any thread.
 final class ScreenCaptureFrameRenderer {
 
     enum RendererError: LocalizedError {
@@ -49,16 +63,31 @@ final class ScreenCaptureFrameRenderer {
         }
     }
 
+    private struct OverlaySnapshot {
+        let debugBoxes: [CGRect]
+        let redactionBoxes: [CGRect]
+    }
+
+    private struct AnalyzedChunk {
+        let overlay: OverlaySnapshot
+        let pixelBuffers: [CVPixelBuffer]
+    }
+
+    private struct DelayedAnalysisReservation {
+        let generation: UInt64
+        let token: UInt64
+    }
+
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier ?? "com.buildergroup.nodox",
         category: "FrameRenderer"
     )
+    // Set by ScreenCaptureManager on the sample-handler queue before or during capture.
+    private var debugMode = false
+    private var redactionEnabled = false
+    private var redactionMode: RedactionMode = .live
+    private var delayedChunkSize = AppConfig.defaultRedactionChunkSize
 
-    // Set by ScreenCaptureManager from the main thread; read from sampleHandlerQueue.
-    // Bool loads/stores are single-instruction on arm64 — a stale read trails a toggle
-    // by at most one frame, which is acceptable for a debug overlay.
-    var debugMode = false
-    var redactionEnabled = false
     // Injected before stream starts; cleared after stream stops.
     var detector: VisionTextDetector?
     var matcher: SensitiveTextMatcher?
@@ -74,6 +103,22 @@ final class ScreenCaptureFrameRenderer {
     private let outputFormatDescription: CMFormatDescription
     private let pixelBufferPool: CVPixelBufferPool
 
+    // Delayed-redaction state.
+    // inputChunk, outputQueue, and latestDelayedOverlay are accessed only on
+    // sampleHandlerQueue. pendingChunks, delayedGeneration, and activeAnalysisToken
+    // are shared with detectionQueue and therefore guarded by chunkLock.
+    private var inputChunk: [CVPixelBuffer] = []
+    private var outputQueue: [CVPixelBuffer] = []
+    private var latestDelayedOverlay = OverlaySnapshot(
+        debugBoxes: [],
+        redactionBoxes: []
+    )
+    private let chunkLock = NSLock()
+    private var pendingChunks: [AnalyzedChunk] = []
+    private var delayedGeneration: UInt64 = 0
+    private var nextAnalysisToken: UInt64 = 0
+    private var activeAnalysisToken: UInt64?
+
     init() throws {
         outputFormatDescription = try Self.makeFormatDescription(
             width: AppConfig.videoWidth,
@@ -85,55 +130,133 @@ final class ScreenCaptureFrameRenderer {
         )
     }
 
+    // MARK: - Configuration
+
+    func setDebugMode(_ value: Bool) {
+        debugMode = value
+    }
+
+    func setRedactionEnabled(_ value: Bool) {
+        redactionEnabled = value
+        if !value {
+            resetDelayedState()
+        }
+    }
+
+    func setRedactionMode(_ value: RedactionMode) {
+        guard redactionMode != value else { return }
+        redactionMode = value
+        resetDelayedState()
+    }
+
+    func setDelayedChunkSize(_ value: Int) {
+        let clamped = max(
+            AppConfig.minRedactionChunkSize,
+            min(value, AppConfig.maxRedactionChunkSize)
+        )
+        guard delayedChunkSize != clamped else { return }
+        delayedChunkSize = clamped
+        resetDelayedState()
+    }
+
     // MARK: - Frame rendering
 
-    /// Returns a new rendered sample buffer, or `nil` if a system resource was
-    /// temporarily unavailable (e.g. pixel buffer pool exhausted).
-    func makeSampleBuffer(from sourceBuffer: CMSampleBuffer) -> CMSampleBuffer?
+    /// Returns zero or more rendered sample buffers that are ready for delivery.
+    ///
+    /// Live mode returns the current frame immediately. Delayed mode buffers a
+    /// chunk of frames, samples the last frame in that chunk with Vision, then
+    /// applies that sampled overlay to the whole chunk before release. If Vision
+    /// is already busy, delayed mode reuses the most recent sampled overlay for
+    /// the next chunk instead of letting latency grow without bound.
+    func makeSampleBuffers(from sourceBuffer: CMSampleBuffer)
+        -> [CMSampleBuffer]
     {
         guard
             let sourcePixelBuffer = CMSampleBufferGetImageBuffer(sourceBuffer),
-            let pixelBuffer = makePixelBuffer()
+            let renderedPixelBuffer = makeRenderedPixelBuffer(
+                from: sourcePixelBuffer
+            )
         else {
-            return nil
+            return []
         }
 
+        let usesDelayedRedaction = redactionEnabled && redactionMode == .delayed
+        guard usesDelayedRedaction else {
+            guard
+                let sampleBuffer = makeLiveSampleBuffer(
+                    from: renderedPixelBuffer,
+                    sourceBuffer: sourceBuffer,
+                    sourcePixelBuffer: sourcePixelBuffer
+                )
+            else {
+                return []
+            }
+            return [sampleBuffer]
+        }
+
+        // Delayed mode: chunk-sampled best effort.
+        //
+        // Frames are held in inputChunk until the chunk is full, then Vision runs on the
+        // last source frame and the resulting overlay (redaction + debug boxes) is applied
+        // to every frame in the chunk before they are pushed to outputQueue. This reduces
+        // leak risk compared with live mode, but it is still best effort because text that
+        // appears and disappears between sampled frames can be missed.
+        //
+        // To keep latency bounded, at most one chunk is analyzed at a time. If Vision is
+        // still busy when the next chunk fills, that chunk reuses the most recent sampled
+        // overlay instead of waiting indefinitely and growing an unbounded backlog.
+        drainPendingChunks()
+
+        inputChunk.append(renderedPixelBuffer)
+
+        if inputChunk.count >= delayedChunkSize {
+            let chunk = inputChunk
+            inputChunk.removeAll(keepingCapacity: true)
+            scheduleDelayedChunk(
+                chunk,
+                sampledSourcePixelBuffer: sourcePixelBuffer
+            )
+        }
+
+        guard !outputQueue.isEmpty else { return [] }
+        let outputPixelBuffer = outputQueue.removeFirst()
+        // Use the current source buffer's timestamp so the display layer and CMIO sink
+        // always receive frames stamped "now". Delayed frames with their original capture
+        // timestamps would appear in the past to the layer, causing it to display them
+        // immediately without any rate-limiting → burst playback.
+        let timestamp = resolvedPresentationTimeStamp(for: sourceBuffer)
+        guard
+            let sampleBuffer = makeOutputSampleBuffer(
+                from: outputPixelBuffer,
+                presentationTimeStamp: timestamp
+            )
+        else {
+            return []
+        }
+        return [sampleBuffer]
+    }
+
+    private func makeLiveSampleBuffer(
+        from renderedPixelBuffer: CVPixelBuffer,
+        sourceBuffer: CMSampleBuffer,
+        sourcePixelBuffer: CVPixelBuffer
+    ) -> CMSampleBuffer? {
+        let overlay = liveOverlaySnapshot(for: sourcePixelBuffer)
+        applyOverlays(overlay, to: renderedPixelBuffer)
+        return makeOutputSampleBuffer(
+            from: renderedPixelBuffer,
+            presentationTimeStamp: resolvedPresentationTimeStamp(
+                for: sourceBuffer
+            )
+        )
+    }
+
+    private func makeRenderedPixelBuffer(from sourcePixelBuffer: CVPixelBuffer)
+        -> CVPixelBuffer?
+    {
+        guard let pixelBuffer = makePixelBuffer() else { return nil }
+
         let sourceImage = CIImage(cvPixelBuffer: sourcePixelBuffer)
-
-        // Schedule Vision detection on the incoming frame (non-blocking; returns
-        // cached result). ScreenCaptureManager now applies source cropping at the
-        // SCStream layer, so Vision only sees the already-cropped capture buffer.
-        let sourceWidth = CGFloat(CVPixelBufferGetWidth(sourcePixelBuffer))
-        let sourceHeight = CGFloat(CVPixelBufferGetHeight(sourcePixelBuffer))
-        let shouldAnalyze = debugMode || redactionEnabled
-        let detectedText = shouldAnalyze
-            ? (detector?.detect(in: sourcePixelBuffer) ?? [])
-            : []
-
-        let debugBoxes: [CGRect] =
-            debugMode
-            ? detectedText.map { detected in
-                mapToOutput(
-                    detected.boundingBox,
-                    sourceWidth: sourceWidth,
-                    sourceHeight: sourceHeight
-                )
-            }
-            : []
-
-        let redactionBoxes: [CGRect] =
-            redactionEnabled
-            ? (matcher?.matchedDetections(in: detectedText) ?? []).map {
-                paddedRedactionBox(
-                    for: mapToOutput(
-                        $0.boundingBox,
-                        sourceWidth: sourceWidth,
-                        sourceHeight: sourceHeight
-                    )
-                )
-            }
-            : []
-
         let framed =
             sourceImage
             .scaledToFit(in: outputRect)
@@ -145,29 +268,229 @@ final class ScreenCaptureFrameRenderer {
             bounds: outputRect,
             colorSpace: colorSpace
         )
-        drawOverlays(
-            redactionBoxes: redactionBoxes,
-            debugBoxes: debugBoxes,
-            on: pixelBuffer
-        )
 
+        return pixelBuffer
+    }
+
+    private func makePixelBuffer() -> CVPixelBuffer? {
+        var pixelBuffer: CVPixelBuffer?
+        let status = CVPixelBufferPoolCreatePixelBuffer(
+            kCFAllocatorDefault,
+            pixelBufferPool,
+            &pixelBuffer
+        )
+        guard status == kCVReturnSuccess else {
+            logger.error(
+                "Pixel buffer pool exhausted (CVReturn \(status)) - dropping frame"
+            )
+            return nil
+        }
+        return pixelBuffer
+    }
+
+    private func liveOverlaySnapshot(for sourcePixelBuffer: CVPixelBuffer)
+        -> OverlaySnapshot
+    {
+        guard debugMode || redactionEnabled else {
+            return OverlaySnapshot(debugBoxes: [], redactionBoxes: [])
+        }
+
+        let detections = detector?.detect(in: sourcePixelBuffer) ?? []
+        return overlaySnapshot(
+            from: detections,
+            sourceWidth: CGFloat(CVPixelBufferGetWidth(sourcePixelBuffer)),
+            sourceHeight: CGFloat(CVPixelBufferGetHeight(sourcePixelBuffer)),
+            debugEnabled: debugMode,
+            redactionEnabled: redactionEnabled
+        )
+    }
+
+    private func overlaySnapshot(
+        from detections: [VisionTextDetector.DetectedText],
+        sourceWidth: CGFloat,
+        sourceHeight: CGFloat,
+        debugEnabled: Bool,
+        redactionEnabled: Bool
+    ) -> OverlaySnapshot {
+        let debugBoxes: [CGRect] =
+            debugEnabled
+            ? detections.map { detected in
+                mapToOutput(
+                    detected.boundingBox,
+                    sourceWidth: sourceWidth,
+                    sourceHeight: sourceHeight
+                )
+            }
+            : []
+
+        let redactionBoxes: [CGRect] =
+            redactionEnabled
+            ? (matcher?.matchedDetections(in: detections) ?? []).map {
+                detected in
+                paddedRedactionBox(
+                    for: mapToOutput(
+                        detected.boundingBox,
+                        sourceWidth: sourceWidth,
+                        sourceHeight: sourceHeight
+                    )
+                )
+            }
+            : []
+
+        return OverlaySnapshot(
+            debugBoxes: debugBoxes,
+            redactionBoxes: redactionBoxes
+        )
+    }
+
+    private func drainPendingChunks() {
+        chunkLock.lock()
+        let chunks = pendingChunks
+        pendingChunks.removeAll(keepingCapacity: true)
+        chunkLock.unlock()
+
+        for chunk in chunks {
+            latestDelayedOverlay = chunk.overlay
+            outputQueue.append(contentsOf: chunk.pixelBuffers)
+        }
+    }
+
+    private func scheduleDelayedChunk(
+        _ chunk: [CVPixelBuffer],
+        sampledSourcePixelBuffer: CVPixelBuffer
+    ) {
+        guard let reservation = reserveDelayedAnalysisSlot() else {
+            enqueueChunk(chunk, using: latestDelayedOverlay)
+            return
+        }
+
+        analyzeAndEnqueueChunk(
+            chunk,
+            sampledSourcePixelBuffer: sampledSourcePixelBuffer,
+            reservation: reservation
+        )
+    }
+
+    private func reserveDelayedAnalysisSlot() -> DelayedAnalysisReservation? {
+        guard detector != nil else { return nil }
+
+        chunkLock.lock()
+        defer { chunkLock.unlock() }
+
+        guard activeAnalysisToken == nil else { return nil }
+        nextAnalysisToken &+= 1
+        let token = nextAnalysisToken
+        activeAnalysisToken = token
+        return DelayedAnalysisReservation(
+            generation: delayedGeneration,
+            token: token
+        )
+    }
+
+    // Runs Vision on the last source frame of a completed chunk (on detectionQueue),
+    // applies the resulting overlay to every rendered frame in the chunk, then moves
+    // them to pendingChunks so drainPendingChunks can pick them up on the next tick.
+    private func analyzeAndEnqueueChunk(
+        _ chunk: [CVPixelBuffer],
+        sampledSourcePixelBuffer: CVPixelBuffer,
+        reservation: DelayedAnalysisReservation
+    ) {
+        let sourceWidth = CGFloat(
+            CVPixelBufferGetWidth(sampledSourcePixelBuffer)
+        )
+        let sourceHeight = CGFloat(
+            CVPixelBufferGetHeight(sampledSourcePixelBuffer)
+        )
+        let capturedDebugMode = debugMode
+        let capturedRedactionEnabled = redactionEnabled
+
+        guard let detector else {
+            releaseDelayedAnalysisSlot(token: reservation.token)
+            enqueueChunk(chunk, using: latestDelayedOverlay)
+            return
+        }
+
+        detector.analyzeSample(in: sampledSourcePixelBuffer) {
+            [weak self] detections in
+            guard let self else { return }
+            let overlay = self.overlaySnapshot(
+                from: detections,
+                sourceWidth: sourceWidth,
+                sourceHeight: sourceHeight,
+                debugEnabled: capturedDebugMode,
+                redactionEnabled: capturedRedactionEnabled
+            )
+            for pixelBuffer in chunk {
+                self.applyOverlays(overlay, to: pixelBuffer)
+            }
+
+            self.chunkLock.lock()
+            if self.delayedGeneration == reservation.generation {
+                self.pendingChunks.append(
+                    AnalyzedChunk(overlay: overlay, pixelBuffers: chunk)
+                )
+            }
+            if self.activeAnalysisToken == reservation.token {
+                self.activeAnalysisToken = nil
+            }
+            self.chunkLock.unlock()
+        }
+    }
+
+    private func releaseDelayedAnalysisSlot(token: UInt64) {
+        chunkLock.lock()
+        if activeAnalysisToken == token {
+            activeAnalysisToken = nil
+        }
+        chunkLock.unlock()
+    }
+
+    private func enqueueChunk(
+        _ chunk: [CVPixelBuffer],
+        using overlay: OverlaySnapshot
+    ) {
+        for pixelBuffer in chunk {
+            applyOverlays(overlay, to: pixelBuffer)
+        }
+        outputQueue.append(contentsOf: chunk)
+    }
+
+    private func resetDelayedState() {
+        inputChunk.removeAll(keepingCapacity: true)
+        outputQueue.removeAll(keepingCapacity: true)
+        chunkLock.lock()
+        pendingChunks.removeAll(keepingCapacity: true)
+        delayedGeneration &+= 1
+        activeAnalysisToken = nil
+        chunkLock.unlock()
+        latestDelayedOverlay = OverlaySnapshot(
+            debugBoxes: [],
+            redactionBoxes: []
+        )
+    }
+
+    private func resolvedPresentationTimeStamp(for sourceBuffer: CMSampleBuffer)
+        -> CMTime
+    {
+        let sourceTime = sourceBuffer.presentationTimeStamp
+        guard sourceTime.isValid else {
+            return CMClockGetTime(CMClockGetHostTimeClock())
+        }
+        return sourceTime
+    }
+
+    private func makeOutputSampleBuffer(
+        from pixelBuffer: CVPixelBuffer,
+        presentationTimeStamp: CMTime
+    ) -> CMSampleBuffer? {
         var timing = CMSampleTimingInfo(
             duration: CMTime(
                 value: 1,
                 timescale: CMTimeScale(AppConfig.videoFrameRate)
             ),
-            presentationTimeStamp: sourceBuffer.presentationTimeStamp,
+            presentationTimeStamp: presentationTimeStamp,
             decodeTimeStamp: .invalid
         )
-
-        // Fall back to host clock if the source buffer carries no timestamp.
-        // This can happen with certain SCStream configurations; Vision frameworks
-        // tolerate host-time stamps fine since they treat each frame independently.
-        if !timing.presentationTimeStamp.isValid {
-            timing.presentationTimeStamp = CMClockGetTime(
-                CMClockGetHostTimeClock()
-            )
-        }
 
         var sampleBuffer: CMSampleBuffer?
         let status = CMSampleBufferCreateReadyWithImageBuffer(
@@ -185,22 +508,6 @@ final class ScreenCaptureFrameRenderer {
         }
 
         return sampleBuffer
-    }
-
-    private func makePixelBuffer() -> CVPixelBuffer? {
-        var pixelBuffer: CVPixelBuffer?
-        let status = CVPixelBufferPoolCreatePixelBuffer(
-            kCFAllocatorDefault,
-            pixelBufferPool,
-            &pixelBuffer
-        )
-        guard status == kCVReturnSuccess else {
-            logger.error(
-                "Pixel buffer pool exhausted (CVReturn \(status)) — dropping frame"
-            )
-            return nil
-        }
-        return pixelBuffer
     }
 
     // Maps a box from source pixel coordinates to output pixel coordinates,
@@ -227,9 +534,21 @@ final class ScreenCaptureFrameRenderer {
     private func paddedRedactionBox(for box: CGRect) -> CGRect {
         let horizontalPadding = max(6, box.height * 0.18)
         let verticalPadding = max(3, box.height * 0.12)
-        return box
+        return
+            box
             .insetBy(dx: -horizontalPadding, dy: -verticalPadding)
             .intersection(outputRect)
+    }
+
+    private func applyOverlays(
+        _ overlay: OverlaySnapshot,
+        to pixelBuffer: CVPixelBuffer
+    ) {
+        drawOverlays(
+            redactionBoxes: overlay.redactionBoxes,
+            debugBoxes: overlay.debugBoxes,
+            on: pixelBuffer
+        )
     }
 
     private func drawOverlays(

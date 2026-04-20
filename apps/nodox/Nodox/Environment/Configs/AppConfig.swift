@@ -15,6 +15,9 @@ enum AppConfig {
     // Maximum rate at which VisionTextDetector runs a new recognition request.
     // 0.1 s = 10 Hz, leaving plenty of CPU headroom alongside the 30 fps capture pipeline.
     static let visionThrottleInterval: TimeInterval = 0.1
+    static let defaultRedactionChunkSize = 4
+    static let minRedactionChunkSize = 2
+    static let maxRedactionChunkSize = 12
 
     static let exampleWordRedactionPattern =
         #"(?i)\b(?:alice|bob|acme)\b"#

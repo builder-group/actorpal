@@ -13,6 +13,9 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
     @Published private(set) var isCapturing = false
     @Published private(set) var isDebugMode = false
     @Published private(set) var isRedactionEnabled = false
+    @Published private(set) var redactionMode: RedactionMode = .live
+    @Published private(set) var delayedRedactionChunkSize =
+        AppConfig.defaultRedactionChunkSize
     @Published private(set) var requiresCameraPermission = false
     @Published private(set) var visionUseFastRecognition = false
     @Published private(set) var visionMinimumTextHeight: Float = 0.008
@@ -78,12 +81,34 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
 
     func toggleDebugMode() {
         isDebugMode.toggle()
-        frameRenderer?.debugMode = isDebugMode
+        sampleHandlerQueue.async { [weak self] in
+            self?.frameRenderer?.setDebugMode(self?.isDebugMode ?? false)
+        }
     }
 
     func setRedactionEnabled(_ value: Bool) {
         isRedactionEnabled = value
-        frameRenderer?.redactionEnabled = value
+        sampleHandlerQueue.async { [weak self] in
+            self?.frameRenderer?.setRedactionEnabled(value)
+        }
+    }
+
+    func setRedactionMode(_ value: RedactionMode) {
+        redactionMode = value
+        sampleHandlerQueue.async { [weak self] in
+            self?.frameRenderer?.setRedactionMode(value)
+        }
+    }
+
+    func setDelayedRedactionChunkSize(_ value: Int) {
+        let clamped = max(
+            AppConfig.minRedactionChunkSize,
+            min(value, AppConfig.maxRedactionChunkSize)
+        )
+        delayedRedactionChunkSize = clamped
+        sampleHandlerQueue.async { [weak self] in
+            self?.frameRenderer?.setDelayedChunkSize(clamped)
+        }
     }
 
     func setRedactionPattern(_ value: String, at index: Int) {
@@ -211,36 +236,39 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             return
         }
 
-        guard let renderedBuffer = renderer.makeSampleBuffer(from: sampleBuffer)
-        else {
+        let renderedBuffers = renderer.makeSampleBuffers(from: sampleBuffer)
+        guard !renderedBuffers.isEmpty else {
             return
         }
 
-        previewLayer.enqueue(renderedBuffer)
+        for renderedBuffer in renderedBuffers {
+            previewLayer.enqueue(renderedBuffer)
 
-        do {
-            let result = try sinkClient.enqueue(renderedBuffer)
-            if case .droppedWaitingForConsumer = result {
-                droppedFrameCount += 1
-                if droppedFrameCount % AppConfig.videoFrameRate == 0 {
-                    logger.info(
-                        "Dropping frames while waiting for the CMIO sink consumer"
-                    )
+            do {
+                let result = try sinkClient.enqueue(renderedBuffer)
+                if case .droppedWaitingForConsumer = result {
+                    droppedFrameCount += 1
+                    if droppedFrameCount % AppConfig.videoFrameRate == 0 {
+                        logger.info(
+                            "Dropping frames while waiting for the CMIO sink consumer"
+                        )
+                    }
+                } else {
+                    if droppedFrameCount > 0 {
+                        logger.info(
+                            "Resumed delivery after \(self.droppedFrameCount) dropped frame(s)"
+                        )
+                    }
+                    droppedFrameCount = 0
                 }
-            } else {
-                if droppedFrameCount > 0 {
-                    logger.info(
-                        "Resumed delivery after \(self.droppedFrameCount) dropped frame(s)"
-                    )
+            } catch {
+                logger.error(
+                    "Virtual camera transport failed: \(error.localizedDescription, privacy: .public)"
+                )
+                Task { [weak self] in
+                    await self?.handleTransportFailure(error)
                 }
-                droppedFrameCount = 0
-            }
-        } catch {
-            logger.error(
-                "Virtual camera transport failed: \(error.localizedDescription, privacy: .public)"
-            )
-            Task { [weak self] in
-                await self?.handleTransportFailure(error)
+                return
             }
         }
     }
@@ -280,8 +308,10 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
                 visionUseFastRecognition ? .fast : .accurate
             detector.minimumTextHeight = visionMinimumTextHeight
             renderer.detector = detector
-            renderer.debugMode = isDebugMode
-            renderer.redactionEnabled = isRedactionEnabled
+            renderer.setDebugMode(isDebugMode)
+            renderer.setRedactionEnabled(isRedactionEnabled)
+            renderer.setRedactionMode(redactionMode)
+            renderer.setDelayedChunkSize(delayedRedactionChunkSize)
             renderer.matcher = redactionMatcher
 
             let filter: SCContentFilter

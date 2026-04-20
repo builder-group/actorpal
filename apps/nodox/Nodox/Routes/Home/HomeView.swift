@@ -167,6 +167,67 @@ struct HomeView: View {
                 .toggleStyle(.switch)
 
                 VStack(alignment: .leading, spacing: 6) {
+                    Text("Delivery Mode")
+                        .font(.subheadline.weight(.medium))
+                    Picker(
+                        "Delivery Mode",
+                        selection: Binding(
+                            get: { screenCaptureManager.redactionMode },
+                            set: { screenCaptureManager.setRedactionMode($0) }
+                        )
+                    ) {
+                        ForEach(RedactionMode.allCases, id: \.self) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    Text(redactionModeDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                if screenCaptureManager.redactionMode == .delayed {
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Delay")
+                                .font(.subheadline.weight(.medium))
+                            Spacer()
+                            Text(
+                                "\(screenCaptureManager.delayedRedactionChunkSize) frames (~\(delayedRedactionDelayLabel)s)"
+                            )
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                        }
+                        Slider(
+                            value: Binding(
+                                get: {
+                                    Double(
+                                        screenCaptureManager
+                                            .delayedRedactionChunkSize
+                                    )
+                                },
+                                set: {
+                                    screenCaptureManager
+                                        .setDelayedRedactionChunkSize(
+                                            Int($0.rounded())
+                                        )
+                                }
+                            ),
+                            in: Double(
+                                AppConfig.minRedactionChunkSize
+                            )...Double(AppConfig.maxRedactionChunkSize),
+                            step: 1
+                        )
+                        Text(
+                            "How many frames to buffer per chunk. Vision samples only the last frame in each chunk. If Vision falls behind, NoDox reuses the most recent sampled overlay so delay stays bounded instead of growing forever."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text("Regex Patterns")
                             .font(.subheadline.weight(.medium))
@@ -447,6 +508,24 @@ struct HomeView: View {
         let noun = count == 1 ? "pattern" : "patterns"
         return
             "\(count) active \(noun). Inline modifiers such as `(?i)` still work if you want case-insensitive matching."
+    }
+
+    private var redactionModeDescription: String {
+        switch screenCaptureManager.redactionMode {
+        case .live:
+            return
+                "Frames are output immediately with the latest cached OCR result. A newly visible sensitive string can slip through for one Vision cycle (~100ms) before it is redacted."
+        case .delayed:
+            return
+                "Frames are held in chunks. Vision samples the last frame of each chunk and applies that result to the whole chunk before release. This lowers leak risk, but short-lived text that appears only between sampled frames can still be missed. If Vision falls behind, NoDox reuses the most recent sampled overlay instead of letting delay grow without bound."
+        }
+    }
+
+    private var delayedRedactionDelayLabel: String {
+        let seconds =
+            Double(screenCaptureManager.delayedRedactionChunkSize)
+            / Double(AppConfig.videoFrameRate)
+        return String(format: "%.2f", seconds)
     }
 
     private func redactionPatternRow(_ index: Int) -> some View {

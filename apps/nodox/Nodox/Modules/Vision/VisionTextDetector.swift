@@ -71,6 +71,20 @@ final class VisionTextDetector {
         return cached
     }
 
+    /// Runs OCR on a specific sampled frame and returns the result asynchronously.
+    ///
+    /// Delayed chunk mode uses this to inspect one frame per buffered chunk without
+    /// blocking the screen-capture callback queue.
+    func analyzeSample(
+        in pixelBuffer: CVPixelBuffer,
+        completion: @escaping ([DetectedText]) -> Void
+    ) {
+        detectionQueue.async { [weak self] in
+            guard let self else { return }
+            completion(self.runVision(on: pixelBuffer))
+        }
+    }
+
     private func runVision(on pixelBuffer: CVPixelBuffer) -> [DetectedText] {
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)

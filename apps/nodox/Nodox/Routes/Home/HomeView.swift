@@ -14,6 +14,7 @@ struct HomeView: View {
                     captureSourceSection
                 }
                 screenCaptureSection
+                redactionSection
                 if screenCaptureManager.isCapturing {
                     previewSection
                 }
@@ -48,7 +49,7 @@ struct HomeView: View {
             }
 
             Text(
-                "Install the camera extension, start screen capture, then enable Vision debug mode to see Apple Vision text detection boxes overlaid on the live feed."
+                "Install the camera extension, start screen capture, then use regex-driven redaction to black out sensitive OCR matches before they reach the preview or virtual camera."
             )
             .foregroundStyle(.secondary)
         }
@@ -147,6 +148,75 @@ struct HomeView: View {
                 .controlSize(.large)
                 .tint(screenCaptureManager.isDebugMode ? .green : nil)
             }
+        }
+    }
+
+    private var redactionSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Sensitive Text Redaction")
+                .font(.headline)
+
+            VStack(alignment: .leading, spacing: 16) {
+                Toggle(
+                    "Black out text that matches the regex list",
+                    isOn: Binding(
+                        get: { screenCaptureManager.isRedactionEnabled },
+                        set: { screenCaptureManager.setRedactionEnabled($0) }
+                    )
+                )
+                .toggleStyle(.switch)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Regex Patterns")
+                        .font(.subheadline.weight(.medium))
+
+                    TextEditor(
+                        text: Binding(
+                            get: { screenCaptureManager.redactionPatternInput },
+                            set: {
+                                screenCaptureManager.setRedactionPatternInput(
+                                    $0
+                                )
+                            }
+                        )
+                    )
+                    .font(.system(.body, design: .monospaced))
+                    .frame(minHeight: 110)
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(.black.opacity(0.08))
+                    )
+
+                    Text(
+                        "One regex per line. Lines that start with # are ignored. This first pass redacts whole Vision boxes, so if OCR merges several words into one string the full line gets covered."
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                    Text(
+                        "Example exact-word pattern: \(AppConfig.exampleWordRedactionPattern)"
+                    )
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+
+                    Text(redactionPatternStatus)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    if let redactionErrorText {
+                        Text(redactionErrorText)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
+            .background(
+                .quaternary.opacity(0.35),
+                in: RoundedRectangle(cornerRadius: 20)
+            )
         }
     }
 
@@ -362,10 +432,36 @@ struct HomeView: View {
                 "4. Open OBS, QuickTime, or Photo Booth and confirm the NoDox camera shows the live display."
             )
             Text(
-                "5. Enable Vision debug boxes and look for green outlines appearing over text regions in the feed."
+                "5. Add one or more regexes, enable sensitive-text redaction, and confirm matching text is covered with black bars in the preview."
+            )
+            Text(
+                "6. Enable Vision debug boxes when needed to compare OCR detection rectangles against the redacted output."
             )
         }
         .foregroundStyle(.secondary)
+    }
+
+    private var redactionPatternStatus: String {
+        let count = screenCaptureManager.redactionActivePatternCount
+        let noun = count == 1 ? "pattern" : "patterns"
+        return
+            "\(count) active \(noun). Inline regex modifiers such as `(?i)` work if you want case-insensitive matching."
+    }
+
+    private var redactionErrorText: String? {
+        guard !screenCaptureManager.redactionPatternErrors.isEmpty else {
+            return nil
+        }
+
+        let messages = screenCaptureManager.redactionPatternErrors.prefix(2).map
+        {
+            "'\($0.pattern)' failed: \($0.message)"
+        }
+        let suffix =
+            screenCaptureManager.redactionPatternErrors.count > 2
+            ? " More patterns still have errors."
+            : ""
+        return messages.joined(separator: " ") + suffix
     }
 }
 

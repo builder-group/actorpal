@@ -25,7 +25,9 @@ enum CropAlignment: String, CaseIterable, Hashable {
 /// Converts a raw ScreenCaptureKit frame into a 1920×1080 BGRA sample buffer.
 ///
 /// When `debugMode` is true, detected text bounding boxes from `detector` are
-/// drawn as green outlines over the rendered frame.
+/// drawn as green outlines over the rendered frame. When `redactionEnabled` is
+/// true, OCR strings that match the configured regex patterns are covered with
+/// solid black bars before the frame reaches the preview or virtual camera.
 ///
 /// One instance should live for the duration of a single capture session.
 /// It is safe to call `makeSampleBuffer(from:)` from any thread.
@@ -56,8 +58,10 @@ final class ScreenCaptureFrameRenderer {
     // Bool loads/stores are single-instruction on arm64 — a stale read trails a toggle
     // by at most one frame, which is acceptable for a debug overlay.
     var debugMode = false
+    var redactionEnabled = false
     // Injected before stream starts; cleared after stream stops.
     var detector: VisionTextDetector?
+    var matcher: SensitiveTextMatcher?
 
     private let outputRect = CGRect(
         x: 0,
@@ -101,13 +105,31 @@ final class ScreenCaptureFrameRenderer {
         // SCStream layer, so Vision only sees the already-cropped capture buffer.
         let sourceWidth = CGFloat(CVPixelBufferGetWidth(sourcePixelBuffer))
         let sourceHeight = CGFloat(CVPixelBufferGetHeight(sourcePixelBuffer))
-        let textBoxes: [CGRect] =
+        let shouldAnalyze = debugMode || redactionEnabled
+        let detectedText = shouldAnalyze
+            ? (detector?.detect(in: sourcePixelBuffer) ?? [])
+            : []
+
+        let debugBoxes: [CGRect] =
             debugMode
-            ? (detector?.detect(in: sourcePixelBuffer) ?? []).map { detected in
-                return mapToOutput(
+            ? detectedText.map { detected in
+                mapToOutput(
                     detected.boundingBox,
                     sourceWidth: sourceWidth,
                     sourceHeight: sourceHeight
+                )
+            }
+            : []
+
+        let redactionBoxes: [CGRect] =
+            redactionEnabled
+            ? (matcher?.matchedDetections(in: detectedText) ?? []).map {
+                paddedRedactionBox(
+                    for: mapToOutput(
+                        $0.boundingBox,
+                        sourceWidth: sourceWidth,
+                        sourceHeight: sourceHeight
+                    )
                 )
             }
             : []
@@ -123,7 +145,11 @@ final class ScreenCaptureFrameRenderer {
             bounds: outputRect,
             colorSpace: colorSpace
         )
-        drawDebugBoxes(textBoxes, on: pixelBuffer)
+        drawOverlays(
+            redactionBoxes: redactionBoxes,
+            debugBoxes: debugBoxes,
+            on: pixelBuffer
+        )
 
         var timing = CMSampleTimingInfo(
             duration: CMTime(
@@ -198,11 +224,20 @@ final class ScreenCaptureFrameRenderer {
         )
     }
 
-    private func drawDebugBoxes(
-        _ boxes: [CGRect],
+    private func paddedRedactionBox(for box: CGRect) -> CGRect {
+        let horizontalPadding = max(6, box.height * 0.18)
+        let verticalPadding = max(3, box.height * 0.12)
+        return box
+            .insetBy(dx: -horizontalPadding, dy: -verticalPadding)
+            .intersection(outputRect)
+    }
+
+    private func drawOverlays(
+        redactionBoxes: [CGRect],
+        debugBoxes: [CGRect],
         on pixelBuffer: CVPixelBuffer
     ) {
-        guard !boxes.isEmpty else { return }
+        guard !redactionBoxes.isEmpty || !debugBoxes.isEmpty else { return }
 
         CVPixelBufferLockBaseAddress(pixelBuffer, [])
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, []) }
@@ -221,14 +256,19 @@ final class ScreenCaptureFrameRenderer {
             )
         else { return }
 
+        if !redactionBoxes.isEmpty {
+            context.setFillColor(NSColor.black.cgColor)
+            for box in redactionBoxes {
+                context.fill(box)
+            }
+        }
+
+        guard !debugBoxes.isEmpty else { return }
+
         context.setStrokeColor(NSColor.systemGreen.cgColor)
-        context.setFillColor(
-            NSColor.systemGreen.withAlphaComponent(0.15).cgColor
-        )
         context.setLineWidth(2)
 
-        for box in boxes {
-            context.fill(box)
+        for box in debugBoxes {
             context.stroke(box)
         }
     }

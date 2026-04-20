@@ -12,9 +12,16 @@ import Vision
 final class ScreenCaptureManager: NSObject, ObservableObject {
     @Published private(set) var isCapturing = false
     @Published private(set) var isDebugMode = false
+    @Published private(set) var isRedactionEnabled = false
     @Published private(set) var requiresCameraPermission = false
     @Published private(set) var visionUseFastRecognition = false
     @Published private(set) var visionMinimumTextHeight: Float = 0.008
+    @Published private(set) var redactionPatternInput =
+        AppConfig.defaultRedactionPatternText
+    @Published private(set) var redactionActivePatternCount =
+        AppConfig.defaultRedactionPatterns.count
+    @Published private(set) var redactionPatternErrors:
+        [SensitiveTextMatcher.PatternError] = []
     @Published private(set) var captureTargets: [CaptureTarget] = []
     @Published private(set) var selectedTarget: CaptureTarget?
     @Published private(set) var cropMode: CropMode = .none
@@ -42,6 +49,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         qos: .userInteractive
     )
     private let streamOutput = ScreenCaptureStreamOutput()
+    private let redactionMatcher = SensitiveTextMatcher()
 
     private var captureStream: SCStream?
     private var droppedFrameCount = 0
@@ -70,6 +78,18 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
     func toggleDebugMode() {
         isDebugMode.toggle()
         frameRenderer?.debugMode = isDebugMode
+    }
+
+    func setRedactionEnabled(_ value: Bool) {
+        isRedactionEnabled = value
+        frameRenderer?.redactionEnabled = value
+    }
+
+    func setRedactionPatternInput(_ value: String) {
+        redactionPatternInput = value
+        updateRedactionPatternState(
+            redactionMatcher.updatePatterns(from: value)
+        )
     }
 
     func toggleVisionRecognitionSpeed() {
@@ -250,6 +270,8 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             detector.minimumTextHeight = visionMinimumTextHeight
             renderer.detector = detector
             renderer.debugMode = isDebugMode
+            renderer.redactionEnabled = isRedactionEnabled
+            renderer.matcher = redactionMatcher
 
             let filter: SCContentFilter
             let baseStreamSize: CGSize
@@ -541,6 +563,15 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             self.requiresCameraPermission = requiresCameraPermission
             self.statusTitle = title
             self.statusMessage = message
+        }
+    }
+
+    private func updateRedactionPatternState(
+        _ result: SensitiveTextMatcher.UpdateResult
+    ) {
+        DispatchQueue.main.async {
+            self.redactionActivePatternCount = result.activePatternCount
+            self.redactionPatternErrors = result.errors
         }
     }
 }

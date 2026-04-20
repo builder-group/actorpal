@@ -8,8 +8,18 @@ import OSLog
 /// How the source capture should be cropped before it reaches Vision and rendering.
 enum CropMode: Hashable {
     case none
-    /// Crops the largest centered region that matches the given aspect ratio.
-    case centerAspect(width: Int, height: Int)
+    /// Crops the largest region that matches the given aspect ratio.
+    case aspect(width: Int, height: Int)
+}
+
+enum CropAlignment: String, CaseIterable, Hashable {
+    case left
+    case center
+    case right
+
+    var title: String {
+        rawValue.capitalized
+    }
 }
 
 /// Converts a raw ScreenCaptureKit frame into a 1920×1080 BGRA sample buffer.

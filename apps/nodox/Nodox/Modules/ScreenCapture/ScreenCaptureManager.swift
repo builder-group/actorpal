@@ -18,6 +18,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
     @Published private(set) var captureTargets: [CaptureTarget] = []
     @Published private(set) var selectedTarget: CaptureTarget?
     @Published private(set) var cropMode: CropMode = .none
+    @Published private(set) var cropAlignment: CropAlignment = .center
     @Published private(set) var statusTitle = "Screen Capture Ready"
     @Published private(set) var statusMessage =
         "Choose a capture source, then start screen capture."
@@ -88,6 +89,10 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
 
     func setCropMode(_ mode: CropMode) {
         cropMode = mode
+    }
+
+    func setCropAlignment(_ alignment: CropAlignment) {
+        cropAlignment = alignment
     }
 
     func loadCaptureTargets() {
@@ -295,7 +300,8 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
                 filter: filter,
                 configuration: makeStreamConfiguration(
                     geometry: geometry,
-                    cropMode: cropMode
+                    cropMode: cropMode,
+                    cropAlignment: cropAlignment
                 ),
                 delegate: streamOutput
             )
@@ -403,12 +409,14 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
 
     private func makeStreamConfiguration(
         geometry: ActiveCaptureGeometry,
-        cropMode: CropMode
+        cropMode: CropMode,
+        cropAlignment: CropAlignment
     ) -> SCStreamConfiguration {
         let config = SCStreamConfiguration()
         let sourceRect = sourceRect(
             in: geometry.contentRect,
-            cropMode: cropMode
+            cropMode: cropMode,
+            cropAlignment: cropAlignment
         )
         let streamSize = streamSize(
             boundingSize: geometry.baseStreamSize,
@@ -430,10 +438,12 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         return config
     }
 
-    private func sourceRect(in contentRect: CGRect, cropMode: CropMode)
-        -> CGRect
-    {
-        guard case .centerAspect(let width, let height) = cropMode,
+    private func sourceRect(
+        in contentRect: CGRect,
+        cropMode: CropMode,
+        cropAlignment: CropAlignment
+    ) -> CGRect {
+        guard case .aspect(let width, let height) = cropMode,
             width > 0,
             height > 0
         else {
@@ -453,8 +463,19 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             cropHeight = cropWidth / targetAspect
         }
 
+        let xInset = contentRect.width - cropWidth
+        let x: CGFloat
+        switch cropAlignment {
+        case .left:
+            x = contentRect.minX
+        case .center:
+            x = contentRect.minX + xInset / 2
+        case .right:
+            x = contentRect.maxX - cropWidth
+        }
+
         return CGRect(
-            x: contentRect.minX + (contentRect.width - cropWidth) / 2,
+            x: x,
             y: contentRect.minY + (contentRect.height - cropHeight) / 2,
             width: cropWidth,
             height: cropHeight

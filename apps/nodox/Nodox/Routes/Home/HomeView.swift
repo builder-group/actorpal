@@ -275,15 +275,39 @@ struct HomeView: View {
                         )
                     ) {
                         Text("Full Source").tag(CropMode.none)
-                        Text("16:9 Center Crop").tag(
-                            CropMode.centerAspect(width: 16, height: 9)
+                        Text("16:9 Crop").tag(
+                            CropMode.aspect(width: 16, height: 9)
                         )
-                        Text("4:3 Center Crop").tag(
-                            CropMode.centerAspect(width: 4, height: 3)
+                        Text("4:3 Crop").tag(
+                            CropMode.aspect(width: 4, height: 3)
                         )
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
+                    if screenCaptureManager.cropMode != .none {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Horizontal Position")
+                                .font(.subheadline.weight(.medium))
+                            Picker(
+                                "Horizontal Position",
+                                selection: Binding(
+                                    get: { screenCaptureManager.cropAlignment },
+                                    set: {
+                                        screenCaptureManager.setCropAlignment(
+                                            $0
+                                        )
+                                    }
+                                )
+                            ) {
+                                ForEach(CropAlignment.allCases, id: \.self) {
+                                    alignment in
+                                    Text(alignment.title).tag(alignment)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                        }
+                    }
                     Text(cropModeDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -303,13 +327,13 @@ struct HomeView: View {
         case .none:
             return
                 "Captures the full source. Ultrawide displays may still be letterboxed in the fixed 16:9 camera feed."
-        case .centerAspect(let w, let h):
+        case .aspect(let w, let h):
             if w * AppConfig.videoHeight == h * AppConfig.videoWidth {
                 return
-                    "Crops the center \(w):\(h) region before Vision, then fills the 16:9 camera feed edge-to-edge."
+                    "Crops a \(w):\(h) region before Vision, then fills the 16:9 camera feed edge-to-edge."
             }
             return
-                "Crops the center \(w):\(h) region before Vision. Because the virtual camera stays 16:9, non-16:9 crops are centered with side bars."
+                "Crops a \(w):\(h) region before Vision. Because the virtual camera stays 16:9, non-16:9 crops are centered with side bars."
         }
     }
 

@@ -2,42 +2,49 @@
 //  CameraExtensionProviderSource.swift
 //  Camera Extension
 //
-//  Created by Codex on 20.04.26.
-//
 
 import CoreMediaIO
 import Foundation
+import OSLog
 
+/// Top-level CMIO extension provider. Owns the camera device source.
 final class CameraExtensionProviderSource: NSObject, CMIOExtensionProviderSource
 {
-    private let clientQueue: DispatchQueue?
-    private let deviceSource: CameraExtensionDeviceSource
-    private(set) lazy var provider = CMIOExtensionProvider(
-        source: self,
-        clientQueue: clientQueue
+
+    private static let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier
+            ?? "com.buildergroup.nodox.camera-extension",
+        category: "ProviderSource"
     )
 
-    init(clientQueue: DispatchQueue?) {
-        self.clientQueue = clientQueue
-        deviceSource = CameraExtensionDeviceSource(
-            localizedName: CameraExtensionConstants.deviceName
-        )
+    private let deviceSource: CameraExtensionDeviceSource
 
+    private(set) lazy var provider = CMIOExtensionProvider(
+        source: self,
+        clientQueue: nil
+    )
+
+    override init() {
+        deviceSource = CameraExtensionDeviceSource()
         super.init()
 
-        let cameraProvider = provider
-
+        // `addDevice` only fails if the same device is added twice (programmer error)
+        let provider = self.provider
         do {
-            try cameraProvider.addDevice(deviceSource.device)
+            try provider.addDevice(deviceSource.device)
         } catch {
+            Self.logger.fault(
+                "Failed to add camera device: \(error.localizedDescription, privacy: .public)"
+            )
             fatalError(
                 "Failed to add NoDox camera device: \(error.localizedDescription)"
             )
         }
     }
 
-    func connect(to client: CMIOExtensionClient) throws {}
+    // MARK: - CMIOExtensionProviderSource
 
+    func connect(to client: CMIOExtensionClient) throws {}
     func disconnect(from client: CMIOExtensionClient) {}
 
     var availableProperties: Set<CMIOExtensionProperty> {
@@ -47,15 +54,11 @@ final class CameraExtensionProviderSource: NSObject, CMIOExtensionProviderSource
     func providerProperties(
         forProperties properties: Set<CMIOExtensionProperty>
     ) throws -> CMIOExtensionProviderProperties {
-        let providerProperties = CMIOExtensionProviderProperties(dictionary: [:]
-        )
-
+        let props = CMIOExtensionProviderProperties(dictionary: [:])
         if properties.contains(.providerManufacturer) {
-            providerProperties.manufacturer =
-                CameraExtensionConstants.manufacturerName
+            props.manufacturer = CameraExtensionConstants.manufacturerName
         }
-
-        return providerProperties
+        return props
     }
 
     func setProviderProperties(

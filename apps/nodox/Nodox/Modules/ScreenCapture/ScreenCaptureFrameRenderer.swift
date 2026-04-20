@@ -10,8 +10,36 @@ import CoreImage
 import CoreMedia
 import CoreVideo
 import Foundation
+import OSLog
 
+/// Converts a raw ScreenCaptureKit frame into a 1920×1080 BGRA sample buffer
+/// with a red overlay drawn on top.
+///
+/// One instance should live for the duration of a single capture session.
+/// It is safe to call `makeSampleBuffer(from:)` from any thread.
 final class ScreenCaptureFrameRenderer {
+
+    enum RendererError: LocalizedError {
+        case formatDescriptionFailed(OSStatus)
+        case pixelBufferPoolFailed(CVReturn)
+
+        var errorDescription: String? {
+            switch self {
+            case .formatDescriptionFailed(let status):
+                return
+                    "Could not create the render format description (OSStatus \(status))."
+            case .pixelBufferPoolFailed(let status):
+                return
+                    "Could not create the render pixel buffer pool (CVReturn \(status))."
+            }
+        }
+    }
+
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.buildergroup.nodox",
+        category: "FrameRenderer"
+    )
+
     private let outputRect = CGRect(
         x: 0,
         y: 0,
@@ -20,21 +48,24 @@ final class ScreenCaptureFrameRenderer {
     )
     private let ciContext = CIContext()
     private let colorSpace = CGColorSpaceCreateDeviceRGB()
-
     private let outputFormatDescription: CMFormatDescription
     private let pixelBufferPool: CVPixelBufferPool
 
-    init() {
-        outputFormatDescription = Self.makeVideoFormatDescription(
+    init() throws {
+        outputFormatDescription = try Self.makeFormatDescription(
             width: AppConfig.videoWidth,
             height: AppConfig.videoHeight
         )
-        pixelBufferPool = Self.makePixelBufferPool(
+        pixelBufferPool = try Self.makePixelBufferPool(
             width: AppConfig.videoWidth,
             height: AppConfig.videoHeight
         )
     }
 
+    // MARK: - Frame rendering
+
+    /// Returns a new rendered sample buffer, or `nil` if a system resource was
+    /// temporarily unavailable (e.g. pixel buffer pool exhausted).
     func makeSampleBuffer(from sourceBuffer: CMSampleBuffer) -> CMSampleBuffer?
     {
         guard
@@ -45,20 +76,20 @@ final class ScreenCaptureFrameRenderer {
         }
 
         let sourceImage = CIImage(cvPixelBuffer: sourcePixelBuffer)
-        let framedImage =
+        let framed =
             sourceImage
             .scaledToFit(in: outputRect)
             .composited(over: CIImage(color: .black).cropped(to: outputRect))
 
         ciContext.render(
-            framedImage,
+            framed,
             to: pixelBuffer,
             bounds: outputRect,
             colorSpace: colorSpace
         )
         drawOverlay(on: pixelBuffer)
 
-        var timingInfo = CMSampleTimingInfo(
+        var timing = CMSampleTimingInfo(
             duration: CMTime(
                 value: 1,
                 timescale: CMTimeScale(AppConfig.videoFrameRate)
@@ -67,8 +98,11 @@ final class ScreenCaptureFrameRenderer {
             decodeTimeStamp: .invalid
         )
 
-        if !timingInfo.presentationTimeStamp.isValid {
-            timingInfo.presentationTimeStamp = CMClockGetTime(
+        // Fall back to host clock if the source buffer carries no timestamp.
+        // This can happen with certain SCStream configurations; Vision frameworks
+        // tolerate host-time stamps fine since they treat each frame independently.
+        if !timing.presentationTimeStamp.isValid {
+            timing.presentationTimeStamp = CMClockGetTime(
                 CMClockGetHostTimeClock()
             )
         }
@@ -78,11 +112,13 @@ final class ScreenCaptureFrameRenderer {
             allocator: kCFAllocatorDefault,
             imageBuffer: pixelBuffer,
             formatDescription: outputFormatDescription,
-            sampleTiming: &timingInfo,
+            sampleTiming: &timing,
             sampleBufferOut: &sampleBuffer
         )
-
         guard status == noErr else {
+            logger.error(
+                "CMSampleBufferCreateReadyWithImageBuffer failed: \(status)"
+            )
             return nil
         }
 
@@ -97,9 +133,11 @@ final class ScreenCaptureFrameRenderer {
             &pixelBuffer
         )
         guard status == kCVReturnSuccess else {
+            logger.error(
+                "Pixel buffer pool exhausted (CVReturn \(status)) — dropping frame"
+            )
             return nil
         }
-
         return pixelBuffer
     }
 
@@ -123,14 +161,13 @@ final class ScreenCaptureFrameRenderer {
             return
         }
 
-        let overlayRect = AppConfig.overlayRect
+        let rect = AppConfig.overlayRect
 
         context.setFillColor(NSColor.systemRed.withAlphaComponent(0.22).cgColor)
-        context.fill(overlayRect)
-
+        context.fill(rect)
         context.setStrokeColor(NSColor.systemRed.cgColor)
         context.setLineWidth(4)
-        context.stroke(overlayRect)
+        context.stroke(rect)
 
         let graphicsContext = NSGraphicsContext(
             cgContext: context,
@@ -149,37 +186,32 @@ final class ScreenCaptureFrameRenderer {
                 .foregroundColor: NSColor.white,
             ]
         )
-
-        let textOrigin = CGPoint(
-            x: overlayRect.minX + 18,
-            y: overlayRect.minY + overlayRect.height - 42
+        label.draw(
+            at: CGPoint(x: rect.minX + 18, y: rect.minY + rect.height - 42)
         )
-        label.draw(at: textOrigin)
 
         NSGraphicsContext.restoreGraphicsState()
     }
 
-    private static func makeVideoFormatDescription(width: Int, height: Int)
+    private static func makeFormatDescription(width: Int, height: Int) throws
         -> CMFormatDescription
     {
-        var formatDescription: CMFormatDescription?
-        CMVideoFormatDescriptionCreate(
+        var desc: CMFormatDescription?
+        let status = CMVideoFormatDescriptionCreate(
             allocator: kCFAllocatorDefault,
             codecType: kCVPixelFormatType_32BGRA,
             width: Int32(width),
             height: Int32(height),
             extensions: nil,
-            formatDescriptionOut: &formatDescription
+            formatDescriptionOut: &desc
         )
-
-        guard let formatDescription else {
-            fatalError("Failed to create NoDox render format description")
+        guard status == noErr, let desc else {
+            throw RendererError.formatDescriptionFailed(status)
         }
-
-        return formatDescription
+        return desc
     }
 
-    private static func makePixelBufferPool(width: Int, height: Int)
+    private static func makePixelBufferPool(width: Int, height: Int) throws
         -> CVPixelBufferPool
     {
         let attributes: NSDictionary = [
@@ -188,40 +220,41 @@ final class ScreenCaptureFrameRenderer {
             kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
             kCVPixelBufferIOSurfacePropertiesKey: [:] as NSDictionary,
         ]
-
         var pool: CVPixelBufferPool?
-        CVPixelBufferPoolCreate(kCFAllocatorDefault, nil, attributes, &pool)
-
-        guard let pool else {
-            fatalError("Failed to create NoDox render pixel buffer pool")
+        let status = CVPixelBufferPoolCreate(
+            kCFAllocatorDefault,
+            nil,
+            attributes,
+            &pool
+        )
+        guard status == kCVReturnSuccess, let pool else {
+            throw RendererError.pixelBufferPoolFailed(status)
         }
-
         return pool
     }
 }
 
+// MARK: - CIImage scaling helper
+
 extension CIImage {
+    /// Scales the image to fit inside `outputRect`, letterboxing as needed.
     fileprivate func scaledToFit(in outputRect: CGRect) -> CIImage {
         let extent = extent.integral
-        guard extent.width > 0, extent.height > 0 else {
-            return self
-        }
+        guard extent.width > 0, extent.height > 0 else { return self }
 
         let scale = min(
             outputRect.width / extent.width,
             outputRect.height / extent.height
         )
-        let scaledImage = transformed(
-            by: CGAffineTransform(scaleX: scale, y: scale)
-        )
+        let scaled = transformed(by: CGAffineTransform(scaleX: scale, y: scale))
 
-        let xOffset = (outputRect.width - scaledImage.extent.width) / 2
-        let yOffset = (outputRect.height - scaledImage.extent.height) / 2
+        let xOffset = (outputRect.width - scaled.extent.width) / 2
+        let yOffset = (outputRect.height - scaled.extent.height) / 2
 
-        return scaledImage.transformed(
+        return scaled.transformed(
             by: CGAffineTransform(
-                translationX: xOffset - scaledImage.extent.minX,
-                y: yOffset - scaledImage.extent.minY
+                translationX: xOffset - scaled.extent.minX,
+                y: yOffset - scaled.extent.minY
             )
         )
     }

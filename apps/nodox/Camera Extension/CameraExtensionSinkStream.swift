@@ -7,7 +7,7 @@
 
 import CoreMediaIO
 import Foundation
-import os.log
+import OSLog
 
 final class CameraExtensionSinkStream: NSObject, CMIOExtensionStreamSource {
     private let streamID: UUID
@@ -99,16 +99,18 @@ final class CameraExtensionSinkStream: NSObject, CMIOExtensionStreamSource {
         logger.info("Stopped NoDox sink stream")
     }
 
+    // CMIO sink consumption works as a self-rescheduling trampoline:
+    // - `consumeSampleBuffer` is asynchronous and calls back once a buffer arrives.
+    // - On success, we forward the pixel buffer and immediately request the next one.
+    // - On nil/error (no buffer ready), we wait 20 ms before retrying to avoid spinning.
+    // The recursion never overflows the stack because every path goes through an async
+    // dispatch (either the CMIO callback or the asyncAfter).
     private func consumeNextBuffer(from client: CMIOExtensionClient) {
-        guard isStreaming else {
-            return
-        }
+        guard isStreaming else { return }
 
         stream.consumeSampleBuffer(from: client) {
             [weak self] sampleBuffer, sequenceNumber, _, _, error in
-            guard let self else {
-                return
-            }
+            guard let self else { return }
 
             if let sampleBuffer,
                 let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)
@@ -116,13 +118,14 @@ final class CameraExtensionSinkStream: NSObject, CMIOExtensionStreamSource {
                 self.sourceStream?.updateLatestPixelBuffer(pixelBuffer)
 
                 let now = CMClockGetTime(CMClockGetHostTimeClock())
-                let scheduledOutput = CMIOExtensionScheduledOutput(
-                    sequenceNumber: sequenceNumber,
-                    hostTimeInNanoseconds: UInt64(
-                        now.seconds * Double(NSEC_PER_SEC)
+                self.stream.notifyScheduledOutputChanged(
+                    CMIOExtensionScheduledOutput(
+                        sequenceNumber: sequenceNumber,
+                        hostTimeInNanoseconds: UInt64(
+                            now.seconds * Double(NSEC_PER_SEC)
+                        )
                     )
                 )
-                self.stream.notifyScheduledOutputChanged(scheduledOutput)
                 self.consumeNextBuffer(from: client)
                 return
             }

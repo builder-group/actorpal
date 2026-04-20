@@ -10,19 +10,13 @@ import SwiftUI
 @main
 struct NodoxApp: App {
     @StateObject private var cameraExtensionActivationManager = CameraExtensionActivationManager()
-    private let shouldAutoActivateExtension = ProcessInfo.processInfo.arguments.contains("--auto-activate-extension")
+    @StateObject private var screenCaptureManager = ScreenCaptureManager()
 
     var body: some Scene {
         WindowGroup {
             HomeView()
                 .environmentObject(cameraExtensionActivationManager)
-                .task {
-                    guard shouldAutoActivateExtension else {
-                        return
-                    }
-
-                    cameraExtensionActivationManager.activateExtension()
-                }
+                .environmentObject(screenCaptureManager)
         }
     }
 }

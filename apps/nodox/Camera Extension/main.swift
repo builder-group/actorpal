@@ -5,10 +5,10 @@
 //  Created by Benno on 19.04.26.
 //
 
-import Foundation
 import CoreMediaIO
+import Foundation
 
-let providerSource = Camera_ExtensionProviderSource(clientQueue: nil)
+let providerSource = CameraExtensionProviderSource(clientQueue: nil)
 CMIOExtensionProvider.startService(provider: providerSource.provider)
 
 CFRunLoopRun()

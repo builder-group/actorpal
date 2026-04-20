@@ -6,19 +6,27 @@
 //
 
 import AppKit
-import Foundation
 import Combine
+import Foundation
 import OSLog
 import SystemExtensions
 
 @MainActor
 final class CameraExtensionActivationManager: NSObject, ObservableObject {
-    private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.buildergroup.nodox", category: "CameraExtension")
+    private let logger = Logger(
+        subsystem: Bundle.main.bundleIdentifier ?? "com.buildergroup.nodox",
+        category: "CameraExtension"
+    )
     @Published private(set) var isActivating = false
     @Published private(set) var requiresUserApproval = false
     @Published private(set) var statusTitle = "Camera Extension Ready"
     @Published private(set) var statusMessage =
         "Install the virtual camera extension, then approve it in System Settings so apps like QuickTime can see NoDox as a camera."
+
+    var actionTitle: String {
+        statusTitle == "Extension Installed"
+            ? "Reinstall Camera Extension" : "Install Camera Extension"
+    }
 
     func activateExtension() {
         guard !isActivating else {
@@ -42,7 +50,8 @@ final class CameraExtensionActivationManager: NSObject, ObservableObject {
 
         isActivating = true
         statusTitle = "Requesting Activation"
-        statusMessage = "Submitting the camera extension activation request to macOS."
+        statusMessage =
+            "Submitting the camera extension activation request to macOS."
 
         OSSystemExtensionManager.shared.submitRequest(request)
     }
@@ -58,10 +67,16 @@ final class CameraExtensionActivationManager: NSObject, ObservableObject {
 
     private var approvalSettingsURL: URL {
         if #available(macOS 15.0, *) {
-            return URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension")!
+            return URL(
+                string:
+                    "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
+            )!
         }
 
-        return URL(string: "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension")!
+        return URL(
+            string:
+                "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension"
+        )!
     }
 
     private func setFailureStatus(for error: Error) {
@@ -73,12 +88,15 @@ final class CameraExtensionActivationManager: NSObject, ObservableObject {
         statusTitle = "Activation Failed"
         statusMessage = details
 
-        logger.error("Camera extension activation failed: \(details, privacy: .public)")
+        logger.error(
+            "Camera extension activation failed: \(details, privacy: .public)"
+        )
     }
 
     private static func errorDetails(for error: NSError) -> String {
         let reason = errorCodeDescription(for: error)
-        let base = "\(error.domain) (\(error.code)): \(error.localizedDescription)"
+        let base =
+            "\(error.domain) (\(error.code)): \(error.localizedDescription)"
 
         guard let reason else {
             return base
@@ -96,17 +114,23 @@ final class CameraExtensionActivationManager: NSObject, ObservableObject {
         case OSSystemExtensionError.unknown.rawValue:
             return "macOS reported an unknown system extension error."
         case OSSystemExtensionError.missingEntitlement.rawValue:
-            return "A required entitlement is missing from the app or extension."
+            return
+                "A required entitlement is missing from the app or extension."
         case OSSystemExtensionError.unsupportedParentBundleLocation.rawValue:
-            return "The app needs to be launched from /Applications to activate the extension."
+            return
+                "The app needs to be launched from /Applications to activate the extension."
         case OSSystemExtensionError.extensionNotFound.rawValue:
-            return "macOS could not find the embedded camera extension in the app bundle."
+            return
+                "macOS could not find the embedded camera extension in the app bundle."
         case OSSystemExtensionError.extensionMissingIdentifier.rawValue:
-            return "The camera extension bundle is missing its bundle identifier."
+            return
+                "The camera extension bundle is missing its bundle identifier."
         case OSSystemExtensionError.duplicateExtensionIdentifer.rawValue:
-            return "macOS found more than one embedded extension with the same identifier."
+            return
+                "macOS found more than one embedded extension with the same identifier."
         case OSSystemExtensionError.unknownExtensionCategory.rawValue:
-            return "macOS did not recognize the embedded bundle as a valid system extension category."
+            return
+                "macOS did not recognize the embedded bundle as a valid system extension category."
         case OSSystemExtensionError.codeSignatureInvalid.rawValue:
             return "The app or extension signature is invalid for activation."
         case OSSystemExtensionError.validationFailed.rawValue:
@@ -118,7 +142,8 @@ final class CameraExtensionActivationManager: NSObject, ObservableObject {
         case OSSystemExtensionError.requestSuperseded.rawValue:
             return "A newer activation request replaced this one."
         case OSSystemExtensionError.authorizationRequired.rawValue:
-            return "macOS requires additional authorization before activation can continue."
+            return
+                "macOS requires additional authorization before activation can continue."
         default:
             return nil
         }
@@ -126,7 +151,9 @@ final class CameraExtensionActivationManager: NSObject, ObservableObject {
 }
 
 extension CameraExtensionActivationManager: OSSystemExtensionRequestDelegate {
-    nonisolated func requestNeedsUserApproval(_ request: OSSystemExtensionRequest) {
+    nonisolated func requestNeedsUserApproval(
+        _ request: OSSystemExtensionRequest
+    ) {
         Task { @MainActor in
             isActivating = false
             requiresUserApproval = true

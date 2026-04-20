@@ -16,8 +16,8 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
     @Published private(set) var requiresCameraPermission = false
     @Published private(set) var visionUseFastRecognition = false
     @Published private(set) var visionMinimumTextHeight: Float = 0.008
-    @Published private(set) var redactionPatternInput =
-        AppConfig.defaultRedactionPatternText
+    @Published private(set) var redactionPatterns =
+        AppConfig.defaultRedactionPatterns
     @Published private(set) var redactionActivePatternCount =
         AppConfig.defaultRedactionPatterns.count
     @Published private(set) var redactionPatternErrors:
@@ -67,6 +67,7 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         super.init()
         streamOutput.manager = self
         setupPreviewLayer()
+        syncRedactionPatterns()
     }
 
     // MARK: - Public API
@@ -85,11 +86,21 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
         frameRenderer?.redactionEnabled = value
     }
 
-    func setRedactionPatternInput(_ value: String) {
-        redactionPatternInput = value
-        updateRedactionPatternState(
-            redactionMatcher.updatePatterns(from: value)
-        )
+    func setRedactionPattern(_ value: String, at index: Int) {
+        guard redactionPatterns.indices.contains(index) else { return }
+        redactionPatterns[index] = value
+        syncRedactionPatterns()
+    }
+
+    func addRedactionPattern() {
+        redactionPatterns.append("")
+        syncRedactionPatterns()
+    }
+
+    func removeRedactionPattern(at index: Int) {
+        guard redactionPatterns.indices.contains(index) else { return }
+        redactionPatterns.remove(at: index)
+        syncRedactionPatterns()
     }
 
     func toggleVisionRecognitionSpeed() {
@@ -573,6 +584,12 @@ final class ScreenCaptureManager: NSObject, ObservableObject {
             self.redactionActivePatternCount = result.activePatternCount
             self.redactionPatternErrors = result.errors
         }
+    }
+
+    private func syncRedactionPatterns() {
+        updateRedactionPatternState(
+            redactionMatcher.updatePatterns(redactionPatterns)
+        )
     }
 }
 

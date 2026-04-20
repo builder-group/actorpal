@@ -167,29 +167,36 @@ struct HomeView: View {
                 .toggleStyle(.switch)
 
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Regex Patterns")
-                        .font(.subheadline.weight(.medium))
+                    HStack {
+                        Text("Regex Patterns")
+                            .font(.subheadline.weight(.medium))
+                        Spacer()
+                        Button {
+                            screenCaptureManager.addRedactionPattern()
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                    }
 
-                    TextEditor(
-                        text: Binding(
-                            get: { screenCaptureManager.redactionPatternInput },
-                            set: {
-                                screenCaptureManager.setRedactionPatternInput(
-                                    $0
-                                )
-                            }
-                        )
-                    )
-                    .font(.system(.body, design: .monospaced))
-                    .frame(minHeight: 110)
-                    .padding(10)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.black.opacity(0.08))
-                    )
+                    if screenCaptureManager.redactionPatterns.isEmpty {
+                        Text("No patterns yet. Add one to start redacting.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(
+                            Array(
+                                screenCaptureManager.redactionPatterns.indices
+                            ),
+                            id: \.self
+                        ) { index in
+                            redactionPatternRow(index)
+                        }
+                    }
 
                     Text(
-                        "One regex per line. Lines that start with # are ignored. This first pass redacts whole Vision boxes, so if OCR merges several words into one string the full line gets covered."
+                        "Each row is compiled separately, and any matching pattern redacts the OCR box. This first pass still redacts whole Vision boxes, so merged OCR text can cover a full line."
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -203,12 +210,6 @@ struct HomeView: View {
                     Text(redactionPatternStatus)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-
-                    if let redactionErrorText {
-                        Text(redactionErrorText)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -445,23 +446,53 @@ struct HomeView: View {
         let count = screenCaptureManager.redactionActivePatternCount
         let noun = count == 1 ? "pattern" : "patterns"
         return
-            "\(count) active \(noun). Inline regex modifiers such as `(?i)` work if you want case-insensitive matching."
+            "\(count) active \(noun). Inline modifiers such as `(?i)` still work if you want case-insensitive matching."
     }
 
-    private var redactionErrorText: String? {
-        guard !screenCaptureManager.redactionPatternErrors.isEmpty else {
-            return nil
-        }
+    private func redactionPatternRow(_ index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 10) {
+                TextField(
+                    "Enter regex pattern",
+                    text: Binding(
+                        get: {
+                            guard
+                                screenCaptureManager.redactionPatterns.indices
+                                    .contains(index)
+                            else { return "" }
+                            return screenCaptureManager.redactionPatterns[index]
+                        },
+                        set: {
+                            screenCaptureManager.setRedactionPattern(
+                                $0,
+                                at: index
+                            )
+                        }
+                    )
+                )
+                .textFieldStyle(.roundedBorder)
+                .font(.system(.body, design: .monospaced))
 
-        let messages = screenCaptureManager.redactionPatternErrors.prefix(2).map
-        {
-            "'\($0.pattern)' failed: \($0.message)"
+                Button(role: .destructive) {
+                    screenCaptureManager.removeRedactionPattern(at: index)
+                } label: {
+                    Image(systemName: "minus.circle")
+                }
+                .buttonStyle(.plain)
+            }
+
+            if let error = redactionPatternError(at: index) {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
-        let suffix =
-            screenCaptureManager.redactionPatternErrors.count > 2
-            ? " More patterns still have errors."
-            : ""
-        return messages.joined(separator: " ") + suffix
+    }
+
+    private func redactionPatternError(at index: Int) -> String? {
+        screenCaptureManager.redactionPatternErrors.first(where: {
+            $0.index == index
+        })?.message
     }
 }
 

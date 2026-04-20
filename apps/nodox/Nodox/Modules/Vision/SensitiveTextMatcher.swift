@@ -7,7 +7,7 @@ import Foundation
 final class SensitiveTextMatcher {
 
     struct PatternError: Equatable {
-        let pattern: String
+        let index: Int
         let message: String
     }
 
@@ -23,24 +23,21 @@ final class SensitiveTextMatcher {
     private let lock = NSLock()
     private var compiledPatterns: [CompiledPattern] = []
 
-    init(patternInput: String = AppConfig.defaultRedactionPatternText) {
-        _ = updatePatterns(from: patternInput)
+    init(patterns: [String] = AppConfig.defaultRedactionPatterns) {
+        _ = updatePatterns(patterns)
     }
 
     @discardableResult
-    func updatePatterns(from patternInput: String) -> UpdateResult {
-        let rawPatterns =
-            patternInput
-            .split(whereSeparator: \.isNewline)
-            .map {
-                $0.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            .filter { !$0.isEmpty && !$0.hasPrefix("#") }
-
+    func updatePatterns(_ patterns: [String]) -> UpdateResult {
         var compiled: [CompiledPattern] = []
         var compileErrors: [PatternError] = []
 
-        for pattern in rawPatterns {
+        for (index, rawPattern) in patterns.enumerated() {
+            let pattern = rawPattern.trimmingCharacters(
+                in: .whitespacesAndNewlines
+            )
+            guard !pattern.isEmpty else { continue }
+
             do {
                 compiled.append(
                     CompiledPattern(
@@ -50,7 +47,7 @@ final class SensitiveTextMatcher {
             } catch {
                 compileErrors.append(
                     PatternError(
-                        pattern: pattern,
+                        index: index,
                         message: error.localizedDescription
                     )
                 )

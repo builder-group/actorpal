@@ -22,18 +22,8 @@ enum AppConfig {
     static let defaultRedactionPatterns = [
         #"(?i)[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}"#,
         #"\b(?:\d{1,3}\.){3}\d{1,3}\b"#,
+        #"(?i)\b(?:benno|jeff|frank)\b"#,
     ]
-
-    static var defaultRedactionPatternText: String {
-        var lines = [
-            "# Add your own words or names like this:",
-            "# \(exampleWordRedactionPattern)",
-            "",
-        ]
-        lines.append("# Common structured leaks")
-        lines.append(contentsOf: defaultRedactionPatterns)
-        return lines.joined(separator: "\n")
-    }
 
     static var marketingVersion: String {
         bundleValue(for: "CFBundleShortVersionString", fallback: "0.0.0")

@@ -1,4 +1,4 @@
-import { useCombinedCompute } from 'feature-react/state';
+import { useCompute } from 'feature-react/state';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { SegmentControl, TSegmentControlItem } from '@/components';
@@ -15,9 +15,9 @@ import { TimerActionButton } from './TimerActionButton';
 
 export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 	const { cx } = props;
-	const { min, max, isInvalidRange, isFixedDuration } = useCombinedCompute(
+	const { min, max, isInvalidRange, isFixedDuration } = useCompute(
 		[cx.$config],
-		([{ value: config }]) => {
+		([config]) => {
 			const min = config.min;
 			const max = config.max;
 			const minTotal = durationToSeconds(min);
@@ -30,13 +30,11 @@ export const TimerInput: React.FC<TTimerInputProps> = (props) => {
 			};
 		},
 		[],
-		{
-			isEqual: (a, b) =>
-				isSameDuration(a.min, b.min) &&
-				isSameDuration(a.max, b.max) &&
-				a.isInvalidRange === b.isInvalidRange &&
-				a.isFixedDuration === b.isFixedDuration
-		}
+		(a, b) =>
+			isSameDuration(a.min, b.min) &&
+			isSameDuration(a.max, b.max) &&
+			a.isInvalidRange === b.isInvalidRange &&
+			a.isFixedDuration === b.isFixedDuration
 	);
 	const [activeTimer, setActiveTimer] = React.useState<TActiveTimer>('min');
 

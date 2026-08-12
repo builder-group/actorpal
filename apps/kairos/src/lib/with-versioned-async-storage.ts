@@ -1,22 +1,18 @@
-import { type TEnforceFeatureConstraint, type TFeatureDefinition } from '@blgc/types/features';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-	FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER,
-	withStorage,
-	type TPersistFeature,
+	missingStorageValue,
+	storageFeature,
 	type TState,
+	type TStorageFeature,
 	type TStorageInterface
 } from 'feature-state';
 
-export function withVersionedAsyncStorage<
-	GValue extends { version: string },
-	GFeatures extends TFeatureDefinition[]
->(
-	baseState: TEnforceFeatureConstraint<TState<GValue, GFeatures>, TState<GValue, GFeatures>, []>,
+export function withVersionedAsyncStorage<GValue extends { version: string }>(
+	baseState: TState<GValue>,
 	key: string,
 	migrationConfig: TVersionedMigrationConfig<GValue>
-): TState<GValue, [TPersistFeature, ...GFeatures]> {
-	return withStorage(baseState, new VersionedAsyncStorageInterface(migrationConfig), key);
+): TState<GValue, [TStorageFeature]> {
+	return baseState.with(storageFeature(new VersionedAsyncStorageInterface(migrationConfig), key));
 }
 
 // MARK: - VersionedAsyncStorageInterface
@@ -39,15 +35,15 @@ class VersionedAsyncStorageInterface<
 		}
 	}
 
-	async load(key: string): Promise<GValue | typeof FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER> {
+	async load(key: string): Promise<GValue | typeof missingStorageValue> {
 		let raw: string | null;
 		try {
 			raw = await AsyncStorage.getItem(key);
 		} catch {
-			return FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+			return missingStorageValue;
 		}
 		if (raw == null) {
-			return FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+			return missingStorageValue;
 		}
 
 		// Parse loaded storage item
@@ -55,16 +51,16 @@ class VersionedAsyncStorageInterface<
 		try {
 			value = JSON.parse(raw);
 		} catch {
-			return FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+			return missingStorageValue;
 		}
 		if (value == null || typeof value !== 'object') {
-			return FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+			return missingStorageValue;
 		}
 
 		// Try to extract version from parsed value
 		const version = (value as { version?: string }).version ?? this._config.fallbackVersion;
 		if (version == null) {
-			return FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+			return missingStorageValue;
 		}
 		let current = value as GValue;
 		let currentVersion = version;
@@ -73,7 +69,7 @@ class VersionedAsyncStorageInterface<
 		while (currentVersion !== this._config.latestVersion) {
 			const migration = this._config.migrations[currentVersion];
 			if (migration == null) {
-				return FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+				return missingStorageValue;
 			}
 
 			// Apply migration

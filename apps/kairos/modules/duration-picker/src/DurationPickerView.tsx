@@ -1,4 +1,4 @@
-import { requireNativeViewManager } from 'expo-modules-core';
+import { requireNativeView } from 'expo';
 import React from 'react';
 import { useColorScheme, type ViewProps } from 'react-native';
 
@@ -24,7 +24,7 @@ export interface TDurationPickerChangeEvent {
 	seconds: number;
 }
 
-const NativeDurationPickerView = requireNativeViewManager<TNativeProps>('DurationPicker');
+const NativeDurationPickerView = requireNativeView<TNativeProps>('DurationPicker');
 
 interface TNativeProps extends TDurationPickerViewProps {
 	colorScheme: string;

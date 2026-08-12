@@ -33,7 +33,7 @@ ensure_ios_build_prereqs() {
 build_local_ios() {
 	ensure_ios_build_prereqs
 	mkdir -p "${ARTIFACT_DIR}"
-	exec eas build --platform ios --profile production --local --output "${ARTIFACT_PATH}"
+	exec pnpm dlx eas-cli@latest build --platform ios --profile production --local --output "${ARTIFACT_PATH}"
 }
 
 submit_local_ios() {
@@ -43,7 +43,7 @@ submit_local_ios() {
 		exit 1
 	fi
 
-	exec eas submit --platform ios --profile production --path "${ARTIFACT_PATH}"
+	exec pnpm dlx eas-cli@latest submit --platform ios --profile production --path "${ARTIFACT_PATH}"
 }
 
 case "${1:-}" in

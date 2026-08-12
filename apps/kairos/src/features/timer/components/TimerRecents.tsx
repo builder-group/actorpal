@@ -1,4 +1,4 @@
-import { useCombinedCompute, useFeatureState } from 'feature-react/state';
+import { useCompute, useFeatureState } from 'feature-react/state';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { TimerCx } from '../TimerCx';
@@ -7,9 +7,9 @@ import { TimerRecentItem } from './TimerRecentItem';
 export const TimerRecents: React.FC<TTimerRecentsProps> = (props) => {
 	const { cx } = props;
 	const recents = useFeatureState(cx.$recents);
-	const shouldMaskLatestRecent = useCombinedCompute(
+	const shouldMaskLatestRecent = useCompute(
 		[cx.$config, cx.$status],
-		([{ value: config }, { value: status }]) => config.hideTimeDisplay && status !== 'idle'
+		([config, status]) => config.hideTimeDisplay && status !== 'idle'
 	);
 
 	// MARK: - UI

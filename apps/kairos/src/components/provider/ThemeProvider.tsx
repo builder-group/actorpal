@@ -18,7 +18,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 	const systemTheme = useColorScheme();
 	const theme = useCompute(
 		settingsCx.$settings,
-		({ value }) => {
+		(value) => {
 			const pref = value.appearance.theme;
 			return pref === 'system' ? resolveSystemTheme(systemTheme) : pref;
 		},

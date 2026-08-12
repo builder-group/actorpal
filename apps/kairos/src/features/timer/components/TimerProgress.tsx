@@ -1,4 +1,4 @@
-import { useCombinedCompute, useCompute, useFeatureState } from 'feature-react/state';
+import { useCompute, useFeatureState } from 'feature-react/state';
 import React from 'react';
 import { Text, View } from 'react-native';
 import { BellIcon, ClockIcon, useTheme } from '@/components';
@@ -18,12 +18,12 @@ export const TimerProgress: React.FC<TTimerProgressProps> = (props) => {
 	const { cx, className } = props;
 	const { tokens } = useTheme();
 
-	const status = useCompute(cx.$status, ({ value }) => value);
-	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
-	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
-	const progress = useCombinedCompute(
+	const status = useCompute(cx.$status, (value) => value);
+	const hideTimeDisplay = useCompute(cx.$config, (value) => value.hideTimeDisplay);
+	const endMode = useCompute(cx.$config, (value) => value.endMode);
+	const progress = useCompute(
 		[cx.$status, cx.$totalSeconds, cx.$remainingSeconds],
-		([{ value: status }, { value: totalSeconds }, { value: remainingSeconds }]) => {
+		([status, totalSeconds, remainingSeconds]) => {
 			if (status === 'overtime') {
 				return 1;
 			}
@@ -79,16 +79,16 @@ const TimerProgressContent: React.FC<TTimerProgressContentProps> = (props) => {
 	const { cx } = props;
 	const { tokens } = useTheme();
 
-	const status = useCompute(cx.$status, ({ value }) => value);
-	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
-	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
-	const maxSeconds = useCompute(cx.$config, ({ value }) => durationToSeconds(value.max));
-	const totalSeconds = useCompute(cx.$totalSeconds, ({ value }) => value);
+	const status = useCompute(cx.$status, (value) => value);
+	const hideTimeDisplay = useCompute(cx.$config, (value) => value.hideTimeDisplay);
+	const endMode = useCompute(cx.$config, (value) => value.endMode);
+	const maxSeconds = useCompute(cx.$config, (value) => durationToSeconds(value.max));
+	const totalSeconds = useCompute(cx.$totalSeconds, (value) => value);
 	const remainingSeconds = useFeatureState(cx.$remainingSeconds);
 	const overtimeSeconds = useFeatureState(cx.$overtimeSeconds);
-	const endTime = useCombinedCompute(
+	const endTime = useCompute(
 		[cx.$startedAt, cx.$remainingAtStart],
-		([{ value: startedAt }, { value: remainingAtStart }]) =>
+		([startedAt, remainingAtStart]) =>
 			startedAt != null ? startedAt + remainingAtStart * 1000 : null
 	);
 

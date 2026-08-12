@@ -7,13 +7,24 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${PROJECT_ROOT}"
 
-# Note: Not using `pnpm update --latest`; Expo SDKs expect a compatible version set.
-# Bump `expo` first, then let `expo install --fix` align the rest.
+# Update packages outside Expo's native compatibility matrix first
+pnpm update --latest \
+	'!typescript' \
+	'!@expo/*' \
+	'!expo' \
+	'!expo-*' \
+	'!react' \
+	'!react-dom' \
+	'!react-native' \
+	'!react-native-*' \
+	'!@react-native-async-storage/async-storage'
+
+# Bump Expo separately, then let Expo align React and every native module
 # https://docs.expo.dev/workflow/upgrading-expo-sdk-walkthrough/
 pnpm add expo@latest
-npx expo install --fix
-npx expo-doctor
+pnpm exec expo install --fix
+pnpm dlx expo-doctor@latest
 
 if [[ -d ios ]]; then
-	npx pod-install
+	pnpm dlx pod-install@latest
 fi

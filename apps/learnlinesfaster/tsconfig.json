@@ -1,9 +1,8 @@
 {
-	"extends": "@blgc/config/typescript/react-internal",
+	"extends": "@blgc/config/typescript/react",
 	"compilerOptions": {
 		"target": "ES2022",
 		"lib": ["ES2022", "dom", "dom.iterable"],
-		"baseUrl": ".",
 		"types": ["@react-router/node", "vite/client"],
 		"rootDirs": [".", "./.react-router/types"],
 		"paths": {

@@ -20,6 +20,9 @@
 		"test": {
 			"cache": false
 		},
+		"typecheck": {
+			"dependsOn": ["^typecheck"]
+		},
 		"update:latest": {
 			"cache": false
 		}

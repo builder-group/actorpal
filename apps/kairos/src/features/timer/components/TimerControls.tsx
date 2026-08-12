@@ -5,7 +5,7 @@ import { TimerCx } from '../TimerCx';
 import { TimerActionButton } from './TimerActionButton';
 
 export const TimerControls: React.FC<TTimerControlsProps> = ({ cx }) => {
-	const status = useCompute(cx.$status, ({ value }) => value);
+	const status = useCompute(cx.$status, (value) => value);
 
 	const canRightAction = status === 'running' || status === 'paused' || status === 'overtime';
 	const rightActionLabel =

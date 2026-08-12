@@ -1,4 +1,4 @@
-import { requireNativeModule, type EventSubscription } from 'expo-modules-core';
+import { requireNativeModule } from 'expo';
 
 const AlarmModule = requireNativeModule<TAlarmModule>('Alarm');
 
@@ -22,7 +22,11 @@ interface TAlarmModule {
 	addListener(
 		eventName: 'onAlarmNotificationTapped',
 		listener: (event: TAlarmNotificationTap) => void
-	): EventSubscription;
+	): TEventSubscription;
+}
+
+interface TEventSubscription {
+	remove(): void;
 }
 
 interface TAlarmNotificationTap {
@@ -63,11 +67,7 @@ export async function getNotificationPermissionStatus(): Promise<TNotificationPe
 }
 
 export type TNotificationPermissionStatus =
-	| 'notDetermined'
-	| 'denied'
-	| 'authorized'
-	| 'provisional'
-	| 'ephemeral';
+	'notDetermined' | 'denied' | 'authorized' | 'provisional' | 'ephemeral';
 
 /**
  * Schedules a local notification at endTimeMs (Unix ms) with a stable identifier.
@@ -105,7 +105,7 @@ export async function cancelAlarm(id: string): Promise<void> {
 
 export function addAlarmNotificationTappedListener(
 	listener: (event: TAlarmNotificationTap) => void
-): EventSubscription {
+): TEventSubscription {
 	return AlarmModule.addListener('onAlarmNotificationTapped', listener);
 }
 

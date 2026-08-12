@@ -79,7 +79,7 @@ kairos/
 
 ### State Management
 
-`feature-state` (`$`-prefixed atoms) owns all app state. `withStorage()` handles persistence via an AsyncStorage adapter. No separate persistence layer needed.
+`feature-state` (`$`-prefixed atoms) owns all app state. `storageFeature()` handles persistence via an AsyncStorage adapter. No separate persistence layer needed.
 
 ### Live Activity
 

@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { useCombinedCompute } from 'feature-react/state';
+import { useCompute } from 'feature-react/state';
 import React from 'react';
 import { useTheme } from '@/components';
 import { formatDurationRange, useTimerCx } from '@/features/timer';
@@ -8,12 +8,9 @@ const Layout: React.FC = () => {
 	const { tokens } = useTheme();
 	const cx = useTimerCx();
 
-	const { title, headerLargeTitle } = useCombinedCompute(
+	const { title, headerLargeTitle } = useCompute(
 		[cx.$status, cx.$config],
-		([statusCx, configCx]) => {
-			const status = statusCx?.value ?? 'idle';
-			const config = configCx?.value;
-
+		([status, config]) => {
 			// Keep large title only while idle. Switching to inline title when active causes a small native jump,
 			// but this is the most reliable cross-version behavior without brittle scroll/header animation hacks
 			if (status === 'idle') {
@@ -26,9 +23,7 @@ const Layout: React.FC = () => {
 			};
 		},
 		[],
-		{
-			isEqual: (a, b) => a.title === b.title && a.headerLargeTitle === b.headerLargeTitle
-		}
+		(a, b) => a.title === b.title && a.headerLargeTitle === b.headerLargeTitle
 	);
 
 	// MARK: - UI

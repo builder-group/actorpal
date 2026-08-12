@@ -1,4 +1,4 @@
-import { useCompute, useFeatureState, withLocalStorage } from 'feature-react/state';
+import { localStorageFeature, useCompute, useFeatureState } from 'feature-react/state';
 import { createState } from 'feature-state';
 import { AlignLeftIcon, InfoIcon, TextSearchIcon } from 'lucide-react';
 import React from 'react';
@@ -18,14 +18,14 @@ mind – tell me it's all an illusion ...`
 	} = props;
 
 	const textState = React.useMemo(() => {
-		const state = withLocalStorage(createState(defaultText), 'lines-practice_text');
+		const state = createState(defaultText).with(localStorageFeature('lines-practice_text'));
 		return state;
 	}, [defaultText]);
 	const text = useFeatureState(textState);
 
 	const linesState = useCompute(
 		textState,
-		({ value: text }) => {
+		(text) => {
 			const tokens = tokenizeText(text);
 			const lines: TRevealableToken[][] = [];
 			let currentLine: TRevealableToken[] = [];
@@ -52,11 +52,11 @@ mind – tell me it's all an illusion ...`
 
 	const allTextRevealed = useCompute(
 		linesState,
-		({ value }) =>
-			value.every((line) => line.filter((t) => t.type === 'word').every((t) => t.revealed)),
+		(lines) =>
+			lines.every((line) => line.filter((t) => t.type === 'word').every((t) => t.revealed)),
 		[]
 	);
-	const isDefaultText = useCompute(textState, ({ value }) => value === defaultText, [defaultText]);
+	const isDefaultText = useCompute(textState, (value) => value === defaultText, [defaultText]);
 
 	// =========================================================================
 	// Events
@@ -64,60 +64,62 @@ mind – tell me it's all an illusion ...`
 
 	const handleTextChange = React.useCallback(
 		(event: React.ChangeEvent<HTMLTextAreaElement>) => {
-			textState._v = event.target.value;
-			textState._notify();
+			textState.set(event.target.value);
 		},
 		[textState]
 	);
 
 	const handleReset = React.useCallback(() => {
-		textState._v = defaultText;
-		textState._notify();
+		textState.set(defaultText);
 	}, [textState, defaultText]);
 
 	const toggleLine = React.useCallback(
 		(lineIndex: number) => {
-			const line = linesState._v[lineIndex];
-			if (line == null) return;
+			linesState.set((lines) => {
+				const line = lines[lineIndex];
+				if (line == null) return lines;
 
-			const allWordsRevealed = line.filter((t) => t.type === 'word').every((t) => t.revealed);
-
-			for (const token of line) {
-				if (token.type === 'word') {
-					token.revealed = !allWordsRevealed;
-				}
-			}
-
-			linesState._notify();
+				const allWordsRevealed = line
+					.filter((token) => token.type === 'word')
+					.every((token) => token.revealed);
+				const nextLines = [...lines];
+				nextLines[lineIndex] = line.map((token) =>
+					token.type === 'word' ? { ...token, revealed: !allWordsRevealed } : token
+				);
+				return nextLines;
+			});
 		},
 		[linesState]
 	);
 
 	const toggleWord = React.useCallback(
 		(lineIndex: number, tokenIndex: number) => {
-			const token = linesState._v[lineIndex]?.[tokenIndex];
-			if (token == null || token.type !== 'word') return;
+			linesState.set((lines) => {
+				const line = lines[lineIndex];
+				const token = line?.[tokenIndex];
+				if (line == null || token == null || token.type !== 'word') return lines;
 
-			token.revealed = !token.revealed;
-			linesState._notify();
+				const nextLines = [...lines];
+				const nextLine = [...line];
+				nextLine[tokenIndex] = { ...token, revealed: !token.revealed };
+				nextLines[lineIndex] = nextLine;
+				return nextLines;
+			});
 		},
 		[linesState]
 	);
 
 	const toggleAllText = React.useCallback(() => {
-		const allWordsRevealed = linesState._v.every((line) =>
-			line.filter((t) => t.type === 'word').every((t) => t.revealed)
-		);
-
-		for (const line of linesState._v) {
-			for (const token of line) {
-				if (token.type === 'word') {
-					token.revealed = !allWordsRevealed;
-				}
-			}
-		}
-
-		linesState._notify();
+		linesState.set((lines) => {
+			const allWordsRevealed = lines.every((line) =>
+				line.filter((token) => token.type === 'word').every((token) => token.revealed)
+			);
+			return lines.map((line) =>
+				line.map((token) =>
+					token.type === 'word' ? { ...token, revealed: !allWordsRevealed } : token
+				)
+			);
+		});
 	}, [linesState]);
 
 	// =========================================================================

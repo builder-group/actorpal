@@ -1,5 +1,5 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { createState, type TPersistFeature, type TState } from 'feature-state';
+import { createState, type TState, type TStorageFeature } from 'feature-state';
 import React from 'react';
 import { Alert, AppState, Linking } from 'react-native';
 import { AudioCx, useAudioCx } from '@/features/audio';
@@ -20,16 +20,16 @@ export class TimerCx {
 	private readonly _alarm: TimerAlarm;
 	private readonly _cleanups: Array<() => void> = [];
 
-	public readonly $config: TState<TTimerConfig, [TPersistFeature]>;
-	public readonly $status: TState<TTimerStatus, [TPersistFeature]>;
+	public readonly $config: TState<TTimerConfig, [TStorageFeature]>;
+	public readonly $status: TState<TTimerStatus, [TStorageFeature]>;
 
-	public readonly $totalSeconds: TState<number | null, [TPersistFeature]>;
+	public readonly $totalSeconds: TState<number | null, [TStorageFeature]>;
 	public readonly $remainingSeconds: TState<number, []>;
 	public readonly $overtimeSeconds: TState<number, []>;
 
-	public readonly $remainingAtStart: TState<number, [TPersistFeature]>;
-	public readonly $startedAt: TState<number | null, [TPersistFeature]>;
-	public readonly $recents: TState<TTimerRecent[], [TPersistFeature]>;
+	public readonly $remainingAtStart: TState<number, [TStorageFeature]>;
+	public readonly $startedAt: TState<number | null, [TStorageFeature]>;
+	public readonly $recents: TState<TTimerRecent[], [TStorageFeature]>;
 
 	constructor(audioCx: AudioCx, settingsCx: SettingsCx) {
 		this._audioCx = audioCx;

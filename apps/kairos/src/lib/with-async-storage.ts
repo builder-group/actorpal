@@ -1,18 +1,17 @@
-import { type TEnforceFeatureConstraint, type TFeatureDefinition } from '@blgc/types/features';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-	FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER,
-	withStorage,
-	type TPersistFeature,
+	missingStorageValue,
+	storageFeature,
 	type TState,
+	type TStorageFeature,
 	type TStorageInterface
 } from 'feature-state';
 
-export function withAsyncStorage<GValue, GFeatures extends TFeatureDefinition[]>(
-	baseState: TEnforceFeatureConstraint<TState<GValue, GFeatures>, TState<GValue, GFeatures>, []>,
+export function withAsyncStorage<GValue>(
+	baseState: TState<GValue>,
 	key: string
-): TState<GValue, [TPersistFeature, ...GFeatures]> {
-	return withStorage(baseState, new AsyncStorageInterface<GValue>(), key);
+): TState<GValue, [TStorageFeature]> {
+	return baseState.with(storageFeature(new AsyncStorageInterface<GValue>(), key));
 }
 
 class AsyncStorageInterface<GStorageValue> implements TStorageInterface<GStorageValue> {
@@ -25,14 +24,12 @@ class AsyncStorageInterface<GStorageValue> implements TStorageInterface<GStorage
 		}
 	}
 
-	async load(key: string): Promise<GStorageValue | typeof FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER> {
+	async load(key: string): Promise<GStorageValue | typeof missingStorageValue> {
 		try {
 			const raw = await AsyncStorage.getItem(key);
-			return raw != null
-				? (JSON.parse(raw) as GStorageValue)
-				: FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+			return raw != null ? (JSON.parse(raw) as GStorageValue) : missingStorageValue;
 		} catch {
-			return FAILED_TO_LOAD_FROM_STORAGE_IDENTIFIER;
+			return missingStorageValue;
 		}
 	}
 

@@ -12,7 +12,7 @@ import {
 
 const Screen: React.FC = () => {
 	const cx = useTimerCx();
-	const isActive = useCompute(cx.$status, ({ value }) => value !== 'idle');
+	const isActive = useCompute(cx.$status, (value) => value !== 'idle');
 
 	return (
 		<ScrollView

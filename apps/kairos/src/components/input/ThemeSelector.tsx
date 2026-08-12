@@ -13,7 +13,7 @@ import { useTheme } from '../provider';
 
 export const ThemeSelector: React.FC = () => {
 	const settingsCx = useSettingsCx();
-	const themePreference = useCompute(settingsCx.$settings, ({ value }) => value.appearance.theme);
+	const themePreference = useCompute(settingsCx.$settings, (value) => value.appearance.theme);
 	const { tokens } = useTheme();
 
 	const options = React.useMemo<{ value: TThemePreference; Icon: React.FC<TNamedAppIconProps> }[]>(

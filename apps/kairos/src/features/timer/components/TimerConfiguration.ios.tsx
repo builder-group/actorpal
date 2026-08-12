@@ -8,6 +8,7 @@ import {
 	Text,
 	TextField,
 	Toggle,
+	useNativeState,
 	VStack,
 	type TextFieldRef
 } from '@expo/ui/swift-ui';
@@ -16,7 +17,9 @@ import {
 	clipShape,
 	foregroundStyle,
 	frame,
+	keyboardType,
 	multilineTextAlignment,
+	onSubmit,
 	padding,
 	pickerStyle,
 	shapes,
@@ -42,19 +45,24 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 	const labelRef = React.useRef<TextFieldRef | null>(null);
 	const endAfterRef = React.useRef<TextFieldRef | null>(null);
+	const initialConfig = cx.$config.get();
+	const labelText = useNativeState(initialConfig.label);
+	const endAfterText = useNativeState(
+		String(initialConfig.endMode.type !== 'overtime' ? initialConfig.endMode.delaySeconds : 5)
+	);
 	const [isLabelFocused, setIsLabelFocused] = React.useState(false);
 	const [isEndAfterFocused, setIsEndAfterFocused] = React.useState(false);
 
-	const label = useCompute(cx.$config, ({ value }) => value.label);
-	const endSound = useCompute(cx.$config, ({ value }) => value.endSound);
-	const countdownSound = useCompute(cx.$config, ({ value }) => value.countdownSound);
-	const backgroundAlert = useCompute(cx.$config, ({ value }) => value.backgroundAlert);
-	const hideTimeDisplay = useCompute(cx.$config, ({ value }) => value.hideTimeDisplay);
-	const endMode = useCompute(cx.$config, ({ value }) => value.endMode);
-	const endModeDelay = useCompute(cx.$config, ({ value }) =>
+	const label = useCompute(cx.$config, (value) => value.label);
+	const endSound = useCompute(cx.$config, (value) => value.endSound);
+	const countdownSound = useCompute(cx.$config, (value) => value.countdownSound);
+	const backgroundAlert = useCompute(cx.$config, (value) => value.backgroundAlert);
+	const hideTimeDisplay = useCompute(cx.$config, (value) => value.hideTimeDisplay);
+	const endMode = useCompute(cx.$config, (value) => value.endMode);
+	const endModeDelay = useCompute(cx.$config, (value) =>
 		value.endMode.type !== 'overtime' ? value.endMode.delaySeconds : 5
 	);
-	const availableSounds = useCompute(audioCx.$sounds, ({ value }) => value);
+	const availableSounds = useCompute(audioCx.$sounds, (value) => value);
 	const canClearLabel = label.length > 0 && isLabelFocused;
 	const { isAllowed: notificationsAllowed } = useNotificationPermission();
 	const hasNotificationWarning = backgroundAlert === 'notification' && !notificationsAllowed;
@@ -66,13 +74,12 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 
 	// MARK: - Actions
 
-	const setLabelInputText = React.useCallback((value: string) => {
-		void labelRef.current?.setText(value).catch(() => undefined);
-	}, []);
+	const setLabelInputText = React.useCallback((value: string) => labelText.set(value), [labelText]);
 
-	const setEndAfterInputText = React.useCallback((value: string) => {
-		void endAfterRef.current?.setText(value).catch(() => undefined);
-	}, []);
+	const setEndAfterInputText = React.useCallback(
+		(value: string) => endAfterText.set(value),
+		[endAfterText]
+	);
 
 	const handleClearLabel = React.useCallback(() => {
 		cx.$config.set((c) => ({ ...c, label: '' }));
@@ -209,18 +216,18 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 						<HStack spacing={8} alignment="center">
 							<TextField
 								ref={labelRef}
-								defaultValue={label}
+								text={labelText}
 								placeholder="Timer"
-								onChangeText={(v) => {
+								onTextChange={(v) => {
 									cx.$config.set((c) => ({ ...c, label: v }));
 								}}
-								onChangeFocus={handleLabelFocusChange}
-								onSubmit={() => {
-									void labelRef.current?.blur();
-								}}
+								onFocusChange={handleLabelFocusChange}
 								modifiers={[
 									textFieldStyle('plain'),
 									submitLabel('done'),
+									onSubmit(() => {
+										void labelRef.current?.blur();
+									}),
 									frame({ width: canClearLabel ? 120 : 140, alignment: 'trailing' }),
 									multilineTextAlignment('trailing')
 								]}
@@ -357,15 +364,15 @@ export const TimerConfiguration: React.FC<TTimerConfigurationProps> = (props) =>
 							>
 								<TextField
 									ref={endAfterRef}
-									defaultValue={String(endModeDelay)}
+									text={endAfterText}
 									placeholder="5"
-									onChangeText={handleDelaySecondsChange}
-									onChangeFocus={handleEndAfterFocusChange}
-									onSubmit={handleEndAfterSubmit}
-									keyboardType="numbers-and-punctuation"
+									onTextChange={handleDelaySecondsChange}
+									onFocusChange={handleEndAfterFocusChange}
 									modifiers={[
 										textFieldStyle('plain'),
 										submitLabel('done'),
+										onSubmit(handleEndAfterSubmit),
+										keyboardType('numbers-and-punctuation'),
 										frame({ width: 60, alignment: 'trailing' }),
 										multilineTextAlignment('trailing')
 									]}
